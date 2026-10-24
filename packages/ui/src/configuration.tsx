@@ -14,7 +14,7 @@ export function createConfigurationClient(apiBase = '/api'): ConfigurationClient
     const value = await response.json() as T & {error?: {code?: string; message?:string}};
     if (!response.ok) throw new ConfigurationRequestError(response.status,value.error?.code??`HTTP_${response.status}`,value.error?.message??value.error?.code??`HTTP_${response.status}`); return value;
   };
-  return { state: () => request('/'), save: (configuration, draft) => request('/drafts', { configuration, ...(draft ? {draftId: draft.draftId, expectedRevision: draft.revision} : {}) }), validate: draft => request(`/drafts/${encodeURIComponent(draft.draftId)}/validate`, {expectedRevision: draft.revision}), publish: draft => request(`/drafts/${encodeURIComponent(draft.draftId)}/publish`, {expectedRevision: draft.revision}) };
+  return { state: () => request(''), save: (configuration, draft) => request('/drafts', { configuration, ...(draft ? {draftId: draft.draftId, expectedRevision: draft.revision} : {}) }), validate: draft => request(`/drafts/${encodeURIComponent(draft.draftId)}/validate`, {expectedRevision: draft.revision}), publish: draft => request(`/drafts/${encodeURIComponent(draft.draftId)}/publish`, {expectedRevision: draft.revision}) };
 }
 const initial: AgentConfiguration = {name: '应用助手', instructions: '帮助用户完成当前软件中的任务。仅使用获准能力，以宿主回执确认结果。', capabilityIds: [], bounds: {maxTurns: 8, maxElapsedMs: 120000}};
 /** Same component and API for standalone console and native host Agentic tab. */
