@@ -31,3 +31,7 @@ The runtime worker separately reports an approval pause with zero mutations, one
 `qualification-trace.json` retains request IDs, canonical request and response hashes, finish reasons, tool names and simulation provenance. Raw conversations and detailed local response traces remain uncommitted in `.runtime` / shared IPC. No hidden chain of thought is recorded. No watcher remains running; per-request file checks were bounded and only started after runtime handshake.
 
 Limitations: these rounds demonstrate a dynamic in-session model simulation and read-only intent variation, not production model quality, measured provider usage, broad capability coverage, or real provider reliability. A real provider adapter remains future work.
+
+## Separate UI/HTTP flow
+
+`ui-qualification-trace.json` records three further actual model rounds from the UI/HTTP acceptance run, separately from the original five rounds. A Chinese request asked to read the current ticket, preview low-to-high priority, and wait for confirmation. The actor read the contextual ticket, proposed high using the returned version 1, then issued a Chinese final only after receiving a succeeded host receipt reporting high/version 2. The actor performed no approval or host mutation. Browser/UI observations and confirmation enforcement belong to the browser qualification worker's evidence, not to this model trace. All three responses remain explicitly simulated with unmeasured usage. No model watcher remains active.
