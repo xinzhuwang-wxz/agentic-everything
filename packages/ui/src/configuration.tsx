@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { AgentConfigurationSchema, type AgentConfiguration, type AgentDraft, type AgentRelease, type CapabilityVersion } from '@ae/contracts';
-export interface ConfigurationState { durability: 'memory_fixture'; canConfigure: boolean; capabilities: CapabilityVersion[]; drafts: AgentDraft[]; releases: AgentRelease[]; activeReleaseId?: string }
+export interface ConfigurationState { durability: 'memory_fixture' | 'postgres_qualified'; canConfigure: boolean; capabilities: CapabilityVersion[]; drafts: AgentDraft[]; releases: AgentRelease[]; activeReleaseId?: string }
 export interface ConfigurationClient {
   state(): Promise<ConfigurationState>;
   save(configuration: AgentConfiguration, draft?: AgentDraft): Promise<AgentDraft>;
@@ -31,7 +31,7 @@ export function ConfigurationPanel({client,onPublished}: {client: ConfigurationC
   const publish = () => act(async()=>{if(!draft||dirty||!changes)return;const current=epoch.current;const release=await client.publish(draft);if(current!==epoch.current)return;setNotice(`已发布 ${release.releaseId}。仅新任务使用新版本，现有任务保持原版本。`);setChanges(undefined);await onPublished?.();if(current!==epoch.current)return;const next=await client.state();if(current===epoch.current)setState(next);});
   return <section className="ae-configuration" aria-labelledby={`${id}-heading`} aria-busy={busy}>
     <div className="ae-config-heading"><p className="ae-eyebrow">CONFIGURE · VALIDATE · RELEASE</p><h2 id={`${id}-heading`}>配置你的应用助手</h2></div>
-    <p className="ae-config-environment">内存测试配置 · 进程重启会丢失 · 模型仍由子智能体模拟。配置权限不授予宿主业务权限。</p>
+    <p className="ae-config-environment">{state?.durability === 'postgres_qualified' ? '配置已持久化到 PostgreSQL。' : state?.durability === 'memory_fixture' ? '内存测试配置 · 进程重启会丢失。' : '正在读取配置存储状态。'}配置权限不授予宿主业务权限；存储状态不代表模型或生产环境已经验收。</p>
     {error&&<p className="ae-config-error" ref={errorRef} tabIndex={-1} role="alert">{error}。若保存或发布结果不确定，请重新加载核对，勿重复创建。</p>}
     {notice&&<p className="ae-config-notice" role="status">{notice}</p>}
     <button disabled={busy} onClick={()=>void act(async()=>{const current=epoch.current;const next=await client.state();if(current!==epoch.current)return;setState(next);setNotice('已重新读取服务端配置与发布历史。');})}>重新加载配置</button>
