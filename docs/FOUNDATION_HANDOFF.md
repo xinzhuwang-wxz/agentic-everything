@@ -41,3 +41,8 @@ no alternative durable workflow engine is silently introduced. UI uses React/Rad
 surface, without claiming assistant-ui compatibility or hiding its pending qualification.
 All npm installs use registry.npmjs.org with ignore-scripts and exact top-level versions; package-lock.json
 pins integrity and transitive versions. No dependency installation script or paid API was run.
+
+Post-install checks also passed: `npm ls --all --depth=0` (all top-level dependencies resolve),
+`node node_modules/vite/bin/vite.js --version` (8.3.5 on Node 24.19.0; no install script required).
+Installed dependencies occupy approximately 181 MiB; npm's isolated cache approximately 233 MiB.
+A clean npm ci has not yet been executed while parallel consumers share the installed dependencies.

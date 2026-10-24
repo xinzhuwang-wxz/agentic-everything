@@ -6,3 +6,9 @@ coverage/
 .env.*
 !.env.example
 .tmp/
+.next/
+.cache/
+.runtime/
+.delivery/
+upstream/
+*.tsbuildinfo

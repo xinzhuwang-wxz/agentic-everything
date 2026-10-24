@@ -4,7 +4,7 @@ User approved development on 2026-10-24. First close the source-to-agentic busin
 
 | Ticket | Scope | Owner | State |
 |---|---|---|---|
-| AE-FOUNDATION | Reproducible TS workspace, minimal shared contracts and actual commands | foundation | in progress |
+| AE-FOUNDATION | Reproducible TS workspace, minimal shared contracts and actual commands | foundation | complete (80e66f1; six tests and schema export passed) |
 | AE-TRANSFORM | Source assessment, tailored plan and reversible fixture recipe | transformation | pending |
 | AE-RUNTIME | Governed model/tool execution and durable boundary | runtime | pending |
 | AE-SURFACE | Existing-host tab and assistant linked to actual contracts | surfaces | pending |
