@@ -24,6 +24,12 @@ function fixtureChecks(report: unknown): VerificationReport['checks'] {
   exact(checks.map(c => c.name).sort(), [...GATES].sort(), 'Unexpected fixture verification gates');
   return checks;
 }
+function bindEvidenceRefs(checks: VerificationReport['checks'], files: Map<string, Buffer>): void {
+  for (const check of checks) for (const ref of check.evidence) {
+    const bytes = files.get(ref.path);
+    if (!bytes || bytesHash(bytes) !== ref.sha256) throw new Error('Verification evidence reference mismatch: ' + ref.path);
+  }
+}
 function authorizationCheck(approval: ApprovedChangeSet, completedAt: string): VerificationReport['checks'][number] {
   const valid = Date.parse(completedAt) < Date.parse(approval.expiresAt);
   return { name: 'delivery-authorization-valid', status: valid ? 'pass' : 'fail', expected: 'Delivery completed before ' + approval.expiresAt, actual: valid ? 'Approval remained current through delivery' : 'Approval expired during delivery; fresh approval is required before further execution', evidence: [] };
@@ -129,6 +135,7 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
   verification.checks.push(authorizationCheck(approval, createdAt));
   const files = new Map<string, Buffer>(Object.entries({ 'assessment.json': assessment, 'plan.json': plan, 'approval.json': approval, 'applied.json': applied, 'verification.json': verification }).map(([path, value]) => [path, Buffer.from(json(value))]));
   for (const [path, bytes] of evidenceFiles) files.set(path, bytes);
+  bindEvidenceRefs(verification.checks, files);
   for (const change of applied.patch.changes) { files.set('source/' + change.path, sources.get(change.path)!); const original = applied.originals[change.path]; if (original !== null) files.set('rollback/' + change.path, Buffer.from(original!)); }
   const manifest = DeliveryManifestSchema.parse({ schemaVersion: '1', kind: 'ae-delivery', toolVersion: '0.1.0', status: status(verification.checks), verificationScope: plan.verificationAuthorization ? 'react-helpdesk-synthetic-v1' : 'static-only', startedAt, createdAt, projectId: assessment.projectId, baseCommit: plan.baseCommit, recipe: applied.patch.recipe, chain: { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, baselineCodeHash: expectedBaselineCodeHash(assessment, plan), candidateCodeHash: candidateHash(assessment, plan, applied), permissions: permissions(approval), artifacts: [...files].map(([path, bytes]) => ({ path, sha256: bytesHash(bytes), bytes: bytes.length })), checks: verification.checks, limitations: plan.verificationAuthorization ? FIXTURE_LIMITATIONS : LIMITATIONS });
   if (!plan.verificationAuthorization) mkdirSync(out, { mode: 0o700 });
@@ -176,6 +183,7 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
     checks.push(authorizationCheck(approval, manifest.createdAt));
     exact([...refs.keys()].sort(), expectedPaths.sort(), 'Unexpected artifact scope');
     for (const change of helpdeskRecipe.preview(path => applied.originals[path] ?? null)) if (bytesHash(sources.get(change.path)!) !== sha256(change.after)) throw new Error('Packaged candidate does not match recipe');
+    bindEvidenceRefs(verification.checks, files);
     exact(verification.checks, checks, 'Unsupported verification claim'); exact(manifest.checks, verification.checks, 'Manifest check mismatch');
     if (manifest.status !== status(verification.checks)) throw new Error('Unsupported delivery status');
     return { valid: true, errors: [], manifest };
