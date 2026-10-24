@@ -106,6 +106,7 @@ export async function checkFixtureDeliveryEvidence(input:FixtureDeliveryEvidence
   }
   if(passed('host-business-tests')||passed('black-box-business-differential')){
   const baseline=verifyArchive(input.baseline), differential=record(input.differential);
+  if(baseline.manifest.provenance.sourceVersion!==report.provenance.sourceVersion||differential.candidate.sourceVersion!==report.provenance.sourceVersion)throw Error('Source commit binding mismatch');
   if(baseline.manifest.provenance.codeHash!==report.trust.sourceTreeHash||differential.candidate.codeHash!==report.trust.candidateTreeHash)throw Error('Behavior source binding mismatch');
   const ticket={id:'ticket-1',tenantId:'tenant-a',title:'Printer offline',priority:'low',version:1};
   const changed={...ticket,priority:'high',version:2};
