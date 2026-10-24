@@ -1,0 +1,18 @@
+{
+  "name": "@ae/host-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@ae/ui": "0.1.0",
+    "react": "*"
+  },
+  "types": "./src/index.ts"
+}

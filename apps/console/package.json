@@ -1,0 +1,1 @@
+{"name":"@ae/console","version":"0.1.0","private":true,"type":"module","dependencies":{"@ae/host-sdk":"0.1.0","@ae/ui":"0.1.0","react":"*","react-dom":"*"}}
