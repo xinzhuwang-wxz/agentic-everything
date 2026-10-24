@@ -13,6 +13,6 @@ export default function App() {
     <button type="button" onClick={() => void refreshTicket()}>Refresh ticket</button>
     {error && <p role="alert">{error}</p>}
     {!ticket && !error && <p>Loading ticket…</p>}
-    {ticket && <article aria-label="Original ticket details"><h2>{ticket.title}</h2><p>Priority: <strong data-testid="host-priority">{ticket.priority}</strong></p><p>Version: <span data-testid="host-version">{ticket.version}</span></p></article>}
+    {ticket && <article aria-label="Original ticket details"><h2>{ticket.title}</h2><p>Priority: <strong data-testid="host-priority">{ticket.priority}</strong></p><p>Assignee: <span data-testid="host-assignee">{ticket.assigneeId ?? 'Unassigned'}</span></p><p>Version: <span data-testid="host-version">{ticket.version}</span></p></article>}
   </main>;
 }

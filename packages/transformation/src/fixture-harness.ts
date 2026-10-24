@@ -15,10 +15,10 @@ export const trustedFixtureHashes: Readonly<Record<string, string>> = Object.fre
   'index.html':'ff2e85ae4437145924971f70a7cd2716280df4434f79f27bb4de519b7cd6d5e6',
   'package.json':'58f3284f06f481a5e65acbe394222ff80a9b4cffd5d1d0359550c1183c841948',
   'vite.config.ts':'063b280b03e58e4e1d8445ef2c7f7a79939f86a0a7c5fa008021fc163d8df18d',
-  'src/App.tsx':'c139c713ac1ba6562e53230d202816c4478160425e6e3cc8859e1a3bf6a218e7',
-  'src/api.ts':'e99d2f76f300bffedae382dc27ba9655dbbc13609ea4b2c5e611765e2b932fa7',
+  'src/App.tsx':'16768bb0d44a9ede89d01da77d545ddcfbba96f27bfc349b30db299b55dd77e5',
+  'src/api.ts':'b3957652c56fcddeb9b9a8f76aa82d22bd654b648f86e1d8a2d400115e362938',
   'src/main.tsx':'d4ed766ef457a435f4d2727fe6b62dd63896eb46473280d70c051a0eae4098af',
-  'src/tickets.ts':'3ba60408f7d00a120290cdaa70fccadb5bf8027309e8ce13c7f9e8616cd1c946',
+  'src/tickets.ts':'d7f284f03a26c5f1115d8c5d851d32ed17c9da2e0b0e07082508308166aaddda',
 });
 const hash = (value: string | Buffer): string => createHash('sha256').update(value).digest('hex');
 const treeHash = (files: Record<string,string>): string => hash(JSON.stringify(Object.entries(files).sort(([a],[b])=>a.localeCompare(b))));
@@ -139,23 +139,20 @@ export async function checkFixtureDeliveryEvidence(input:FixtureDeliveryEvidence
   const baseline=verifyArchive(input.baseline), differential=record(input.differential);
   if(baseline.manifest.provenance.sourceVersion!==report.provenance.sourceVersion||differential.candidate.sourceVersion!==report.provenance.sourceVersion)throw Error('Source commit binding mismatch');
   if(baseline.manifest.provenance.codeHash!==report.trust.sourceTreeHash||differential.candidate.codeHash!==report.trust.candidateTreeHash)throw Error('Behavior source binding mismatch');
-  const ticket={id:'ticket-1',tenantId:'tenant-a',title:'Printer offline',priority:'low',version:1};
-  const changed={...ticket,priority:'high',version:2};
-  const cases=['read','cross-tenant','write','stale-write'];
-  if(JSON.stringify(baseline.manifest.cases.map(c=>c.test.id))!==JSON.stringify(cases)||baseline.manifest.normalization.length)throw Error('Fixed case set changed');
-  for(const c of baseline.manifest.cases){const expectedTest={id:c.test.id,input:{operation:c.test.id},seed:{fixture:'committed-ticket-seed-v1'},covers:[c.test.id]};const expectedObservation={output:c.test.id==='read'?ticket:c.test.id==='write'?changed:{error:c.test.id==='cross-tenant'?'Not found':'Conflict or not found'},sideEffects:c.test.id==='write'?[changed]:[],receipt:{beforeVersion:1,afterVersion:c.test.id==='write'?2:1}};if(JSON.stringify(c.test)!==JSON.stringify(expectedTest)||JSON.stringify(c.observation)!==JSON.stringify(expectedObservation))throw Error('Baseline does not match fixed fixture semantics');}
+  await assertFixtureBaseline(baseline,{sourceVersion:report.provenance.sourceVersion});
   const recomputed=await compareBaseline({baseline,adapter:{safety:'isolated-seeded-fixture',async execute(c){const found=differential.cases.find((x:{id:string})=>x.id===c.id);if(!found)throw Error('Missing observation');return found.observation as Observation;}},provenance:differential.candidate as Provenance,configuration:{baselineHash:baseline.hash,candidateCodeHash:report.trust.candidateTreeHash,registryHash:improvementRegistryHash([]),enabled:[]},improvements:[]});
   if(JSON.stringify(recomputed)!==JSON.stringify(differential)||!recomputed.passed)throw Error('Differential claims do not match observations');
   }
   if(passed('host-typecheck')){const builds=[record(input.originalBuild),record(input.candidateBuild)];if(builds[0]!.sourceTreeHash!==report.trust.sourceTreeHash||builds[1]!.sourceTreeHash!==report.trust.candidateTreeHash)throw Error('Build source mismatch');
   for(const build of builds)if(build.exitCode!==0||build.typecheckExitCode!==0||!build.files?.length||build.files.some((f:{sha256:string})=>! /^[a-f0-9]{64}$/.test(f.sha256)))throw Error('Host build/typecheck did not pass');}
   if(passed('authenticated-runtime')){const runtime=record(input.runtime);
-  if(runtime.unauthenticated.status!==401||runtime.crossTenant.status!==404||runtime.denied.status!==403||runtime.before.version!==1||runtime.before.priority!=='low'||runtime.awaitingMutationCount!==0||runtime.approved.status!=='succeeded'||runtime.after.version!==2||runtime.after.priority!=='high'||runtime.mutationCount!==1||!runtime.approved.receipts.some((r:{status:string;data?:{version:number}})=>r.status==='succeeded'&&r.data?.version===2))throw Error('Runtime observations do not prove the fixed journey');}
+  if(runtime.unauthenticated.status!==401||runtime.crossTenant.status!==404||runtime.denied.status!==403||runtime.before.version!==1||runtime.before.priority!=='low'||runtime.awaitingMutationCount!==0||runtime.approved.status!=='succeeded'||runtime.after.version!==2||runtime.after.priority!=='high'||runtime.mutationCount!==1||!runtime.approved.receipts.some((r:{status:string;data?:{version:number}})=>r.status==='succeeded'&&r.data?.version===2))throw Error('Runtime observations do not prove the fixed journey');
+  if(runtime.members?.started?.status!=='awaiting-approval'||runtime.members?.approved?.status!=='succeeded'||runtime.members?.after?.assigneeId!=='member-a'||runtime.members?.after?.version!==2||runtime.members?.mutationCount!==1||!runtime.members.started.receipts.some((r:{data?:{members?:unknown[]}})=>Array.isArray(r.data?.members))||runtime.memberRecovery?.unknown!=='outcome-unknown'||runtime.memberRecovery?.reconciled!=='succeeded'||runtime.memberRecovery?.mutationCount!==1||runtime.memberRecovery?.after?.assigneeId!=='member-a')throw Error('Member assignment/reconciliation observations incomplete');}
   if(passed('browser-acceptance')){const browser=record(input.browser);
-  if(browser.errors.length||browser.externalRequests.length||browser.sandbox!==true||browser.original.version!=='1'||browser.original.priority!=='low'||browser.candidateBefore.version!=='1'||browser.candidateAfter.version!=='2'||browser.candidateAfter.priority!=='high'||JSON.stringify(browser.checks)!==JSON.stringify(fixtureBrowserChecks))throw Error('Browser observations incomplete');
+  if(browser.assignment?.assigneeId!=='member-a'||browser.assignment?.version!=='2'||browser.assignment?.mutationCount!==1||browser.errors.length||browser.externalRequests.length||browser.sandbox!==true||browser.original.version!=='1'||browser.original.priority!=='low'||browser.candidateBefore.version!=='1'||browser.candidateAfter.version!=='2'||browser.candidateAfter.priority!=='high'||JSON.stringify(browser.checks)!==JSON.stringify(fixtureBrowserChecks))throw Error('Browser observations incomplete');
   }
 }
 
-export const fixtureBrowserChecks = ["original page and Refresh ticket work with collapsed overlay", "real pointer drag does not open; app-scoped position restores on reload", "keyboard move/open/Escape/launcher focus recovery", "same approval survives close and host management; explicit confirmation changes original host once via onRunChange", "360px resize clamps launcher and conversation without horizontal page overflow", "touchscreen drag does not open; subsequent tap opens and closes"];
+export const fixtureBrowserChecks = ["original page and Refresh ticket work with collapsed overlay", "real pointer drag does not open; app-scoped position restores on reload", "keyboard move/open/Escape/launcher focus recovery", "same approval survives close and host management; explicit confirmation changes original host once via onRunChange", "360px resize clamps launcher and conversation without horizontal page overflow", "touchscreen drag does not open; subsequent tap opens and closes", "ticket-scoped member lookup and explicit assignee approval update ordinary host once"];
 
 export const fixtureToolFiles=['packages/transformation/dist/fixture-baseline.js','packages/transformation/dist/pre-apply.js','packages/transformation/dist/fixture-harness.js','packages/transformation/dist/recipes/react-helpdesk.js','packages/verification/dist/index.js','packages/runtime-core/dist/index.js','packages/capabilities/dist/index.js','dist/apps/api/src/app.js','packages/ui/src/index.ts','packages/host-sdk/src/index.ts'];

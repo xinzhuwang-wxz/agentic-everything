@@ -37,7 +37,7 @@ class Worker extends EventEmitter {
     this.label = `${++workerNumber}-${killPoint || 'normal'}`;
     this.log = join(directory, `${this.label}.log`);
     this.child = spawn(process.execPath, [workerPath, databaseUrl, killPoint], {
-      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC', NODE_OPTIONS: '--max-old-space-size=768' },
+      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC', NODE_OPTIONS: '--max-old-space-size=640' },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     activeWorkers.add(this);

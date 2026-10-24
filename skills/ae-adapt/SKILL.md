@@ -9,7 +9,7 @@ This Skill is a method for the developer agent you already use. It is not a new 
 
 ## Scope
 
-Helpdesk is a worked example, not the product domain. Keep baseline behavior for any product; optional behavior improvements are separately reviewed, versioned and off by default. Do not rename unfamiliar business operations as tickets or expose APIs indiscriminately.
+Helpdesk is a worked example, not the product domain. The qualified fixture covers ticket reads, ticket-scoped member queries, priority and assignee changes; the new member tools require explicit host support, and old adapters retain their original capabilities. Keep baseline behavior for any product; optional behavior improvements are separately reviewed, versioned and off by default. Do not rename unfamiliar business operations as tickets or expose APIs indiscriminately.
 
 ## User interaction
 

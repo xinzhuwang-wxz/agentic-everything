@@ -4,7 +4,7 @@ import type { AdaptationPlan } from '@ae/contracts';
 
 /** First curated example only. These business assumptions do not belong to the generic engine. */
 export const helpdeskRecipe = {
-  ref: { id: 'react-helpdesk', version: '1.0.0' },
+  ref: { id: 'react-helpdesk', version: '1.1.0' },
   inputs: ['package.json', 'src/App.tsx', 'src/tickets.ts', 'src/api.ts', 'src/main.tsx', 'index.html', 'vite.config.ts'],
   outputs: ['src/App.tsx', 'src/ae/AgenticMount.tsx'],
   businessPath: 'src/tickets.ts',
@@ -22,7 +22,7 @@ export const helpdeskRecipe = {
   planDetails: {
     goals: ['Add an Agentic entry and embedded assistant without replacing the existing helpdesk.'],
     nonGoals: ['Production identity provisioning', 'Deployment', 'Database migration', 'Paid model calls'],
-    capabilities: ['ticket.read', 'ticket.update (host authorization and explicit runtime approval required)'],
+    capabilities: ['ticket.read', 'ticket-scoped members.read (when host-supported)', 'ticket priority/assignee update (when host-supported; host authorization and explicit runtime approval required)'],
     dependencies: ['@ae/host-sdk@0.1.0 and @ae/ui@0.1.0 (provided by the AE workspace; installation not authorized by this recipe)'],
     commands: [], networkAllowlist: [],
     dataFlows: ['Existing host API remains authoritative; browser receives no server credential.'],

@@ -8,9 +8,10 @@ import { captureBaseline, verifyArchive } from '@ae/verification';
 
 const sha = (value: string | Buffer): string => createHash('sha256').update(value).digest('hex');
 const treeHash = (files: Readonly<Record<string, string>>): string => sha(JSON.stringify(Object.entries(files).sort(([a], [b]) => a.localeCompare(b))));
-const caseIds = ['read', 'cross-tenant', 'write', 'stale-write'];
-const seed = 'committed-ticket-seed-v1';
-const coverage = { scope: 'Exact committed ticket domain: read, cross-tenant denial, write, stale-version denial', unknowns: ['Finite synthetic cases do not prove all business inputs or production behavior.'] };
+export const fixtureCaseIds = ['read', 'cross-tenant', 'write', 'stale-write', 'members', 'members-cross-tenant', 'assign', 'assign-foreign', 'assign-inactive', 'assign-stale'];
+const caseIds = fixtureCaseIds;
+const seed = 'committed-ticket-members-seed-v2';
+const coverage = { scope: 'Exact committed ticket domain: reads, ticket-scoped active members, priority/assignee writes, tenant/member/version denials', unknowns: ['Finite synthetic cases do not prove all business inputs or production behavior.'] };
 function aeRoot(): string {
   let root = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 7; i++, root = dirname(root)) if (existsSync(join(root, 'tests/browser/delivery.mjs')) && existsSync(join(root, 'package-lock.json'))) return root;
@@ -73,12 +74,9 @@ export async function assertFixtureBaseline(value: unknown, binding: { sourceRoo
   const expectedProvenance = provenance(sourceVersion, trustedFixtureHashes);
   if (Object.entries(expectedProvenance).some(([key, expected]) => archive.manifest.provenance[key as keyof Provenance] !== expected)) throw Error('Baseline provenance mismatch');
   if (archive.manifest.safety !== 'isolated-seeded-fixture' || archive.manifest.normalization.length || JSON.stringify(archive.manifest.coverage) !== JSON.stringify(coverage) || JSON.stringify(archive.manifest.cases.map(c => c.test.id)) !== JSON.stringify(caseIds)) throw Error('Fixed baseline suite changed');
-  const ticket = { id: 'ticket-1', tenantId: 'tenant-a', title: 'Printer offline', priority: 'low', version: 1 };
-  const changed = { ...ticket, priority: 'high', version: 2 };
   for (const c of archive.manifest.cases) {
     const expectedTest = { id: c.test.id, input: { operation: c.test.id }, seed: { fixture: seed }, covers: [c.test.id] };
-    const expectedObservation = { output: c.test.id === 'read' ? ticket : c.test.id === 'write' ? changed : { error: c.test.id === 'cross-tenant' ? 'Not found' : 'Conflict or not found' }, sideEffects: c.test.id === 'write' ? [changed] : [], receipt: { beforeVersion: 1, afterVersion: c.test.id === 'write' ? 2 : 1 } };
-    if (JSON.stringify(c.test) !== JSON.stringify(expectedTest) || JSON.stringify(c.observation) !== JSON.stringify(expectedObservation)) throw Error('Baseline does not match fixed fixture semantics');
+    if (JSON.stringify(c.test) !== JSON.stringify(expectedTest) || JSON.stringify(c.observation) !== JSON.stringify(expectedFixtureObservation(c.test.id))) throw Error('Baseline does not match fixed fixture semantics');
   }
   return archive;
 }
@@ -91,22 +89,41 @@ export async function captureFixtureBaseline(input: { sourceRoot: string }): Pro
       if (inspectOriginal(input.sourceRoot, trustedFixtureHashes) !== sourceVersion) throw Error('Original changed during capture');
       // A unique URL resets the known module's in-memory seed for EVERY case.
       const domain = await import(pathToFileURL(join(resolve(input.sourceRoot), 'src/tickets.ts')).href + '?baseline=' + randomUUID());
-      const before = domain.readTicket('tenant-a', 'ticket-1');
-      let output: JsonValue;
-      try {
-        switch (test.id) {
-          case 'read': output = domain.readTicket('tenant-a', 'ticket-1'); break;
-          case 'cross-tenant': output = domain.readTicket('tenant-b', 'ticket-1'); break;
-          case 'write': output = domain.changePriority('tenant-a', 'ticket-1', 'high', 1); break;
-          case 'stale-write': output = domain.changePriority('tenant-a', 'ticket-1', 'high', 0); break;
-          default: throw Error('Unknown fixed fixture case');
-        }
-      } catch (error) { output = { error: error instanceof Error ? error.message : String(error) }; }
-      const after = domain.readTicket('tenant-a', 'ticket-1');
-      return { output, sideEffects: JSON.stringify(before) === JSON.stringify(after) ? [] : [after], receipt: { beforeVersion: before.version, afterVersion: after.version } };
+      return executeFixtureCase(domain, test.id);
     } },
     cases: caseIds.map(id => ({ id, input: { operation: id }, seed: { fixture: seed }, covers: [id] })),
     provenance: provenance(sourceVersion, trustedFixtureHashes), normalization: [], coverage,
   });
   return assertFixtureBaseline(archive, { sourceRoot: input.sourceRoot, sourceVersion });
+}
+
+interface FixtureDomain {
+  readTicket(tenantId:string,ticketId:string):JsonValue & {version:number};
+  changePriority(tenantId:string,ticketId:string,priority:string,version:number):JsonValue;
+  listMembers(tenantId:string,ticketId:string):JsonValue;
+  changeAssignee(tenantId:string,ticketId:string,memberId:string,version:number):JsonValue;
+}
+export function executeFixtureCase(domain:FixtureDomain,id:string) {
+  const before=domain.readTicket('tenant-a','ticket-1');let output:JsonValue;
+  try {switch(id){
+    case 'read':output=before;break;
+    case 'cross-tenant':output=domain.readTicket('tenant-b','ticket-1');break;
+    case 'write':output=domain.changePriority('tenant-a','ticket-1','high',1);break;
+    case 'stale-write':output=domain.changePriority('tenant-a','ticket-1','high',0);break;
+    case 'members':output=domain.listMembers('tenant-a','ticket-1');break;
+    case 'members-cross-tenant':output=domain.listMembers('tenant-b','ticket-1');break;
+    case 'assign':output=domain.changeAssignee('tenant-a','ticket-1','member-a',1);break;
+    case 'assign-foreign':output=domain.changeAssignee('tenant-a','ticket-1','member-b',1);break;
+    case 'assign-inactive':output=domain.changeAssignee('tenant-a','ticket-1','member-inactive',1);break;
+    case 'assign-stale':output=domain.changeAssignee('tenant-a','ticket-1','member-a',0);break;
+    default:throw Error('Unknown fixed fixture case');
+  }}catch(error){output={error:error instanceof Error?error.message:String(error)};}
+  const after=domain.readTicket('tenant-a','ticket-1');return {output,sideEffects:JSON.stringify(before)===JSON.stringify(after)?[]:[after],receipt:{beforeVersion:before.version,afterVersion:after.version}};
+}
+export function expectedFixtureObservation(id:string) {
+  const ticket={id:'ticket-1',tenantId:'tenant-a',title:'Printer offline',priority:'low',version:1};
+  const changed=id==='assign'?{...ticket,version:2,assigneeId:'member-a'}:{...ticket,priority:'high',version:2};
+  const write=id==='write'||id==='assign';
+  const output=id==='read'?ticket:write?changed:id==='members'?[{id:'member-a',tenantId:'tenant-a',displayName:'Alex',active:true}]:{error:['cross-tenant','members-cross-tenant'].includes(id)?'Not found':['assign-foreign','assign-inactive'].includes(id)?'Member unavailable':'Conflict or not found'};
+  return {output,sideEffects:write?[changed]:[],receipt:{beforeVersion:1,afterVersion:write?2:1}};
 }

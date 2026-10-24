@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { contentHash } from '@ae/contracts/hash';
 import type { BaselineArchive, JsonValue } from '@ae/contracts';
-import { assertFixtureBaseline, captureFixtureBaseline } from '../src/fixture-baseline.js';
+import { assertFixtureBaseline, captureFixtureBaseline, fixtureCaseIds, expectedFixtureObservation } from '../src/fixture-baseline.js';
 
 function setup(t: { after(fn: () => void): void }) {
   const parent = mkdtempSync(join(tmpdir(), 'ae-preapply-baseline-'));
@@ -22,14 +22,14 @@ function rehash(archive: BaselineArchive): BaselineArchive {
   archive.hash = contentHash(archive.manifest as JsonValue);
   return archive;
 }
-test('pre-apply baseline captures four reset observations and binds actual original commit', async t => {
+test('pre-apply baseline captures ten reset observations and binds actual original commit', async t => {
   const f = setup(t);
   const before = readFileSync(join(f.sourceRoot, 'src/tickets.ts'), 'utf8');
   const archive = await captureFixtureBaseline({ sourceRoot: f.sourceRoot });
   assert.equal(archive.manifest.provenance.sourceVersion, f.git('rev-parse', 'HEAD'));
   assert.equal(archive.manifest.provenance.adapterVersion, 'trusted-helpdesk-delivery-v1');
-  assert.deepEqual(archive.manifest.cases.map(c => c.test.id), ['read', 'cross-tenant', 'write', 'stale-write']);
-  assert.deepEqual(archive.manifest.cases.map(c => c.observation.receipt), [{ beforeVersion: 1, afterVersion: 1 }, { beforeVersion: 1, afterVersion: 1 }, { beforeVersion: 1, afterVersion: 2 }, { beforeVersion: 1, afterVersion: 1 }]);
+  assert.deepEqual(archive.manifest.cases.map(c => c.test.id), fixtureCaseIds);
+  assert.deepEqual(archive.manifest.cases.map(c => c.observation.receipt), fixtureCaseIds.map(id => expectedFixtureObservation(id).receipt));
   assert.equal(readFileSync(join(f.sourceRoot, 'src/tickets.ts'), 'utf8'), before);
   assert.equal(f.git('status', '--porcelain'), '');
   await assertFixtureBaseline(archive, { sourceRoot: f.sourceRoot, sourceVersion: f.git('rev-parse', 'HEAD') });
@@ -66,6 +66,8 @@ test('baseline validation rejects rehashed semantic and provenance forgeries', a
   const variants: Array<(a: BaselineArchive) => void> = [
     a => { a.manifest.cases[0]!.observation.output = { error: 'forged' }; },
     a => { a.manifest.cases.reverse(); },
+    a => { a.manifest.cases.find(c => c.test.id === 'members')!.observation.output = [{id:'member-b',tenantId:'tenant-b',displayName:'Blair',active:true}]; },
+    a => { a.manifest.cases.find(c => c.test.id === 'assign-inactive')!.observation.output = {id:'ticket-1',assigneeId:'member-inactive',version:2}; },
     a => { a.manifest.cases[0]!.test.seed = { fixture: 'different' }; },
     a => { a.manifest.provenance.environmentHash = '0'.repeat(64); },
     a => { a.manifest.provenance.codeHash = '0'.repeat(64); },

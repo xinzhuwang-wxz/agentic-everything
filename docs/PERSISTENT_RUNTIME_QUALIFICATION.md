@@ -6,7 +6,7 @@
 
 Command: `bash tests/persistence/run-postgres.sh /tmp/ae-durability-pg/root/usr/lib/postgresql/17/bin 55449`, after `npm run build`.
 
-Full matrix passed at 14:20:24 UTC with 16 cases and 30 fresh OS worker processes. Run prefix: `d4a64e75-5d12-4e3c-871d-aa61c5bf9ad1`. Temporary evidence: `/tmp/ae-persistence-postgres-XJIqq6/result.json`, with worker logs in the same directory. These temporary paths are inspection evidence, not permanent deliverable links. PostgreSQL was stopped by the owned runner on completion.
+Full matrix passed at 19:25:15 UTC with 24 cases and 45 fresh OS worker processes. Run prefix: `c2c8a9c7-47b8-4eae-b32f-0be82232ee0a`. Temporary evidence: `/tmp/ae-persistence-postgres-V44pjB/result.json`, with worker logs and observations in the same directory. These paths are inspection evidence, not permanent deliverable links. PostgreSQL was stopped by the owned runner on completion. Parent/worker heaps were capped at 384/640 MiB.
 
 - Create → read → approval pause → SIGKILL → fresh process: same approval ID, hash, expiry, operation binding and events. Approval resumes the pinned SDK snapshot, not a new conversation. Exactly one host mutation, stable receipt and high/v2 readback.
 - Model results checkpointed before the restart are not requested again. The final model turn receives the actual durable host receipt. Model requests are synthetic and deterministic, not a quality/cost evaluation.
@@ -41,7 +41,17 @@ Review found a missing boundary beyond the first restart matrix: DBOS can return
 
 Review also found that concurrent reconciliation could let a delayed unknown response overwrite an earlier confirmed success. The operation receipt transition is now monotonic, and canonical receipt plus reconciliation run status update in one locked transaction. A deterministic delayed-unknown versus successful query race verifies both callers observe the same confirmed receipt/status. Stored unknown write results, not only empty reservations, are included when classifying cancellation and replay failure.
 
+## Member/assignee session acceptance
+
+The same durable session read its ticket and eligible members, paused on an exact assignment approval, survived a process restart, committed the host assignment with an atomic receipt, lost the acknowledgment, checkpointed unknown, and survived another SIGKILL. Explicit reconciliation queried the same operation once and returned the original receipt: one mutation, no redispatch and no additional model turn. Foreign, inactive and ticket-unscoped members were denied before dispatch; version, member eligibility and role changes after approval were rejected after restart with zero mutation.
+
+The legacy HTTP-PG harness was adjusted to explicitly register its supported four-tool catalog after configuration defaults became fail-closed to two; that separate HTTP-PG suite was not rerun in this milestone.
+
+This exercises the dedicated transactional synthetic PostgreSQL host. The CLI/browser delivery profile separately uses its memory-backed transformed host. These are different execution compositions, not one manufactured combined PASS.
+
 ## Integration contract
+
+Legacy hosts expose only the original two tools. Member tools require `listMembers` and an explicit exact current capability catalog. Persistent HTTP configuration likewise defaults to two tools; trusted composition opts in through `capabilityCatalog`, checked against the reviewed fixed registry. Runtime rechecks current host support and authorization independently.
 
 See `packages/runtime-adapters/db/README.md` for the asynchronous runtime API, host obligations, transaction boundaries, version pins and package subpath. This adapter is explicit opt-in. HTTP composition must use a trusted server principal/release and label the selected persistence mode; the default memory fixture has not silently changed.
 
@@ -49,7 +59,7 @@ AE and DBOS do not guarantee exactly-once arbitrary external mutations. Safe rec
 
 ## Remaining gates
 
-Production authentication/SSO, real model/API behavior and costs, dynamic release snapshots, arbitrary business adapters, multi-worker concurrency/load, schema migration/rollback upgrades, database crash/failover/backup restoration, retention, and production deployment remain unqualified. PostgreSQL storage is disposable local test storage. No real customer data, user computer, production service, paid provider or public exposure was used.
+Production authentication/SSO, real model/API behavior and costs, the final selected release/behavior/recovery combination, arbitrary business adapters, multi-worker concurrency/load, schema migration/rollback upgrades, database crash/failover/backup restoration, retention, and production deployment remain unqualified. PostgreSQL storage is disposable local test storage. No real customer data, user computer, production service, paid provider or public exposure was used.
 
 
-Regression gate: `npm run check` passed all 67 existing tests with strict typecheck and hygiene. The worktree reuses installed dependencies but links each `@ae/*` package locally. An initial whole-node_modules symlink mixed the root's newer transformation recipe with this worktree's older fixture, causing one unrelated MCP test failure; the local-package overlay corrected it without source changes or installation. The final service-backed matrix above was rebuilt with the isolated local links. No generated diagnostic modifications are committed.
+Regression gate: strict full build, source hygiene and 188 aggregate tests passed on the integrated implementation. No dependency or lockfile changes were needed.

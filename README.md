@@ -20,10 +20,10 @@ The first example begins with a plain ticket page, not a prebuilt AI demo.
 | --- | --- | --- |
 | React ticket page with ordinary domain functions | Inspect the known source layout and preview a two-file integration | The original language and app |
 | No assistant or Agentic tab | Add a host-mounted surface in an isolated Git worktree | The original source worktree |
-| A priority-change business function | Route model-requested actions through host authorization and bound approval | The existing business function and resource version checks |
+| Priority and assignee business functions | Route model-requested actions through host authorization and bound approval | The existing business function and resource version checks |
 | No execution evidence | Show run events and operation receipts; stop on unknown outcomes | The host remains the authority |
 
-The [fixture](fixtures/existing-react-helpdesk), [versioned recipe](recipes/react-helpdesk/1.0.0/recipe.json) and [tests](packages/transformation/test/transformation.test.ts) are in the repository. The current transformer recognizes that explicit layout; it does not claim general semantic understanding of arbitrary codebases. Helpdesk is a proving ground, not AE's industry boundary.
+The [fixture](fixtures/existing-react-helpdesk), [versioned recipe](recipes/react-helpdesk/1.1.0/recipe.json) and [tests](packages/transformation/test/transformation.test.ts) are in the repository. The current transformer recognizes that explicit layout; it does not claim general semantic understanding of arbitrary codebases. Helpdesk is a proving ground, not AE's industry boundary.
 
 ## Start with your own developer agent
 

@@ -6,7 +6,7 @@
 
 **Before:** a plain ticket page and tenant-scoped domain functions, with no AE imports or assistant. [Read the input](../fixtures/existing-react-helpdesk).
 
-**Transformation:** the `react-helpdesk@1.0.0` recipe records source hashes and proposes a host mount. After exact-plan approval, it edits a separate Git worktree. [Read the recipe](../recipes/react-helpdesk/1.0.0/recipe.json) and [inspect its tests](../packages/transformation/test/transformation.test.ts).
+**Transformation:** the `react-helpdesk@1.1.0` recipe records source hashes and proposes a host mount. After exact-plan approval, it edits a separate Git worktree. [Read the recipe](../recipes/react-helpdesk/1.1.0/recipe.json) and [inspect its tests](../packages/transformation/test/transformation.test.ts).
 
 **After, in the integrated runtime:** a user can request a ticket inspection or priority change. Reads use the existing business function. A write pauses for an action preview and confirmation, rechecks host authority and target version, then returns a receipt. The UI shows the server result; it does not decide permission.
 

@@ -21,6 +21,12 @@ All `start/get/list/decide/cancel/reconcile` methods are asynchronous. Public vi
 - The durable broker delegates argument validation, stable operation identity, preview creation and approval binding creation to the existing ToolBroker/policy implementation. It independently persists and atomically consumes that exact binding. Current host identity/rights, target scope and version are checked again before dispatch.
 - Fresh authorization/target-access gates run outside cached DBOS tool/model results, including before every new model dispatch. Early live denial uses an idempotent AE business-state transaction rather than changing DBOS checkpoint step positions. Receipt replay checks current authority, but does not require the pre-write resource version to remain unchanged after the operation's own successful mutation. Cached receipts cannot authorize another write.
 
+## Optional ticket-scoped member tools
+
+`read_ticket_members` reads host members for an accessible `ticketId`; `change_ticket_assignee` requires an active in-scope member, exact current ticket version and the normal bound approval. Both require optional `DurableTicketHost.listMembers` and explicit exact entries from `currentCapabilities`. Old hosts remain two-tool hosts. Current authority/member visibility is rechecked before replay or model disclosure. The host must atomically validate eligibility, mutate the ticket and persist its operation receipt.
+
+Persistent API configuration defaults to the legacy registry. A trusted composition may pass an explicit `capabilityCatalog` matching the reviewed registry and implemented member methods; this never overrides runtime host revocation.
+
 ## Transaction/recovery boundaries
 
 `ae_runs_v1`, `ae_approvals_v1`, and `ae_operations_v1` are created by the versioned initial migration in `store.ts`. This is an opt-in initial schema, not a production upgrade/rollback framework. SQL values are parameterized. Run-row locks serialize approval, reservation, event and cancellation updates.

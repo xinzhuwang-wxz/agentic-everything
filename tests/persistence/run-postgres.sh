@@ -18,4 +18,4 @@ VERSION=$("$PG_BIN/psql" -h 127.0.0.1 -p "$PORT" -d ae_persistence_qualification
 echo "PostgreSQL version: $VERSION"
 [[ "$VERSION" == 17.11* ]] || { echo 'This pinned qualification requires PostgreSQL 17.11' >&2; exit 2; }
 # Keep start, tests and stop in the same shell invocation in ephemeral executors.
-env -i PATH="$PATH" HOME="$ROOT" TZ=UTC node tests/persistence/qualify.mjs "postgresql://$(id -un)@127.0.0.1:$PORT/ae_persistence_qualification" "$ROOT"
+env -i PATH="$PATH" HOME="$ROOT" TZ=UTC NODE_OPTIONS=--max-old-space-size=384 node tests/persistence/qualify.mjs "postgresql://$(id -un)@127.0.0.1:$PORT/ae_persistence_qualification" "$ROOT"
