@@ -70,7 +70,7 @@ test('baseline validation rejects rehashed semantic and provenance forgeries', a
     a => { a.manifest.provenance.environmentHash = '0'.repeat(64); },
     a => { a.manifest.provenance.codeHash = '0'.repeat(64); },
     a => { a.manifest.provenance.adapterVersion = 'arbitrary-adapter'; },
-    a => { a.manifest.coverage.unknowns = []; },
+    a => { a.manifest.coverage.unknowns = ['Unsupported coverage claim']; },
     a => { a.manifest.safety = 'recorded-replay'; },
   ];
   for (const mutate of variants) {
