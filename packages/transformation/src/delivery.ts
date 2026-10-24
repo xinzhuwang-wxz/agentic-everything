@@ -20,6 +20,10 @@ function fixtureChecks(report: unknown): VerificationReport['checks'] {
   exact(checks.map(c => c.name).sort(), [...GATES].sort(), 'Unexpected fixture verification gates');
   return checks;
 }
+function authorizationCheck(approval: ApprovedChangeSet, completedAt: string): VerificationReport['checks'][number] {
+  const valid = Date.parse(completedAt) < Date.parse(approval.expiresAt);
+  return { name: 'delivery-authorization-valid', status: valid ? 'pass' : 'fail', expected: 'Delivery completed before ' + approval.expiresAt, actual: valid ? 'Approval remained current through delivery' : 'Approval expired during delivery; fresh approval is required before further execution', evidence: [] };
+}
 function status(checks: VerificationReport['checks']): DeliveryManifest['status'] { return checks.some(c => c.status === 'fail') ? 'failed' : checks.every(c => c.status === 'pass') ? 'complete' : 'partial'; }
 const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
 const bytesHash = (value: Buffer) => createHash('sha256').update(value).digest('hex');
@@ -88,7 +92,8 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
   for (const root of [source, candidate]) if (realpathSync(root) !== root || git(root, ['rev-parse', '--show-toplevel']) !== root || git(root, ['rev-parse', 'HEAD']) !== plan.baseCommit) throw new Error('Source/worktree base drift');
   if (source === candidate || out === source || out.startsWith(source + sep) || out === candidate || out.startsWith(candidate + sep) || source.startsWith(out + sep) || candidate.startsWith(out + sep)) throw new Error('Delivery output must be outside source and candidate');
   if (realpathSync(dirname(out)) !== dirname(out)) throw new Error('Unsafe output parent');
-  scope(assessment, plan, approval, applied, Date.now());
+  const startedAt = new Date().toISOString();
+  scope(assessment, plan, approval, applied, Date.parse(startedAt));
   if (assessment.projectId !== 'project-' + sha256(source).slice(0, 12)) throw new Error('Assessment source identity mismatch');
   if (git(source, ['status', '--porcelain', '--untracked-files=all', '--', ...helpdeskRecipe.inputs, ...helpdeskRecipe.outputs])) throw new Error('Dirty source recipe scope');
   if (adaptationCodeHash(source, assessment, plan) !== expectedBaselineCodeHash(assessment, plan)) throw new Error('Original source drift');
@@ -102,7 +107,7 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
   if (plan.verificationAuthorization) {
     assertTrustedFixtureDelivery({ sourceRoot: source, candidateRoot: candidate });
     mkdirSync(out, { mode: 0o700 });
-    const result = await runFixtureDelivery({ sourceRoot: source, candidateRoot: candidate, outputDirectory: join(out, 'evidence'), verificationAuthorization: plan.verificationAuthorization });
+    const result = await runFixtureDelivery({ sourceRoot: source, candidateRoot: candidate, outputDirectory: join(out, 'evidence'), verificationAuthorization: plan.verificationAuthorization, authorizationExpiresAt: approval.expiresAt });
     const evidence: Record<string, unknown> = {};
     for (const [key, name] of Object.entries(EVIDENCE_FILES)) {
       if (safeAbsolute(result.artifacts[key]!) !== join(out, 'evidence', name)) throw new Error('Unexpected harness artifact location');
@@ -112,13 +117,15 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
     verification.checks = [...verification.checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     verification.observedAt = new Date().toISOString();
     verification.environment = 'Fixed react-helpdesk-synthetic-v1 isolated fixture harness; no customer code execution';
-    scope(assessment, plan, approval, applied, Date.now());
+    scope(assessment, plan, approval, applied, Date.parse(startedAt));
     if (adaptationCodeHash(source, assessment, plan) !== expectedBaselineCodeHash(assessment, plan) || adaptationCodeHash(candidate, assessment, plan) !== candidateHash(assessment, plan, applied)) throw new Error('Source drift during verification');
   }
+  const createdAt = new Date().toISOString();
+  verification.checks.push(authorizationCheck(approval, createdAt));
   const files = new Map<string, Buffer>(Object.entries({ 'assessment.json': assessment, 'plan.json': plan, 'approval.json': approval, 'applied.json': applied, 'verification.json': verification }).map(([path, value]) => [path, Buffer.from(json(value))]));
   for (const [path, bytes] of evidenceFiles) files.set(path, bytes);
   for (const change of applied.patch.changes) { files.set('source/' + change.path, sources.get(change.path)!); const original = applied.originals[change.path]; if (original !== null) files.set('rollback/' + change.path, Buffer.from(original!)); }
-  const manifest = DeliveryManifestSchema.parse({ schemaVersion: '1', kind: 'ae-delivery', toolVersion: '0.1.0', status: status(verification.checks), verificationScope: plan.verificationAuthorization ? 'react-helpdesk-synthetic-v1' : 'static-only', createdAt: new Date().toISOString(), projectId: assessment.projectId, baseCommit: plan.baseCommit, recipe: applied.patch.recipe, chain: { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, baselineCodeHash: expectedBaselineCodeHash(assessment, plan), candidateCodeHash: candidateHash(assessment, plan, applied), permissions: permissions(approval), artifacts: [...files].map(([path, bytes]) => ({ path, sha256: bytesHash(bytes), bytes: bytes.length })), checks: verification.checks, limitations: plan.verificationAuthorization ? FIXTURE_LIMITATIONS : LIMITATIONS });
+  const manifest = DeliveryManifestSchema.parse({ schemaVersion: '1', kind: 'ae-delivery', toolVersion: '0.1.0', status: status(verification.checks), verificationScope: plan.verificationAuthorization ? 'react-helpdesk-synthetic-v1' : 'static-only', startedAt, createdAt, projectId: assessment.projectId, baseCommit: plan.baseCommit, recipe: applied.patch.recipe, chain: { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, baselineCodeHash: expectedBaselineCodeHash(assessment, plan), candidateCodeHash: candidateHash(assessment, plan, applied), permissions: permissions(approval), artifacts: [...files].map(([path, bytes]) => ({ path, sha256: bytesHash(bytes), bytes: bytes.length })), checks: verification.checks, limitations: plan.verificationAuthorization ? FIXTURE_LIMITATIONS : LIMITATIONS });
   if (!plan.verificationAuthorization) mkdirSync(out, { mode: 0o700 });
   for (const [path, bytes] of files) { if (evidenceFiles.has(path)) continue; const target = file(out, path); mkdirSync(dirname(target), { recursive: true, mode: 0o700 }); writeFileSync(target, bytes, { flag: 'wx', mode: 0o600 }); }
   writeFileSync(join(out, 'manifest.json'), json(manifest), { flag: 'wx', mode: 0o600 });
@@ -144,8 +151,8 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
     for (const [path, ref] of refs) { const bytes = read(root, path); if (bytes.length !== ref.bytes || bytesHash(bytes) !== ref.sha256) throw new Error('Artifact byte/hash mismatch: ' + path); files.set(path, bytes); }
     const object = (path: string): unknown => { const bytes = files.get(path); if (!bytes) throw new Error('Missing artifact: ' + path); return JSON.parse(bytes.toString('utf8')); };
     const assessment = ProjectAssessmentSchema.parse(object('assessment.json')), plan = AdaptationPlanSchema.parse(object('plan.json')), approval = ApprovedChangeSetSchema.parse(object('approval.json')), applied = AppliedSchema.parse(object('applied.json')), verification = VerificationReportSchema.parse(object('verification.json'));
-    scope(assessment, plan, approval, applied, Date.parse(manifest.createdAt));
-    if (Date.parse(manifest.createdAt) > Date.now() || Date.parse(verification.observedAt) > Date.parse(manifest.createdAt) || Date.parse(verification.observedAt) < Date.parse(applied.patch.appliedAt)) throw new Error('Invalid observation timestamps');
+    scope(assessment, plan, approval, applied, Date.parse(manifest.startedAt));
+    if (Date.parse(manifest.startedAt) > Date.parse(manifest.createdAt) || Date.parse(manifest.startedAt) < Date.parse(applied.patch.appliedAt) || Date.parse(manifest.createdAt) > Date.now() || Date.parse(verification.observedAt) > Date.parse(manifest.createdAt) || Date.parse(verification.observedAt) < Date.parse(applied.patch.appliedAt)) throw new Error('Invalid observation timestamps');
     exact(manifest.chain, { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, 'Artifact chain mismatch');
     exact(manifest.permissions, permissions(approval), 'Permission mismatch'); exact(manifest.recipe, applied.patch.recipe, 'Recipe mismatch'); exact(manifest.limitations, plan.verificationAuthorization ? FIXTURE_LIMITATIONS : LIMITATIONS, 'Limitations mismatch');
     if (manifest.verificationScope !== (plan.verificationAuthorization ? 'react-helpdesk-synthetic-v1' : 'static-only')) throw new Error('Verification scope mismatch');
@@ -160,6 +167,7 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
       await checkFixtureDeliveryEvidence(evidence as Parameters<typeof checkFixtureDeliveryEvidence>[0]);
       checks = [...checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     }
+    checks.push(authorizationCheck(approval, manifest.createdAt));
     exact([...refs.keys()].sort(), expectedPaths.sort(), 'Unexpected artifact scope');
     for (const change of helpdeskRecipe.preview(path => applied.originals[path] ?? null)) if (bytesHash(sources.get(change.path)!) !== sha256(change.after)) throw new Error('Packaged candidate does not match recipe');
     exact(verification.checks, checks, 'Unsupported verification claim'); exact(manifest.checks, verification.checks, 'Manifest check mismatch');

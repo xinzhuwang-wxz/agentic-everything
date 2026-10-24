@@ -72,3 +72,10 @@ test('fixed fixture verification requires explicit plan and matching approval sc
   assert.throws(() => proposePlan({ ...f.assessment, evidence: f.assessment.evidence.map(e => e.path === 'src/tickets.ts' ? { ...e, sha256: '0'.repeat(64) } : e) }, { verificationProfile: 'react-helpdesk-synthetic-v1' }), /exact trusted/);
   assert.throws(() => applyApprovedPlan({ sourceRoot: f.sourceRoot, destination: join(f.parent, 'unauthorized'), assessment: f.assessment, plan, approval: { ...approval, verificationAuthorization: undefined } as never }), /authorization scope/);
 });
+
+test('contradictory source execution exclusion blocks the fixed harness before packaging', async () => {
+  const f = setup(); const plan = proposePlan(f.assessment, { verificationProfile: 'react-helpdesk-synthetic-v1' });
+  const approval = approvePlan(plan, { approverId: 'fixture', authorizationRef: 'explicit-fixture-profile' });
+  const applied = applyApprovedPlan({ sourceRoot: f.sourceRoot, destination: join(f.parent, 'profile-candidate'), assessment: f.assessment, plan, approval });
+  await assert.rejects(() => createDelivery({ ...f, plan, applied, approval: { ...approval, excludedActions: ['source execution'] } }), /exclusions mismatch/);
+});
