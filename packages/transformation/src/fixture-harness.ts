@@ -26,12 +26,12 @@ export function matchesTrustedFixtureAssessment(assessment: ProjectAssessment): 
 }
 function inspect(root: string): Record<string,string> {
   if (realpathSync(root)!==resolve(root)) throw Error('Fixture root must not traverse symlinks');
-  const files: Record<string,string> = {};
+  const files: Record<string,string> = {};const allowed=new Set([...Object.keys(trustedFixtureHashes),...helpdeskRecipe.outputs]);let visited=0;
   const walk=(relative:string):void=>{ for(const name of readdirSync(join(root,relative)).sort()) {
     if(!relative && name==='.git') continue;
-    const path=relative?relative+'/'+name:name, stat=lstatSync(join(root,path));
+    const path=relative?relative+'/'+name:name;if(++visited>32||(!allowed.has(path)&&![...allowed].some(p=>p.startsWith(path+'/'))))throw Error('Full source/candidate contains an unapproved path: '+path);const stat=lstatSync(join(root,path));
     if(stat.isSymbolicLink()) throw Error('Fixture symlink denied: '+path);
-    if(stat.isDirectory()) walk(path);
+    if(stat.isDirectory()){if(allowed.has(path))throw Error('Expected fixture file: '+path);walk(path);}
     else if(stat.isFile() && stat.size<=256*1024) files[path]=hash(readFileSync(join(root,path)));
     else throw Error('Fixture nonregular or oversized input: '+path);
   }}; walk(''); return files;
@@ -68,20 +68,22 @@ export async function runFixtureDelivery(input:FixtureDeliveryInput):Promise<Fix
   if(realpathSync(outputDirectory)!==outputDirectory)throw Error('Evidence directory symlink denied');
   const work=mkdtempSync(join(tmpdir(),'ae-delivery-'));
   const browserExecutable=input.browserExecutable??process.env.AE_BROWSER_EXECUTABLE??fixtureBrowserPath;
-  const blocked=(reason:string):FixtureDeliveryResult=>{const checks:VerificationReport['checks']=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'].map(name=>({name,status:'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:reason,evidence:[]}));const report={profile:fixtureProfile,status:'fail',trust,checks,failure:reason};const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const path=join(outputDirectory,file);writeFileSync(path,JSON.stringify(name==='report'?report:null)+'\n');return [name,path];}));return {status:'fail',reportPath:artifacts.report!,artifacts,checks};};
+  const blocked=(reason:string,attempted=false):FixtureDeliveryResult=>{const checks:VerificationReport['checks']=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'].map(name=>({name,status:attempted&&name==='host-business-tests'?'fail':'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:reason,evidence:[]}));const report={profile:fixtureProfile,status:'fail',trust,checks,failure:reason};const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const path=join(outputDirectory,file);writeFileSync(path,JSON.stringify(name==='report'?report:null)+'\n');return [name,path];}));return {status:'fail',reportPath:artifacts.report!,artifacts,checks};};
   try{assertFixtureBrowser(browserExecutable);}catch(error){return blocked(String(error));}
   const args={...input,aeRoot,outputDirectory:work,browserExecutable:realpathSync(browserExecutable)};
   const environment={PATH:'/usr/bin:/bin',HOME:work,TMPDIR:work,LANG:'C.UTF-8',NODE_OPTIONS:'--max-old-space-size=640'};
   const log:string[]=[];
-  const code=await new Promise<number|null>((done,reject)=>{
+  let spawnFailure:string|undefined;
+  const code=await new Promise<number|null>(done=>{
     const child=spawn(process.execPath,['--max-old-space-size=640',join(aeRoot,'tests/browser/delivery.mjs'),JSON.stringify(args)],{cwd:aeRoot,env:environment,detached:true,stdio:['ignore','pipe','pipe']});
     const timer=setTimeout(()=>{try{process.kill(-child.pid!,'SIGTERM');}catch{};setTimeout(()=>{try{process.kill(-child.pid!,'SIGKILL');}catch{}},1500).unref();},Math.min(295000,remaining));
     const capture=(chunk:Buffer)=>{if(log.join('').length<1024*1024)log.push(chunk.toString());};child.stdout.on('data',capture);child.stderr.on('data',capture);
-    child.once('error',error=>{clearTimeout(timer);reject(error);});child.once('close',code=>{clearTimeout(timer);done(code);});
+    child.once('error',error=>{clearTimeout(timer);spawnFailure=String(error);done(null);});child.once('close',code=>{clearTimeout(timer);done(code);});
   });
   writeFileSync(join(work,'execution.log'),log.join(''));
-  if(!existsSync(join(work,'report.json')))return blocked('Fixture harness stopped without a report; diagnostic work directory: '+work);
-  const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const src=join(work,file),path=join(outputDirectory,file);if(existsSync(src)){if(lstatSync(src).size>4*1024*1024)throw Error('Oversized fixture artifact');writeFileSync(path,readFileSync(src));}else writeFileSync(path,'null\n');return [name,path];}));
+  if(spawnFailure)return blocked('Harness could not start: '+spawnFailure);
+  if(!existsSync(join(work,'report.json')))return blocked('Fixture harness stopped without a report; diagnostic work directory: '+work,true);
+  const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const src=join(work,file),path=join(outputDirectory,file);if(existsSync(src)){if(lstatSync(src).size>1024*1024)throw Error('Oversized fixture artifact');writeFileSync(path,readFileSync(src));}else writeFileSync(path,'null\n');return [name,path];}));
   const report=JSON.parse(readFileSync(artifacts.report!,'utf8')) as {status:string;checks:VerificationReport['checks']};
   return {status:code===0&&report.status==='pass'?'pass':'fail',reportPath:artifacts.report!,artifacts,checks:report.checks};
 }

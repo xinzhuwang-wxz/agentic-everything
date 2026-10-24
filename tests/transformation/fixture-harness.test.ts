@@ -24,7 +24,7 @@ test('trust checks whole original and exact recipe candidate, including unlisted
 });
 test('symlink and modified business domain cannot enter trusted execution',()=>{
   const f=fixture();try{
-    symlinkSync(join(f.work,'source'),join(f.candidateRoot,'extra'));assert.throws(()=>assertTrustedFixtureDelivery(f),/symlink/);rmSync(join(f.candidateRoot,'extra'));
+    symlinkSync(join(f.work,'source'),join(f.candidateRoot,'extra'));assert.throws(()=>assertTrustedFixtureDelivery(f),/symlink|unapproved path/);rmSync(join(f.candidateRoot,'extra'));
     writeFileSync(join(f.sourceRoot,'src/tickets.ts'),'export const injected = true;');assert.throws(()=>assertTrustedFixtureDelivery(f),/Full source/);
   }finally{rmSync(f.work,{recursive:true,force:true});}
 });
