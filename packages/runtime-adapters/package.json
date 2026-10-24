@@ -12,5 +12,8 @@
       "types": "./db/runtime.ts",
       "default": "./dist/db/runtime.js"
     }
+  },
+  "dependencies": {
+    "@ae/control-plane": "0.1.0"
   }
 }
