@@ -27,7 +27,7 @@ The operator must explicitly authorize the checkout and configure the environmen
 
 All tools are read-only. Unknown arguments, arbitrary paths, worktree arguments, unknown recipes, and model-supplied `approval: true` are rejected. Source reads are limited and bounded by the shared transformation core. Symbolic links in source paths and root ancestry are rejected. The server rechecks its root at every filesystem operation. Do not concurrently replace checkout files while it runs: filesystem permissions and operator isolation, not MCP, are the security boundary against hostile local processes.
 
-Verification checks hashes and TSX parseability, not authenticated provenance. Caller-supplied hashes are expectations, never authorization. Host typecheck, business tests, authenticated runtime, and browser acceptance remain explicitly `not-run`. A clean static result is not production readiness or a signed attestation.
+Verification checks hashes and TSX parseability, not authenticated provenance. Caller-supplied hashes are expectations, never authorization. Host typecheck, business tests, black-box business differential, authenticated runtime, and browser acceptance remain explicitly `not-run`. Static verification never claims that a behavioral differential was executed. A clean static result is not production readiness or a signed attestation.
 
 `react-helpdesk@1.0.0` is the first qualified automatic recipe, not a domain or software-category boundary. AE targets source-to-agentic adaptation across software types. Unknown layouts receive an honest assessment; existing developer agents must research and implement custom adaptations separately rather than claim an unsupported recipe is automatic.
 

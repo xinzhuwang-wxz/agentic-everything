@@ -72,7 +72,11 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
     for (const change of preview.changes) writeFileSync(join(f.root, change.path), change.after);
     const appliedReport = data(await client.callTool({ name: 'ae_verify', arguments: { patch, businessHash: sha256(readFileSync(join(f.root, 'src/tickets.ts'), 'utf8')) } }));
     assert.equal(appliedReport.checks.filter((c: {status: string}) => c.status === 'fail').length, 0);
-    assert.equal(appliedReport.checks.filter((c: {status: string}) => c.status === 'not-run').length, 4);
+    for (const name of ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance']) {
+      const check = appliedReport.checks.find((c: {name: string; status: string}) => c.name === name);
+      assert.ok(check, `Static verification must disclose the ${name} gate`);
+      assert.equal(check.status, 'not-run', `${name} cannot pass without observed execution evidence`);
+    }
     writeFileSync(join(f.root, 'src/App.tsx'), '// changed\n' + readFileSync(join(f.root, 'src/App.tsx'), 'utf8'));
     assert.equal((await client.callTool({ name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: planned.planHash } })).isError, true);
   } finally { await client.close(); rmSync(f.parent, { recursive: true, force: true }); }
