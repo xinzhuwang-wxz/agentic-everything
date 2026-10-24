@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1280" viewBox="0 0 1600 1280" role="img" aria-labelledby="title desc">
+<title id="title">Agentic Everything 宏观架构</title>
+<desc id="desc">现有开发智能体通过 AE Skill MCP CLI 理解客户源码，生成定制计划，经批准改造和验证。客户保持原技术栈，嵌入 Agentic tab 和助手，连接独立 TypeScript 控制面与运行面。宿主保留身份权限及业务真源，AE 保存运行审批账本。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#516273"/></marker></defs>
+<style>text{font-family:'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#152433}.title{font-size:36px;font-weight:700}.subtitle{font-size:20px;fill:#526171}.section{font-size:25px;font-weight:700}.label{font-size:24px;font-weight:600}.body{font-size:20px;fill:#354658}.note{font-size:18px;fill:#526171}.line{fill:none;stroke:#516273;stroke-width:2.5;marker-end:url(#arrow)}.group{fill:#f5f7fa;stroke:#c9d3df;stroke-width:1.5}.box{fill:#fff;stroke:#bdcbd9;stroke-width:1.5}</style>
+<rect width="1600" height="1280" fill="#fff"/>
+<text x="50" y="60" class="title">Agentic Everything 宏观架构</text>
+<text x="50" y="96" class="subtitle">供批准的目标设计 · AE 核心重写为 TypeScript · 客户宿主保持原语言与业务权限</text>
+<rect x="40" y="125" width="1520" height="265" rx="12" class="group"/>
+<text x="65" y="166" class="section">改造域  由客户现有开发智能体执行</text>
+<rect x="65" y="195" width="330" height="145" rx="12" class="box"/>
+<text x="87" y="233" class="label">客户已有软件</text>
+<text x="87" y="267" class="body">源码、业务目标与原有测试</text>
+<text x="87" y="296" class="body">不要求迁移宿主技术栈</text>
+<rect x="445" y="195" width="330" height="145" rx="12" class="box"/>
+<text x="467" y="233" class="label">AE Skill / MCP / CLI</text>
+<text x="467" y="267" class="body">证据化理解与业务流追踪</text>
+<text x="467" y="296" class="body">版本化 recipes 与诊断</text>
+<rect x="825" y="195" width="330" height="145" rx="12" class="box"/>
+<text x="847" y="233" class="label">专属改造计划与批准</text>
+<text x="847" y="267" class="body">能力、文件、风险、验收</text>
+<text x="847" y="296" class="body">范围绑定 plan hash 与 commit</text>
+<rect x="1205" y="195" width="330" height="145" rx="12" class="box"/>
+<text x="1227" y="233" class="label">修改、验证与可逆交付</text>
+<text x="1227" y="267" class="body">隔离 patch 和完整回归</text>
+<text x="1227" y="296" class="body">版本、配置、证据与回退</text>
+<path d="M 395 268 L 442 268" class="line"/>
+<path d="M 775 268 L 822 268" class="line"/>
+<path d="M 1155 268 L 1202 268" class="line"/>
+<text x="65" y="369" class="note">改造工具不自动获得部署、生产数据或持久凭据权限；业务助手不获得源码写入或任意 shell。</text>
+<path d="M 1370 390 L 1370 425 L 270 425 L 270 450" class="line"/>
+<text x="600" y="416" class="note">交付到宿主与 AE，不改变宿主业务真源</text>
+<rect x="40" y="455" width="420" height="610" rx="12" class="group"/>
+<text x="65" y="496" class="section">客户宿主</text>
+<rect x="510" y="455" width="430" height="610" rx="12" class="group"/>
+<text x="535" y="496" class="section">AE 嵌入表面</text>
+<rect x="990" y="455" width="570" height="610" rx="12" class="group"/>
+<text x="1015" y="496" class="section">AE TypeScript 核心</text>
+<rect x="65" y="525" width="370" height="120" rx="12" class="box"/>
+<text x="87" y="563" class="label">原业务页面 / App / 小程序</text>
+<text x="87" y="597" class="body">保留现有导航、UI 和业务流</text>
+<text x="87" y="626" class="body">按平台 recipe 增加入口</text>
+<rect x="65" y="695" width="370" height="110" rx="12" class="box"/>
+<text x="87" y="733" class="label">既有身份与权限</text>
+<text x="87" y="767" class="body">登录、租户、角色、资源 ACL</text>
+<rect x="65" y="870" width="370" height="125" rx="12" class="box"/>
+<text x="87" y="908" class="label">宿主业务 API / SDK</text>
+<text x="87" y="942" class="body">最终鉴权与业务事务</text>
+<text x="87" y="971" class="body">operationId、幂等、执行回执</text>
+<rect x="535" y="525" width="380" height="120" rx="12" class="box"/>
+<text x="557" y="563" class="label">Agentic tab / Console</text>
+<text x="557" y="597" class="body">能力与助手配置、测试和发布</text>
+<text x="557" y="626" class="body">同一控制面，不复制配置</text>
+<rect x="535" y="695" width="380" height="110" rx="12" class="box"/>
+<text x="557" y="733" class="label">嵌入式助手</text>
+<text x="557" y="767" class="body">上下文、预览、确认、进度</text>
+<rect x="535" y="870" width="380" height="125" rx="12" class="box"/>
+<text x="557" y="908" class="label">Host Adapter / 平台桥</text>
+<text x="557" y="942" class="body">显式 context、导航和页面更新</text>
+<text x="557" y="971" class="body">浏览器上报不构成授权</text>
+<rect x="1015" y="525" width="520" height="120" rx="12" class="box"/>
+<text x="1037" y="563" class="label">控制面</text>
+<text x="1037" y="597" class="body">Registry · AgentRelease · Policy</text>
+<text x="1037" y="626" class="body">连接器、预算、评测、版本 pin</text>
+<rect x="1015" y="695" width="520" height="110" rx="12" class="box"/>
+<text x="1037" y="733" class="label">运行面与持久执行</text>
+<text x="1037" y="767" class="body">可信会话 · AgentRuntime · DBOS</text>
+<rect x="1015" y="870" width="520" height="125" rx="12" class="box"/>
+<text x="1037" y="908" class="label">ToolBroker 与受控 adapters</text>
+<text x="1037" y="942" class="body">权限、审批、幂等、未知结果核对</text>
+<text x="1037" y="971" class="body">HTTP / MCP / 平台与 egress 策略</text>
+<path d="M 435 585 L 505 585 L 532 585" class="line"/>
+<path d="M 480 585 L 480 750 L 532 750" class="line"/>
+<path d="M 915 585 L 1012 585" class="line"/>
+<path d="M 915 750 L 1012 750" class="line"/>
+<path d="M 1275 645 L 1275 692" class="line"/>
+<path d="M 1275 805 L 1275 867" class="line"/>
+<path d="M 250 805 L 250 838 L 1100 838 L 1100 808" class="line"/>
+<text x="470" y="831" class="note">宿主服务端交换短期、最小范围的身份</text>
+<path d="M 1275 995 L 1275 1038 L 250 1038 L 250 998" class="line"/>
+<text x="535" y="1028" class="note">受权业务调用与回执，不绕过原系统权限</text>
+<rect x="40" y="1100" width="1520" height="120" rx="12" class="group"/>
+<text x="65" y="1138" class="section">AE 数据与运营</text>
+<text x="65" y="1176" class="body">PostgreSQL：配置 / release / run / approval / invocation / outbox    ｜    凭据只存引用    ｜    业务审计与遥测分离</text>
+<path d="M 1465 995 L 1465 1097" class="line"/>
+<text x="50" y="1260" class="note">边界：Skill/MCP 不是授权系统；checkpoint 不等于外部写入 exactly-once；支持按具体 recipe 与业务验收确认。</text>
+</svg>
