@@ -22,3 +22,11 @@ Reviewed existing research's actual assistant-ui and CopilotKit demo observation
 ## Verification
 
 `npm run check`: source hygiene, strict TypeScript, mounted React/jsdom and SDK transport tests. Covers preview before confirmation, bound digest, denial, double click, stale context, unknown outcomes, expiry and uncertain submission retry. Contract fixtures in UI tests are mocks, not proof of backend integration. Console Vite production bundle succeeds; Radix `use client` directive warnings are non-fatal in this client-only app. Parent owns browser pixels, real API wiring, server identity and runtime/host integration qualification. No screenshots or live-provider quality claimed here.
+
+## Controlled UI reuse refinement
+
+Second slice uses actual audited Kokonut free AI Input Search / resize hook and Status Island source, commit `590ded728c3414f871607a5d0662f9e70941d054`. See `packages/ui/THIRD_PARTY_NOTICES.md`, pristine source hashes and complete MIT license. No new dependencies, framework migration, React Bits shaders, copied business code, fabricated model options, progress timers or completion animations. Existing Radix tabs retained.
+
+Composer now has a framed context band, bounded auto-resizing field, persistent safety hint, and Chinese IME-safe Ctrl/Command-Enter shortcut. Status island exposes only server run ID/status/event and receipt counts, supports touch outside-dismiss and Escape focus return. Approval is a separate, persistent structured parameter card with exact hash/operation details, never an island action. Console typography, separators, evidence cards and responsive layout use the same scoped AE token palette. Reduced motion disables all component animations; no approval animation exists.
+
+Mounted interaction/source-integrity and build checks are evidence of code behavior only. No browser pixel/360px/200%-zoom acceptance or visual quality claim; authorized browser route remains pending.

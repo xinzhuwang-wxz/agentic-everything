@@ -1,0 +1,22 @@
+{
+  "repository": "https://github.com/kokonut-labs/kokonutui",
+  "commit": "590ded728c3414f871607a5d0662f9e70941d054",
+  "files": [
+    {
+      "file": "ai-input-search.tsx.txt",
+      "sha256": "490aabe44149eb48ed17976af44dead7a858095f9f19b53ec99b69b4b523691b"
+    },
+    {
+      "file": "use-auto-resize-textarea.ts.txt",
+      "sha256": "2f63a48ded800f00794cf4dc2f0caf2d32c17e7e311872d4f011d8720e87fe04"
+    },
+    {
+      "file": "status-island.tsx.txt",
+      "sha256": "79dddc9984306e15d0e243456eab6d30d939b176f400d1da75539c529e70ecf5"
+    },
+    {
+      "file": "LICENSE",
+      "sha256": "b2e018ad1fd564608cc1ee0c2ad675ce5202c8ed9f5f68e6d09e7b6bc881d5d2"
+    }
+  ]
+}
