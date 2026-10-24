@@ -1,0 +1,1 @@
+{"name":"@ae/mcp-server","version":"0.1.0","private":true,"type":"module","exports":"./dist/index.js","bin":{"ae-mcp":"./dist/stdio.js"},"dependencies":{"@ae/contracts":"0.1.0","@ae/transformation":"0.1.0","@modelcontextprotocol/server":"2.4.0","zod":"4.6.7"}}
