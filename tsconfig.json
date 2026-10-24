@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "paths": {
+      "@ae/contracts": [
+        "./packages/contracts/src/index.ts"
+      ],
+      "@ae/contracts/hash": [
+        "./packages/contracts/src/hash.ts"
+      ],
+      "@ae/*": [
+        "./packages/*/src/index.ts"
+      ]
+    },
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "packages/**/*.ts",
+    "apps/**/*.ts",
+    "tests/**/*.ts",
+    "packages/**/*.tsx",
+    "apps/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/fixtures/**"
+  ]
+}

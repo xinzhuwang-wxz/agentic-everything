@@ -1,12 +1,8 @@
 node_modules/
-.next/
+.npm-cache/
 dist/
 coverage/
-.cache/
-.runtime/
-.delivery/
-upstream/
 .env
 .env.*
 !.env.example
-*.tsbuildinfo
+.tmp/
