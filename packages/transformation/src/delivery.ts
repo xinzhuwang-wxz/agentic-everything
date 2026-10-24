@@ -1,0 +1,131 @@
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve, sep } from 'node:path';
+import { z } from 'zod';
+import { AdaptationPlanSchema, ApprovedChangeSetSchema, DeliveryManifestSchema, PatchArtifactSchema, ProjectAssessmentSchema, Sha256, VerificationReportSchema, type AdaptationPlan, type ApprovedChangeSet, type DeliveryManifest, type DeliveryValidation, type ProjectAssessment, type VerificationReport } from '@ae/contracts';
+import { adaptationCodeHash, canonical, digest, expectedBaselineCodeHash, previewPatch, proposePlan, sha256, verifyAdaptation, type AppliedTransformation } from './index.js';
+import { helpdeskRecipe } from './recipes/react-helpdesk.js';
+import { parse } from './ast.js';
+
+const LIMIT = 1024 * 1024;
+const AppliedSchema = z.strictObject({ patch: PatchArtifactSchema, originals: z.record(z.string(), z.string().max(256 * 1024).nullable()), businessHash: Sha256 });
+const LIMITATIONS = ['Integrity hashes are not signatures and do not establish approval authenticity.', 'Source and candidate hashes describe bounded recipe evidence observed at creation, not the entire repository.', 'No customer code, behavior harness, typecheck, runtime, or browser acceptance was executed. Missing gates remain not-run; delivery is partial.', 'Only patch-owned source and rollback bytes are included. No deployment or dependency installation is authorized.'];
+const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
+const bytesHash = (value: Buffer) => createHash('sha256').update(value).digest('hex');
+function safeAbsolute(path: string): string {
+  const absolute = resolve(path); let current = sep;
+  for (const part of absolute.split(sep).filter(Boolean)) {
+    current = join(current, part);
+    try { if (lstatSync(current).isSymbolicLink()) throw new Error('Symlink path is forbidden'); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  }
+  return absolute;
+}
+function file(root: string, relative: string): string {
+  if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.startsWith('/') || relative.split('/').some(p => !p || p === '.' || p === '..') || /(^|\/)(\.env|secrets?|credentials?)(\.|\/|$)/i.test(relative)) throw new Error('Unsafe artifact path');
+  return safeAbsolute(join(root, relative));
+}
+function read(root: string, relative: string): Buffer {
+  const path = file(root, relative); const stat = lstatSync(path);
+  if (!stat.isFile() || stat.size > LIMIT) throw new Error('Expected bounded regular artifact');
+  const bytes = readFileSync(path); if (bytes.length > LIMIT) throw new Error('Artifact too large'); return bytes;
+}
+function git(root: string, args: string[]): string { return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-C', root, ...args], { encoding: 'utf8', timeout: 15000, maxBuffer: LIMIT }).trim(); }
+function exact(a: unknown, b: unknown, message: string): void { if (canonical(a) !== canonical(b)) throw new Error(message); }
+function scope(assessment: ProjectAssessment, plan: AdaptationPlan, approval: ApprovedChangeSet, applied: AppliedTransformation, now: number): void {
+  exact(proposePlan(assessment), plan, 'Plan does not match assessed recipe');
+  if (approval.planHash !== digest(plan) || approval.baseCommit !== plan.baseCommit || Date.parse(approval.expiresAt) <= now || Date.parse(approval.approvedAt) > now || Date.parse(approval.approvedAt) > Date.parse(applied.patch.appliedAt) || Date.parse(applied.patch.appliedAt) > now) throw new Error('Approval expired or chain timestamps/base do not bind');
+  exact(approval.allowedPaths, plan.allowedPaths, 'Approval path scope mismatch');
+  if (approval.allowedCommands.length || approval.networkAllowlist.length || approval.maximumCostUsd !== 0) throw new Error('Approval scope mismatch');
+  const patch = applied.patch;
+  if (patch.planHash !== digest(plan) || patch.baseCommit !== plan.baseCommit) throw new Error('Patch chain mismatch');
+  exact(patch.recipe, helpdeskRecipe.ref, 'Recipe mismatch');
+  exact(patch.changes.map(c => c.path), helpdeskRecipe.outputs, 'Patch scope mismatch');
+  exact(Object.keys(applied.originals).sort(), [...helpdeskRecipe.outputs].sort(), 'Rollback scope mismatch');
+  const allowedEvidence = new Set([...helpdeskRecipe.inputs, 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml']);
+  if (assessment.baseline !== 'not-run' || helpdeskRecipe.inputs.some(path => !assessment.evidence.some(e => e.path === path))) throw new Error('Missing recipe assessment or unsupported baseline PASS');
+  if (assessment.evidence.some(e => !allowedEvidence.has(e.path)) || new Set(assessment.evidence.map(e => e.path)).size !== assessment.evidence.length) throw new Error('Unexpected or duplicate assessment evidence');
+  if (assessment.evidence.find(e => e.path === helpdeskRecipe.businessPath)?.sha256 !== applied.businessHash) throw new Error('Business baseline mismatch');
+  for (const change of patch.changes) {
+    const before = applied.originals[change.path];
+    if (before === undefined || (before === null ? null : sha256(before)) !== change.beforeHash || (assessment.evidence.find(e => e.path === change.path)?.sha256 ?? null) !== change.beforeHash) throw new Error('Rollback baseline mismatch');
+  }
+}
+function candidateHash(assessment: ProjectAssessment, plan: AdaptationPlan, applied: AppliedTransformation): string {
+  const hashes = new Map<string, string | null>(assessment.evidence.map(e => [e.path, e.sha256]));
+  for (const path of plan.allowedPaths) hashes.set(path, applied.patch.changes.find(c => c.path === path)!.afterHash);
+  return digest([...hashes].sort(([a], [b]) => a.localeCompare(b)));
+}
+function expectedChecks(applied: AppliedTransformation, sources: Map<string, Buffer>): VerificationReport['checks'] {
+  const checks: VerificationReport['checks'] = [];
+  for (const change of applied.patch.changes) {
+    const bytes = sources.get(change.path); if (!bytes || bytesHash(bytes) !== change.afterHash) throw new Error('Candidate bytes mismatch');
+    let syntax = true; try { parse(change.path, bytes.toString('utf8')); } catch { syntax = false; }
+    checks.push({ name: 'patch:' + change.path, status: 'pass', expected: change.afterHash!, actual: change.afterHash!, evidence: [] }, { name: 'syntax:' + change.path, status: syntax ? 'pass' : 'fail', expected: 'Parseable TSX', actual: syntax ? 'TypeScript parser accepted' : 'Parse error', evidence: [] });
+  }
+  checks.push({ name: 'original-business-source', status: 'pass', expected: applied.businessHash, actual: applied.businessHash, evidence: [] });
+  for (const name of ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance']) checks.push({ name, status: 'not-run', expected: 'Separately authorized isolated execution and observed evidence', actual: 'Static verifier does not execute customer code', evidence: [] });
+  return checks;
+}
+function permissions(approval: ApprovedChangeSet): DeliveryManifest['permissions'] { return { allowedPaths: approval.allowedPaths, allowedCommands: approval.allowedCommands, networkAllowlist: approval.networkAllowlist, maximumCostUsd: approval.maximumCostUsd, excludedActions: approval.excludedActions }; }
+
+export function createDelivery(input: { sourceRoot: string; assessment: ProjectAssessment; plan: AdaptationPlan; approval: ApprovedChangeSet; applied: AppliedTransformation; outputDirectory: string }): DeliveryManifest {
+  const assessment = ProjectAssessmentSchema.parse(input.assessment), plan = AdaptationPlanSchema.parse(input.plan), approval = ApprovedChangeSetSchema.parse(input.approval), applied = AppliedSchema.parse(input.applied);
+  const source = safeAbsolute(input.sourceRoot), candidate = safeAbsolute(applied.patch.worktree), out = safeAbsolute(input.outputDirectory);
+  for (const root of [source, candidate]) if (realpathSync(root) !== root || git(root, ['rev-parse', '--show-toplevel']) !== root || git(root, ['rev-parse', 'HEAD']) !== plan.baseCommit) throw new Error('Source/worktree base drift');
+  if (source === candidate || out === source || out.startsWith(source + sep) || out === candidate || out.startsWith(candidate + sep) || source.startsWith(out + sep) || candidate.startsWith(out + sep)) throw new Error('Delivery output must be outside source and candidate');
+  if (realpathSync(dirname(out)) !== dirname(out)) throw new Error('Unsafe output parent');
+  scope(assessment, plan, approval, applied, Date.now());
+  if (assessment.projectId !== 'project-' + sha256(source).slice(0, 12)) throw new Error('Assessment source identity mismatch');
+  if (git(source, ['status', '--porcelain', '--untracked-files=all', '--', ...helpdeskRecipe.inputs, ...helpdeskRecipe.outputs])) throw new Error('Dirty source recipe scope');
+  if (adaptationCodeHash(source, assessment, plan) !== expectedBaselineCodeHash(assessment, plan)) throw new Error('Original source drift');
+  if (adaptationCodeHash(candidate, assessment, plan) !== candidateHash(assessment, plan, applied)) throw new Error('Candidate source drift');
+  const preview = previewPatch(source, plan, assessment);
+  for (const change of preview) if (sha256(change.after) !== applied.patch.changes.find(c => c.path === change.path)?.afterHash) throw new Error('Candidate does not match recipe');
+  const sources = new Map(applied.patch.changes.map(c => [c.path, read(candidate, c.path)]));
+  const verification = verifyAdaptation(applied);
+  exact(verification.checks, expectedChecks(applied, sources), 'Fresh verification failed');
+  const files = new Map<string, Buffer>(Object.entries({ 'assessment.json': assessment, 'plan.json': plan, 'approval.json': approval, 'applied.json': applied, 'verification.json': verification }).map(([path, value]) => [path, Buffer.from(json(value))]));
+  for (const change of applied.patch.changes) { files.set('source/' + change.path, sources.get(change.path)!); const original = applied.originals[change.path]; if (original !== null) files.set('rollback/' + change.path, Buffer.from(original!)); }
+  const manifest = DeliveryManifestSchema.parse({ schemaVersion: '1', kind: 'ae-delivery', toolVersion: '0.1.0', status: verification.checks.some(c => c.status === 'fail') ? 'failed' : 'partial', createdAt: new Date().toISOString(), projectId: assessment.projectId, baseCommit: plan.baseCommit, recipe: applied.patch.recipe, chain: { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, baselineCodeHash: expectedBaselineCodeHash(assessment, plan), candidateCodeHash: candidateHash(assessment, plan, applied), permissions: permissions(approval), artifacts: [...files].map(([path, bytes]) => ({ path, sha256: bytesHash(bytes), bytes: bytes.length })), checks: verification.checks, limitations: LIMITATIONS });
+  mkdirSync(out, { mode: 0o700 });
+  for (const [path, bytes] of files) { const target = file(out, path); mkdirSync(dirname(target), { recursive: true, mode: 0o700 }); writeFileSync(target, bytes, { flag: 'wx', mode: 0o600 }); }
+  writeFileSync(join(out, 'manifest.json'), json(manifest), { flag: 'wx', mode: 0o600 });
+  return manifest;
+}
+
+/** Offline bounded package integrity validation. Never executes copied source or trusts imported PASS. */
+export function checkDelivery(directory: string): DeliveryValidation {
+  try {
+    const root = safeAbsolute(directory); if (!lstatSync(root).isDirectory()) throw new Error('Expected delivery directory');
+    const manifest = DeliveryManifestSchema.parse(JSON.parse(read(root, 'manifest.json').toString('utf8')));
+    const refs = new Map(manifest.artifacts.map(a => [a.path, a])); if (refs.size !== manifest.artifacts.length) throw new Error('Duplicate artifact reference');
+    const actual: string[] = [];
+    function walk(relative: string): void {
+      for (const name of readdirSync(relative ? file(root, relative) : root)) {
+        const path = relative ? relative + '/' + name : name; const absolute = file(root, path); const stat = lstatSync(absolute);
+        if (actual.length > 32 || path.split('/').length > 8) throw new Error('Unbounded package');
+        if (stat.isDirectory()) { if (![...refs.keys()].some(p => p.startsWith(path + '/'))) throw new Error('Unexpected artifact directory'); walk(path); } else { if (!stat.isFile()) throw new Error('Non-regular artifact'); actual.push(path); }
+      }
+    }
+    walk(''); exact(actual.sort(), ['manifest.json', ...refs.keys()].sort(), 'Unexpected or missing package files');
+    const files = new Map<string, Buffer>();
+    for (const [path, ref] of refs) { const bytes = read(root, path); if (bytes.length !== ref.bytes || bytesHash(bytes) !== ref.sha256) throw new Error('Artifact byte/hash mismatch: ' + path); files.set(path, bytes); }
+    const object = (path: string): unknown => { const bytes = files.get(path); if (!bytes) throw new Error('Missing artifact: ' + path); return JSON.parse(bytes.toString('utf8')); };
+    const assessment = ProjectAssessmentSchema.parse(object('assessment.json')), plan = AdaptationPlanSchema.parse(object('plan.json')), approval = ApprovedChangeSetSchema.parse(object('approval.json')), applied = AppliedSchema.parse(object('applied.json')), verification = VerificationReportSchema.parse(object('verification.json'));
+    scope(assessment, plan, approval, applied, Date.parse(manifest.createdAt));
+    if (Date.parse(manifest.createdAt) > Date.now() || Date.parse(verification.observedAt) > Date.parse(manifest.createdAt) || Date.parse(verification.observedAt) < Date.parse(applied.patch.appliedAt)) throw new Error('Invalid observation timestamps');
+    exact(manifest.chain, { assessmentHash: digest(assessment), planHash: digest(plan), approvalHash: digest(approval), appliedHash: digest(applied), verificationHash: digest(verification) }, 'Artifact chain mismatch');
+    exact(manifest.permissions, permissions(approval), 'Permission mismatch'); exact(manifest.recipe, applied.patch.recipe, 'Recipe mismatch'); exact(manifest.limitations, LIMITATIONS, 'Limitations mismatch');
+    if (manifest.projectId !== assessment.projectId || manifest.baseCommit !== plan.baseCommit || manifest.baselineCodeHash !== expectedBaselineCodeHash(assessment, plan) || manifest.candidateCodeHash !== candidateHash(assessment, plan, applied) || verification.planHash !== digest(plan) || verification.environment !== 'Node static verifier; no customer code execution') throw new Error('Manifest binding mismatch');
+    const sources = new Map(applied.patch.changes.map(c => [c.path, files.get('source/' + c.path)!]));
+    const expectedPaths = ['assessment.json', 'plan.json', 'approval.json', 'applied.json', 'verification.json'];
+    for (const change of applied.patch.changes) { expectedPaths.push('source/' + change.path); const original = applied.originals[change.path]; if (original !== null) { const path = 'rollback/' + change.path; expectedPaths.push(path); if (!files.get(path)?.equals(Buffer.from(original!))) throw new Error('Rollback bytes mismatch'); } }
+    exact([...refs.keys()].sort(), expectedPaths.sort(), 'Unexpected artifact scope');
+    for (const change of helpdeskRecipe.preview(path => applied.originals[path] ?? null)) if (bytesHash(sources.get(change.path)!) !== sha256(change.after)) throw new Error('Packaged candidate does not match recipe');
+    exact(verification.checks, expectedChecks(applied, sources), 'Unsupported verification claim'); exact(manifest.checks, verification.checks, 'Manifest check mismatch');
+    if (manifest.status !== (verification.checks.some(c => c.status === 'fail') ? 'failed' : 'partial')) throw new Error('Unsupported delivery status');
+    return { valid: true, errors: [], manifest };
+  } catch (error) { return { valid: false, errors: [error instanceof Error ? error.message : String(error)] }; }
+}

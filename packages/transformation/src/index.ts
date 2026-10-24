@@ -139,3 +139,5 @@ export function adaptationCodeHash(root: string, assessment: ProjectAssessment, 
   return digest(paths.map(path => { const value = read(repo(root), path); return [path, value === null ? null : sha256(value)]; }));
 }
 export { verifyAdaptationWithBehavior } from './behavior.js';
+
+export { createDelivery, checkDelivery } from './delivery.js';
