@@ -1,0 +1,17 @@
+{
+  "candidateBaseline": "9268d98cb72bbc38deea474c9244b23e3de0a98a",
+  "compiledRuntimeCommit": "644496278c53bffe831e170b93a8228c5ac15c06",
+  "paths": [
+    "packages/runtime-core/src",
+    "packages/capabilities/src",
+    "packages/runtime-adapters/src",
+    "packages/runtime-adapters/db",
+    "packages/contracts/src",
+    "apps/api/src",
+    "packages/ui/src",
+    "packages/host-sdk/src"
+  ],
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "sourceDiffBytes": 0,
+  "qualification": "Used previously qualified identical-source compiled runtime; candidate UI freshly bundled here, not claiming a new runtime strict build."
+}

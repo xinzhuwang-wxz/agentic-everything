@@ -1,0 +1,71 @@
+✖ floating mode has one composer, separate management tabs and focus return without trapping host (228.269862ms)
+✔ drag threshold distinguishes click; pointer cancel does not accidentally open; keyboard remains usable (57.02851ms)
+✔ keyboard movement persists only coordinates by application; reset and resize recover bad positions (67.412784ms)
+✔ closing and host-modal suspension keep the same run and do not restart transport (118.464925ms)
+✖ reserved rectangles and tiny viewports clamp the launcher to an available visible location (0.304652ms)
+✔ blocked storage and malformed saved coordinates cannot disable the launcher (37.305262ms)
+✔ touch tap activates without compatibility click and a later synthetic click does not toggle twice (36.263377ms)
+✔ mounted preview does not execute until explicit confirmation; sends only bound decision (281.331201ms)
+✔ unknown outcome is not successful and disables new execution (68.401356ms)
+✔ server failure never fabricates success (61.306932ms)
+✔ double click cannot consume approval twice (77.687135ms)
+✔ changing host context clears old approval (82.945087ms)
+✔ rejection is a server decision, not a local success (72.281185ms)
+✔ expired approval cannot be approved (49.671422ms)
+✔ uncertain submission blocks a different intent and retries original request (62.91031ms)
+✔ stored run is reloaded from server before another submission (25.725389ms)
+✔ late response from previous page cannot put old approval in new context (71.385628ms)
+✔ Kokonut status disclosure restores keyboard focus on Escape (46.774781ms)
+✔ status disclosure closes on outside pointer without hiding approval (40.091717ms)
+✔ auto-resizing composer remains controlled when choosing a suggestion (22.192766ms)
+✔ IME composition Enter never submits controlled composer (45.810821ms)
+✔ shared workspace exposes configuration through keyboard tab activation without changing runtime authority (36.461138ms)
+✔ mounted configuration saves and publishes via injected contracts, refreshes metadata, and preserves active run (75.710015ms)
+✔ host session boundary remounts configuration and clears prior admin form (102.245616ms)
+✔ inline host refresh callback notifies once per observable run, not parent rerenders or identical refetch (177.579003ms)
+✔ late completion from old context never calls current host callback (56.136703ms)
+✔ distinct behavior navigation preserves the shared unsaved configuration draft (60.135558ms)
+✔ projection contains only literal text; business statuses do not imply success (1.360757ms)
+✔ untrusted HTML, Markdown URLs, and tool-like JSON cannot execute or request network (239.923244ms)
+✔ refresh replaces displayed approval with server current hash; no stale approval locally reconstructed (102.170675ms)
+✔ denied current host rights remain server errors, not presentation approvals (85.259255ms)
+✔ pending approval restore, disconnected refresh, reconnect and cancel preserve original run (75.011491ms)
+✔ polling snapshot progress becomes literal assistant text and terminal receipt (1214.661835ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 31
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7058.926791
+
+✖ failing tests:
+
+test at generated/floating.test.js:98:1
+✖ floating mode has one composer, separate management tabs and focus return without trapping host (228.269862ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  2 !== 1
+
+      at TestContext.<anonymous> (file:///tmp/ae-assistant-ui-r4/qualification/assistant-ui/generated/floating.test.js:103:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at generated/floating.test.js:224:1
+✖ reserved rectangles and tiny viewports clamp the launcher to an available visible location (0.304652ms)
+  TypeError: placeFloatingLauncher is not a function
+      at TestContext.<anonymous> (file:///tmp/ae-assistant-ui-r4/qualification/assistant-ui/generated/floating.test.js:225:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)

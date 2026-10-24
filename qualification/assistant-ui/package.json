@@ -1,0 +1,16 @@
+{
+  "name": "ae-assistant-ui-r4-qualification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:spike": "node prepare.mjs",
+    "build:spike": "node build.mjs",
+    "test:spike": "node --test --test-concurrency=1 --import ./network-guard.mjs generated/panel.test.js generated/floating.test.js generated/store.test.js",
+    "test:browser": "node browser.mjs"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "0.15.31",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

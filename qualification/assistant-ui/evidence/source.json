@@ -1,0 +1,6 @@
+{
+  "baseline": "9268d98cb72bbc38deea474c9244b23e3de0a98a",
+  "panelSha256": "8764b67c78ee25017bc07dbbf3e8100fe5ee992feee5e5ef248c1fb20ac73bd1",
+  "candidateSha256": "7fa884930843bb40d5e06a7d2c04674a6c303995bc2e0bee31394fd44d9e50c2",
+  "preserved": "All original client calls, lifecycle effects, approval JSX, host callbacks, floating and configuration rendering. Only presentation/composer seams replaced."
+}

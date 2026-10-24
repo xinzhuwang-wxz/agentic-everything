@@ -1,0 +1,451 @@
+[
+  {
+    "package": "@assistant-ui/react@0.15.31",
+    "version": "0.15.31",
+    "license": "MIT",
+    "dist": {
+      "shasum": "9ee911fe521c50641f8b1b9de0549d420ad71923",
+      "tarball": "https://registry.npmjs.org/@assistant-ui/react/-/react-0.15.31.tgz",
+      "fileCount": 1117,
+      "integrity": "sha512-vTTcI2963DO5CYrKh8CYkJ0stQcu0JXxUQM0nepsP2Zy4QfrovVuiYkAhKM1U4jMnGHy3sQ9ovxH0VTZrScnZg==",
+      "signatures": [
+        {
+          "sig": "MEUCIQCsXNGWbexZmTe/qO0u1HijEqBST+qXpMzHd3ot5T2bCAIgGsfhTDnboftShCIlj3Zin3+mzVRoGZ2icZatTlLILG8=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEQCIH9/aYVDmtUjCbkhWqQ4tkWp29f8dAyPvaQk5Ij6vyOxAiBAf6n1YeFdqezo12c104qDtBnFKZEnyVAyGOdS9qoEiw=="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@assistant-ui%2freact@0.15.31",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 2837298
+    },
+    "dependencies": {
+      "zod": "^4.6.7",
+      "zustand": "^5.0.15",
+      "radix-ui": "^1.8.1",
+      "assistant-cloud": "^0.2.8",
+      "assistant-stream": "^0.3.54",
+      "@assistant-ui/tap": "^0.9.24",
+      "@assistant-ui/core": "^0.3.31",
+      "safe-content-frame": "^0.0.34",
+      "@assistant-ui/store": "^0.3.22",
+      "react-textarea-autosize": "^8.5.9"
+    },
+    "scripts": {
+      "test": "vitest run",
+      "build": "aui-build",
+      "typecheck": "tsc --noEmit",
+      "test:watch": "vitest",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary",
+      "test:peer-react18": "vitest run --config vitest.peer-react18.config.ts",
+      "test:types:peer-react18": "aui-react18-types"
+    }
+  },
+  {
+    "package": "@assistant-ui/core@0.3.31",
+    "version": "0.3.31",
+    "license": "MIT",
+    "dist": {
+      "shasum": "627902842c979ca3ab710a0ccbd5bb6406b2fb15",
+      "tarball": "https://registry.npmjs.org/@assistant-ui/core/-/core-0.3.31.tgz",
+      "fileCount": 1819,
+      "integrity": "sha512-NrTSgdUTM0SVmos3YMAAvPqDDNlxFmwVTjnA06T+4A7DcXswsKrBw65BsfSEn4m1DFSwaD3rfMlIFTEK3ei4uQ==",
+      "signatures": [
+        {
+          "sig": "MEYCIQDDMswARg9SRz7rXDbHGfhWo2u6w2SaGQ6DvvkqrNE2ZgIhAP4ai9GAJBexYKeyTsCD2kQ7gGQem48yDQ1WO3EGN0qe",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCIGgHWo7Qgpy/JO4HhIRzb7Vjd21ilaB67B7V0CACGSBfAiEAkC3SOFWai/9LjuY9HHKAQL9kFCs9a923d7G07DoUgMw="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@assistant-ui%2fcore@0.3.31",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 10102263
+    },
+    "dependencies": {
+      "nanoid": "^6.0.2",
+      "assistant-cloud": "^0.2.8",
+      "assistant-stream": "^0.3.54"
+    },
+    "scripts": {
+      "test": "vitest run",
+      "build": "aui-build",
+      "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+      "test:watch": "vitest",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary",
+      "test:peer-react18": "vitest run --config vitest.peer-react18.config.ts",
+      "test:react-compiler": "vitest run --config vitest.react-compiler.config.ts",
+      "test:types:peer-react18": "aui-react18-types"
+    }
+  },
+  {
+    "package": "@assistant-ui/store@0.3.22",
+    "version": "0.3.22",
+    "license": "MIT",
+    "dist": {
+      "shasum": "5b7f968d0d778ad78163273483d78c85ec24b359",
+      "tarball": "https://registry.npmjs.org/@assistant-ui/store/-/store-0.3.22.tgz",
+      "fileCount": 236,
+      "integrity": "sha512-aXp4m42mmtZOQUE0lzxJ8Z9EZKknOWBk+DDg1Pj2gNhhBGYXmfrScYD1N1e/9/8wTKSwL0g4z2fSZqr+5fWbxg==",
+      "signatures": [
+        {
+          "sig": "MEUCICxS/hZAr8UWaiWfK2kU0E05K5+LHFNNQA0Kfd6PpSq/AiEAkT8Ez3FukHb0S3Vah83fc6PG2y5pK70I3FB5oO7rCIk=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEQCICVHPwFWuHZ6hDWUyPS2np9sJhGQMJwXGUUwVeh1umCHAiAr0gXfeBrf13jIjIdtW1Hm7KB6h7pczFarZaN2Hzx8Mg=="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@assistant-ui%2fstore@0.3.22",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 776122
+    },
+    "scripts": {
+      "test": "vitest run",
+      "build": "aui-build",
+      "typecheck": "tsc --noEmit",
+      "test:watch": "vitest",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary",
+      "test:peer-react18": "vitest run --config vitest.peer-react18.config.ts",
+      "test:react-compiler": "vitest run --config vitest.react-compiler.config.ts",
+      "test:types:peer-react18": "aui-react18-types"
+    }
+  },
+  {
+    "package": "@assistant-ui/tap@0.9.24",
+    "version": "0.9.24",
+    "license": "MIT",
+    "dist": {
+      "shasum": "4ebc1614c0496df78a108bc3259398a584a6f6ca",
+      "tarball": "https://registry.npmjs.org/@assistant-ui/tap/-/tap-0.9.24.tgz",
+      "fileCount": 302,
+      "integrity": "sha512-6O0hf2HkKbrylIwNlFUimHf2V/6Gq5UXF0y0r2Fbw5wSvvO8ZDmv0AEkMwwygSfJgbpnQgiC8Xs+2VFaeO0RBw==",
+      "signatures": [
+        {
+          "sig": "MEUCIQDJ0AZjU1uoIDXm3QyNNUziJI46oE+GKCkGN7g38KJKXwIgZgfWySpSzx9qA8r7w2HhuMl5wgJ6NvyFsyz2T7qBbRc=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEYCIQDBc3fvyk4BHpjnqjBfAIoZCTrOc8yAUz9XB26lOtm7gAIhANhGO/R5zdVX4YgPcU9gXbzsxgqs0BuCzW2HTLHh3lpV"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@assistant-ui%2ftap@0.9.24",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 770297
+    },
+    "scripts": {
+      "test": "vitest run",
+      "build": "aui-build",
+      "typecheck": "tsc --noEmit",
+      "test:watch": "vitest",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary",
+      "test:standalone": "vitest run --project standalone",
+      "test:peer-react18": "vitest run --config vitest.peer-react18.config.ts",
+      "test:types:peer-react18": "aui-react18-types"
+    }
+  },
+  {
+    "package": "assistant-cloud@0.2.8",
+    "version": "0.2.8",
+    "license": "MIT",
+    "dist": {
+      "shasum": "9675ca96c93bf6740d46381d3dae5a6a0b0f13a2",
+      "tarball": "https://registry.npmjs.org/assistant-cloud/-/assistant-cloud-0.2.8.tgz",
+      "fileCount": 156,
+      "integrity": "sha512-KCFwGcDgGUvKoQNw0zyEeFrS7F5B6QXfDaZ/QCNAjDWs7FxomFtLrXxlFGwlvueE+QK5vlOAdNnvKc9QfRzcqA==",
+      "signatures": [
+        {
+          "sig": "MEUCIQCMwNRNQ4JjYhtJT+LzNwcJ5DUYSK/7Rcse5TLTeGKMXgIgFW+NaI26b57dATXGwvYVooF70YjHvf/pnvsKb1m4Bzg=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEQCIFdNuCtWTtFpSpVD6crE4dm2oIM8sHcc4YU301EURDdlAiA0ti2jUEo1Y+ObfncIZezJqzwVynezbNRQeqTBwF/zGQ=="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/assistant-cloud@0.2.8",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 612261
+    },
+    "dependencies": {
+      "assistant-stream": "^0.3.54"
+    },
+    "scripts": {
+      "test": "pnpm run test:v7 && pnpm run test:peer-v6 && pnpm run test:types:peer-v6",
+      "build": "aui-build",
+      "test:v7": "vitest run",
+      "typecheck": "tsc --noEmit",
+      "test:watch": "vitest",
+      "test:peer-v6": "vitest run --config vitest.peer-v6.config.ts",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary && pnpm run test:peer-v6 && pnpm run test:types:peer-v6",
+      "test:types:peer-v6": "tsc --noEmit --project tsconfig.peer-v6.json"
+    }
+  },
+  {
+    "package": "assistant-stream@0.3.54",
+    "version": "0.3.54",
+    "license": "MIT",
+    "dist": {
+      "shasum": "7af925a312531a12c1128e60619afc605426db09",
+      "tarball": "https://registry.npmjs.org/assistant-stream/-/assistant-stream-0.3.54.tgz",
+      "fileCount": 409,
+      "integrity": "sha512-Jed48fZg12rzHHWDoTIRKLAO7SovX942f5VXCZ/GifGhaBH0fS1wZhhWhT8BVldJ4uDnCAMlszPGl82eZwO+vw==",
+      "signatures": [
+        {
+          "sig": "MEQCIADKw0cFOgDZOGMwfox4wT4n3zJLMntBefQQbnAK3bJtAiB1ckL2buuskH+MIbS2a9lSCCMqq58Dd7YbZAq97nmh1A==",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCIB8RukaqyTT9j1ZLj33LrmjjkaYRiW80QApMF2HImqW5AiEA1eTolD4VcpZgSFQYVwFZlQJQVMd6qpE234yoY4gD7QE="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/assistant-stream@0.3.54",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 1781042
+    },
+    "dependencies": {
+      "nanoid": "^6.0.2",
+      "secure-json-parse": "^4.1.1",
+      "@types/json-schema": "^7.0.15",
+      "@standard-schema/spec": "^1.1.0"
+    },
+    "scripts": {
+      "test": "pnpm run test:v6 && pnpm run test:peer-v5 && pnpm run test:types:peer-v5 && pnpm run test:peer-ai-v6 && pnpm run test:types:peer-ai-v6",
+      "build": "aui-build",
+      "test:v6": "vitest run",
+      "typecheck": "tsc --noEmit",
+      "test:watch": "vitest",
+      "test:peer-v5": "vitest run --config vitest.peer-v5.config.ts",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary && pnpm run test:peer-v5 && pnpm run test:types:peer-v5 && pnpm run test:peer-ai-v6 && pnpm run test:types:peer-ai-v6",
+      "test:peer-ai-v6": "vitest run --config vitest.peer-ai-v6.config.ts",
+      "test:types:peer-v5": "tsc --noEmit --project tsconfig.peer-v5.json",
+      "test:types:peer-ai-v6": "tsc --noEmit --project tsconfig.peer-ai-v6.json"
+    }
+  },
+  {
+    "package": "radix-ui@1.8.1",
+    "version": "1.8.1",
+    "license": "MIT",
+    "dist": {
+      "shasum": "c9cbf62fd9e97d9a35c2b5fafacf34994cf99781",
+      "tarball": "https://registry.npmjs.org/radix-ui/-/radix-ui-1.8.1.tgz",
+      "fileCount": 262,
+      "integrity": "sha512-HPfpVGizO9xANlsFSauruLhRe/3+iOt3vPX0MXYle/UQi3gorQrSYtBcdiv0BZYewcl2rvL59qrIuLFMGAmUrw==",
+      "signatures": [
+        {
+          "sig": "MEQCICX1PXH+0/qvLOAEJCbgqZIcaSddtJyDHsry1S4As/sHAiBAeFpl+KjEZ/he9Mey78/ZGWFtXXZQ3QEaQPm7HoaQ0A==",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEUCIBIfHkFFK1bxZRCL4cV+ZfpAncOSw6aPzgF77pHtiVo1AiEAhOSavEkH/24HjWm5QAQznpomY/HbAKmNHnW4o5IdMCw=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/radix-ui@1.8.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 105530
+    },
+    "dependencies": {
+      "@radix-ui/primitive": "1.2.0",
+      "@radix-ui/react-form": "0.3.0",
+      "@radix-ui/react-menu": "2.2.1",
+      "@radix-ui/react-slot": "1.5.0",
+      "@radix-ui/react-tabs": "1.2.1",
+      "@radix-ui/react-arrow": "1.1.17",
+      "@radix-ui/react-label": "2.1.17",
+      "@radix-ui/react-toast": "1.3.1",
+      "@radix-ui/react-avatar": "1.3.1",
+      "@radix-ui/react-dialog": "1.3.1",
+      "@radix-ui/react-popper": "1.4.0",
+      "@radix-ui/react-portal": "1.2.0",
+      "@radix-ui/react-select": "2.4.1",
+      "@radix-ui/react-slider": "1.6.1",
+      "@radix-ui/react-switch": "1.4.1",
+      "@radix-ui/react-toggle": "1.2.1",
+      "@radix-ui/react-context": "1.3.0",
+      "@radix-ui/react-menubar": "1.2.1",
+      "@radix-ui/react-popover": "1.3.1",
+      "@radix-ui/react-toolbar": "1.2.1",
+      "@radix-ui/react-tooltip": "1.4.1",
+      "@radix-ui/react-checkbox": "1.4.1",
+      "@radix-ui/react-presence": "1.1.11",
+      "@radix-ui/react-progress": "1.2.1",
+      "@radix-ui/react-use-size": "1.1.5",
+      "@radix-ui/react-accordion": "1.3.1",
+      "@radix-ui/react-direction": "1.2.0",
+      "@radix-ui/react-primitive": "2.2.0",
+      "@radix-ui/react-separator": "1.2.0",
+      "@radix-ui/react-collection": "1.2.0",
+      "@radix-ui/react-hover-card": "1.2.1",
+      "@radix-ui/react-collapsible": "1.2.1",
+      "@radix-ui/react-focus-scope": "1.3.1",
+      "@radix-ui/react-radio-group": "1.5.1",
+      "@radix-ui/react-scroll-area": "1.4.0",
+      "@radix-ui/react-alert-dialog": "1.2.1",
+      "@radix-ui/react-aspect-ratio": "1.2.0",
+      "@radix-ui/react-compose-refs": "1.1.5",
+      "@radix-ui/react-context-menu": "2.4.1",
+      "@radix-ui/react-focus-guards": "1.2.0",
+      "@radix-ui/react-roving-focus": "1.2.1",
+      "@radix-ui/react-toggle-group": "1.2.1",
+      "@radix-ui/react-dropdown-menu": "2.2.1",
+      "@radix-ui/react-accessible-icon": "1.2.0",
+      "@radix-ui/react-navigation-menu": "1.4.1",
+      "@radix-ui/react-use-is-hydrated": "0.1.3",
+      "@radix-ui/react-visually-hidden": "1.2.13",
+      "@radix-ui/react-use-callback-ref": "1.1.5",
+      "@radix-ui/react-use-effect-event": "0.0.5",
+      "@radix-ui/react-dismissable-layer": "1.2.1",
+      "@radix-ui/react-use-layout-effect": "1.1.4",
+      "@radix-ui/react-use-escape-keydown": "1.1.6",
+      "@radix-ui/react-password-toggle-field": "0.2.1",
+      "@radix-ui/react-use-controllable-state": "1.3.0",
+      "@radix-ui/react-one-time-password-field": "0.2.1"
+    },
+    "scripts": {
+      "lint": "oxlint --max-warnings 0 src",
+      "build": "radix-build",
+      "clean": "rm -rf dist",
+      "reset": "rm -rf dist node_modules",
+      "// build": "pnpm run --parallel \"/^build:.*/\"",
+      "build:cjs": "tsc --module commonjs --moduleResolution node --outDir dist/cjs",
+      "build:esm": "tsc",
+      "typecheck": "tsc --noEmit"
+    }
+  },
+  {
+    "package": "react-textarea-autosize@8.5.9",
+    "version": "8.5.9",
+    "license": "MIT",
+    "dist": {
+      "integrity": "sha512-U1DGlIQN5AwgjTyOEnI1oCcMuEr1pv1qOtklB2l4nyMGbHzWrI0eFsYK0zos2YWqAolJyG0IWJaqWmWj5ETh0A==",
+      "shasum": "ab8627b09aa04d8a2f45d5b5cd94c84d1d4a8893",
+      "tarball": "https://registry.npmjs.org/react-textarea-autosize/-/react-textarea-autosize-8.5.9.tgz",
+      "fileCount": 33,
+      "unpackedSize": 88510,
+      "signatures": [
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCIB3UysGxazdHEio/y4uKpBbQYUnOc7gcg/VWHF1QUr6qAiEAiwOhuo0GrddTV4hexiFEXw9e5vA9iIijhh8CiglHsNA="
+        }
+      ]
+    },
+    "dependencies": {
+      "@babel/runtime": "^7.20.13",
+      "use-composed-ref": "^1.3.0",
+      "use-latest": "^1.2.1"
+    },
+    "scripts": {
+      "build": "preconstruct build",
+      "docs:dev": "npm run dev --prefix example",
+      "docs:build": "npm run build --prefix example",
+      "docs:publish": "npm run docs:build && cd ./example/dist && git init && git commit --allow-empty -m 'update docs' && git checkout -b gh-pages && touch .nojekyll && git add . && git commit -am 'update docs' && git push git@github.com:Andarist/react-textarea-autosize gh-pages --force",
+      "lint": "eslint --ext .js,.ts,.tsx src",
+      "prepare": "npm run build",
+      "changeset": "changeset",
+      "prerelease": "npm run lint && npm test",
+      "release": "changeset publish",
+      "test": "jest",
+      "test:watch": "npm test -- --watch"
+    }
+  },
+  {
+    "package": "safe-content-frame@0.0.34",
+    "version": "0.0.34",
+    "license": "MIT",
+    "dist": {
+      "shasum": "949feebb40924d5502b8618ecc06daf5725d53c1",
+      "tarball": "https://registry.npmjs.org/safe-content-frame/-/safe-content-frame-0.0.34.tgz",
+      "fileCount": 15,
+      "integrity": "sha512-js/Tt/SWUGdBi+pt8NuMlg5OkDLD+5Q8sTItzAFr4Xr+geHkTOc0Vl2LA+BUsPFZ3fdT4hbRjWaPb9DoPEvHDw==",
+      "signatures": [
+        {
+          "sig": "MEYCIQDLQ9B0YJjL4J4YjFoHZj28bx3wMlMh45+dajIS+fCW2AIhAKXGbZZ67NSVdOHywrx0AN4nZ+WR5RmsYSAxzP79WOmQ",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCIQChEY+OpJZBoy117YJAFrgBechvCj47cpjb02/Tn/K81AIgM8Ygu4YHQcLfKfnNmrmZaFDOJPUHm0UPdUVOrRULroU="
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/safe-content-frame@0.0.34",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 66998
+    },
+    "scripts": {
+      "dev": "vite demo",
+      "test": "vitest run",
+      "build": "aui-build",
+      "typecheck": "tsc --noEmit",
+      "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary"
+    }
+  },
+  {
+    "package": "zustand@5.0.15",
+    "version": "5.0.15",
+    "license": "MIT",
+    "dist": {
+      "shasum": "42bddf35647cb80a818a8943a69f6618c126fcfe",
+      "tarball": "https://registry.npmjs.org/zustand/-/zustand-5.0.15.tgz",
+      "fileCount": 52,
+      "integrity": "sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==",
+      "signatures": [
+        {
+          "sig": "MEYCIQD/NvQg71lrpjFEE4P3/33nDnpvqoj7gzyDoDrb9w8KRgIhALLsbxPaUngtlFBu1hA7t85JuIpslalFoVZqiVtNTf08",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEUCIH4Gk965cRuCEYaV0uqY3/Dx6bPXSO7FE3sw7cjiw2f7AiEA7Kw2+wVRx5r+25/gGK3zVwQGImKeNyz50Z5ZOKRsrIY=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/zustand@5.0.15",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 95173
+    }
+  }
+]

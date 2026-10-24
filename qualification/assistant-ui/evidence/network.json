@@ -1,0 +1,5 @@
+{
+  "policy": "Deny all outbound network before unit modules load; browser context blocks non-fixture-origin HTTP before dispatch, blocks all WebSockets and service workers.",
+  "unitNetworkAttempts": [],
+  "browserNetworkAttempts": []
+}

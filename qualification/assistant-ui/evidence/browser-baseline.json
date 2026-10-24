@@ -1,0 +1,75 @@
+{
+  "work": "/tmp/ae-floating-browser-Db1Obc",
+  "runtimeRoot": "/tmp/ae-joined-qualification",
+  "model": "deterministic synthetic test model, not model quality or external-project acceptance",
+  "checks": [
+    "original page and Refresh ticket work with collapsed overlay",
+    "real pointer drag does not open; app-scoped position restores on reload",
+    "keyboard move/open/Escape/launcher focus recovery",
+    "same approval survives close and host management; explicit confirmation changes original host once via onRunChange",
+    "no external runtime, model, image or telemetry request observed",
+    "360px resize clamps launcher and conversation without horizontal page overflow",
+    "touchscreen drag does not open; subsequent tap opens and closes"
+  ],
+  "errors": [],
+  "touchEvents": [
+    {
+      "type": "pointerdown",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 338,
+      "y": 792,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "pointermove",
+      "pointerType": "touch",
+      "button": -1,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "pointerup",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "lostpointercapture",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "pointerdown",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "pointerup",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    },
+    {
+      "type": "lostpointercapture",
+      "pointerType": "touch",
+      "button": 0,
+      "x": 260,
+      "y": 714,
+      "target": "ae-floating-launcher"
+    }
+  ],
+  "externalRequests": [],
+  "completed": "2026-10-24T21:53:01.924Z"
+}

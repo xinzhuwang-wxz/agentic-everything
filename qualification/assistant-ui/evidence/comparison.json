@@ -1,0 +1,59 @@
+{
+  "baseline": {
+    "files": [
+      {
+        "name": "index-ClYNxLv0.css",
+        "bytes": 19869,
+        "gzip": 4757
+      },
+      {
+        "name": "index-ebpfc0z6.js",
+        "bytes": 387046,
+        "gzip": 117942
+      }
+    ],
+    "checks": [
+      "original page and Refresh ticket work with collapsed overlay",
+      "real pointer drag does not open; app-scoped position restores on reload",
+      "keyboard move/open/Escape/launcher focus recovery",
+      "same approval survives close and host management; explicit confirmation changes original host once via onRunChange",
+      "no external runtime, model, image or telemetry request observed",
+      "360px resize clamps launcher and conversation without horizontal page overflow",
+      "touchscreen drag does not open; subsequent tap opens and closes"
+    ]
+  },
+  "candidate": {
+    "files": [
+      {
+        "name": "index-ClYNxLv0.css",
+        "bytes": 19869,
+        "gzip": 4757
+      },
+      {
+        "name": "index-DH_nnzX4.js",
+        "bytes": 742392,
+        "gzip": 220820
+      }
+    ],
+    "checks": [
+      "original page and Refresh ticket work with collapsed overlay",
+      "real pointer drag does not open; app-scoped position restores on reload",
+      "keyboard move/open/Escape/launcher focus recovery",
+      "same approval survives close and host management; explicit confirmation changes original host once via onRunChange",
+      "no external runtime, model, image or telemetry request observed",
+      "360px resize clamps launcher and conversation without horizontal page overflow",
+      "touchscreen drag does not open; subsequent tap opens and closes"
+    ]
+  },
+  "dependencies": {
+    "isolatedTotal": 95,
+    "additionalNameOrVersion": 74,
+    "reactRealpath": "/workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/react",
+    "inventory": "dependencies.json"
+  },
+  "authored": {
+    "baselineBytes": 17396,
+    "candidateBytes": 18348,
+    "unchanged": "All AE server/lifecycle/approval logic; all floating/admin logic"
+  }
+}

@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.json","compilerOptions":{"noEmit":true},"include":["src/store.tsx","src/store.test.tsx","generated/panel.tsx"]}

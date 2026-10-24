@@ -1,0 +1,41 @@
+✔ floating mode has one composer, separate management tabs and focus return without trapping host (211.166604ms)
+✔ drag threshold distinguishes click; pointer cancel does not accidentally open; keyboard remains usable (50.641426ms)
+✔ keyboard movement persists only coordinates by application; reset and resize recover bad positions (64.23432ms)
+✔ closing and host-modal suspension keep the same run and do not restart transport (112.069878ms)
+✔ reserved rectangles and tiny viewports clamp the launcher to an available visible location (0.475334ms)
+✔ blocked storage and malformed saved coordinates cannot disable the launcher (38.923361ms)
+✔ touch tap activates without compatibility click and a later synthetic click does not toggle twice (35.592575ms)
+✔ mounted preview does not execute until explicit confirmation; sends only bound decision (281.127053ms)
+✔ unknown outcome is not successful and disables new execution (75.812507ms)
+✔ server failure never fabricates success (64.789582ms)
+✔ double click cannot consume approval twice (78.392911ms)
+✔ changing host context clears old approval (80.250645ms)
+✔ rejection is a server decision, not a local success (69.571117ms)
+✔ expired approval cannot be approved (45.919388ms)
+✔ uncertain submission blocks a different intent and retries original request (55.453116ms)
+✔ stored run is reloaded from server before another submission (24.06321ms)
+✔ late response from previous page cannot put old approval in new context (67.873627ms)
+✔ Kokonut status disclosure restores keyboard focus on Escape (49.876378ms)
+✔ status disclosure closes on outside pointer without hiding approval (35.7646ms)
+✔ auto-resizing composer remains controlled when choosing a suggestion (22.888759ms)
+✔ IME composition Enter never submits controlled composer (41.691812ms)
+✔ shared workspace exposes configuration through keyboard tab activation without changing runtime authority (32.022154ms)
+✔ mounted configuration saves and publishes via injected contracts, refreshes metadata, and preserves active run (72.780624ms)
+✔ host session boundary remounts configuration and clears prior admin form (89.727709ms)
+✔ inline host refresh callback notifies once per observable run, not parent rerenders or identical refetch (174.678957ms)
+✔ late completion from old context never calls current host callback (56.434095ms)
+✔ distinct behavior navigation preserves the shared unsaved configuration draft (63.874807ms)
+✔ projection contains only literal text; business statuses do not imply success (1.349039ms)
+✔ untrusted HTML, Markdown URLs, and tool-like JSON cannot execute or request network (262.220295ms)
+✔ refresh replaces displayed approval with server current hash; no stale approval locally reconstructed (96.312645ms)
+✔ denied current host rights remain server errors, not presentation approvals (75.38315ms)
+✔ pending approval restore, disconnected refresh, reconnect and cancel preserve original run (70.486204ms)
+✔ polling snapshot progress becomes literal assistant text and terminal receipt (1208.791903ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6653.097034
