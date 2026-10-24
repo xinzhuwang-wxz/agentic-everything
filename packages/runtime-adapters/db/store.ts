@@ -1,14 +1,15 @@
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
-import type { Principal, RunStatus, RunEvent, ToolResult, ApprovalDecision, JsonObject } from '@ae/contracts';
+import type { AgentRelease, Principal, RunStatus, RunEvent, ToolResult, ApprovalDecision, JsonObject } from '@ae/contracts';
 import { PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
+import { verifyRelease } from '@ae/control-plane';
 import type { PreparedTool } from '@ae/capabilities';
 export interface Queryable { query(sql: string, values?: unknown[]): Promise<{ rows: Record<string, any>[]; rowCount: number | null }> }
 interface Client extends Queryable { release(): void }
 interface Pool extends Queryable { connect(): Promise<Client>; end(): Promise<void> }
 const PgPool = (createRequire(import.meta.url)('pg') as { Pool: new(options: { connectionString: string }) => Pool }).Pool;
-export interface PersistentRunView { runId: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'postgres-dbos'; modelMode: 'configured-model-port' }
-export interface StoredRun { view: PersistentRunView; principal: Principal; releaseId: string; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: 'tickets-policy-v1'; capability: '1' }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
+export interface PersistentRunView { runId: string; releaseId?: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'postgres-dbos'; modelMode: 'configured-model-port' }
+export interface StoredRun { view: PersistentRunView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: 'tickets-policy-v1'; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
 // AE business ledger, never a scheduler. DBOS owns all execution/recovery.
 export const migration = `
 CREATE TABLE IF NOT EXISTS ae_runs_v1 (id text PRIMARY KEY, body jsonb NOT NULL);
@@ -26,6 +27,13 @@ export class PersistentStore {
     const run = result.rows[0]?.body as StoredRun | undefined;
     if (!run || (principal && !samePrincipal(run.principal, principal))) throw new PolicyError('RUN_NOT_FOUND');
     if (run.pins.sdk !== '0.21.0' || run.pins.workflow !== 'ae-v1' || run.pins.policy !== 'tickets-policy-v1' || run.pins.capability !== '1') throw new PolicyError('RUN_VERSION_UNSUPPORTED');
+    if (run.release !== undefined || run.pins.releaseHash !== undefined || /^release-[a-f0-9]{64}$/.test(run.releaseId)) {
+      if (!run.release) throw new PolicyError('RELEASE_BINDING_DENIED');
+      verifyRelease(run.release);
+      if (run.pins.releaseHash !== run.release.contentHash) throw new PolicyError('RELEASE_BINDING_DENIED');
+      if (run.releaseId !== run.release.releaseId || run.release.tenantId !== run.principal.tenantId || run.release.applicationId !== run.principal.applicationId) throw new PolicyError('RELEASE_BINDING_DENIED');
+      if (run.view.releaseId !== run.releaseId) throw new PolicyError('RELEASE_BINDING_DENIED');
+    }
     return run;
   }
   async put(run: StoredRun, client: Queryable): Promise<void> { await client.query('UPDATE ae_runs_v1 SET body=$2 WHERE id=$1', [run.view.runId, JSON.stringify(run)]); }

@@ -165,7 +165,7 @@ try {
     let worker = await startWorker();
     const firstPid = worker.child.pid;
     await assert.rejects(worker.request('start', { ...f.input, release: { releaseId: 'unqualified-dynamic-release' } }),
-      error => error.code === 'DYNAMIC_RELEASE_UNSUPPORTED', 'Unqualified dynamic releases must be rejected, never silently ignored');
+      error => error.code === 'RELEASE_INTEGRITY_DENIED', 'Malformed dynamic releases must be rejected, never silently ignored');
     const paused = await worker.request('start', f.input);
     assert.equal(paused.status, 'awaiting-approval', JSON.stringify(paused));
     assert.ok(paused.approval);
@@ -205,7 +205,7 @@ try {
     worker = await startWorker();
     assert.deepEqual(await worker.request('get', paused.runId, f.principal), result);
     await worker.shutdown();
-    cases.push('dynamic release rejected; approval checkpoint survives SIGKILL; exact approval, receipt and event replay; duplicate decision; tenant/subject/application isolation');
+    cases.push('malformed release rejected; approval checkpoint survives SIGKILL; exact approval, receipt and event replay; duplicate decision; tenant/subject/application isolation');
     observe('passed', { case: 'approval-restart', runId: paused.runId, receiptId: inspection.receipts[0].receiptId });
   }
 

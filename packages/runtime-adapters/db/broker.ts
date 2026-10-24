@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { ToolResultSchema, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
-import { AuthorizedTicketHost, ToolBroker, type PreparedTool, type Ticket } from '@ae/capabilities';
+import { ToolResultSchema, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
+import { AuthorizedTicketHost, ToolBroker, ticketCapabilities, type PreparedTool, type Ticket } from '@ae/capabilities';
 import { authorize, digest, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
+import { releasedCatalog } from '@ae/control-plane';
 import { PersistentStore, type StoredRun } from './store.js';
 /** A host owns its durable operation ledger and atomic business mutation. AE never supplies its database. */
 export interface DurableTicketHost {
   currentPrincipal(principal: Principal): Promise<Principal>;
+  /** Optional current host capability revocation/version view; cannot expand the fixed registry. */
+  currentCapabilities?(principal: Principal): Promise<CapabilityVersion[]>;
   read(principal: Principal, ticketId: string): Promise<Ticket>;
   write(principal: Principal, request: ToolRequest, signal?: AbortSignal): Promise<ToolResult>;
   query(principal: Principal, operationId: string): Promise<ToolResult>;
@@ -13,6 +16,16 @@ export interface DurableTicketHost {
 export class PersistentToolBroker {
   constructor(readonly store: PersistentStore, readonly host: DurableTicketHost, private fault?: (point: string) => Promise<void>) {}
   async current(principal: Principal, write = false): Promise<Principal> { const identity = structuredClone(principal); const p = await this.host.currentPrincipal(structuredClone(identity)); if (!samePrincipal(p, identity)) throw new PolicyError('PRINCIPAL_CHANGED'); authorize(p, write); return p; }
+  async catalog(principal: Principal, run?: StoredRun): Promise<CapabilityVersion[]> {
+    const current = await this.current(principal);
+    const hostCatalog = this.host.currentCapabilities ? await this.host.currentCapabilities(structuredClone(current)) : ticketCapabilities;
+    const catalog = ticketCapabilities.filter(c => hostCatalog.some(h => h.capabilityId === c.capabilityId && h.version === c.version && h.bindingHash === c.bindingHash)).filter(c => { try { authorize(current, c.risk !== 'read'); return true; } catch { return false; } });
+    return run?.release ? releasedCatalog(run.release, current, catalog) : structuredClone(catalog);
+  }
+  async assertCapability(run: StoredRun, name: string): Promise<void> {
+    await this.current(run.principal, name !== 'read_ticket');
+    if (!(await this.catalog(run.principal, run)).some(c => c.capabilityId === name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
+  }
   async prepare(principal: Principal, runId: string, callId: string, name: string, args: JsonObject): Promise<PreparedTool> {
     const p = await this.current(principal, name !== 'read_ticket');
     if (typeof args.ticketId !== 'string') throw new PolicyError('INVALID_ARGUMENTS');
@@ -26,6 +39,7 @@ export class PersistentToolBroker {
     return broker.requestApproval(principal, prepared, releaseId);
   }
   async execute(run: StoredRun, name: string, args: JsonObject, callId: string, approvalId?: string, signal?: AbortSignal): Promise<ToolResult> {
+    await this.assertCapability(run, name);
     const write = name !== 'read_ticket';
     const p = await this.current(run.principal);
     const operationId = digest({ runId: run.view.runId, callId, tenant: p.tenantId, application: p.applicationId });
@@ -43,6 +57,7 @@ export class PersistentToolBroker {
     }
     const prepared = await this.prepare(p, run.view.runId, callId, name, args);
     await this.store.update(run.view.runId, async (r, c) => {
+      await this.assertCapability(r, name);
       if (r.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
       const raced = await c.query('SELECT id FROM ae_operations_v1 WHERE id=$1', [operationId]);
       if (raced.rows.length) throw new PolicyError('OPERATION_ALREADY_RESERVED');
@@ -64,6 +79,7 @@ export class PersistentToolBroker {
       let dispatched = false;
       try {
         const current = await this.current(p, true); const latest = await this.store.load(run.view.runId);
+        await this.assertCapability(latest, name);
         if (latest.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
         dispatched = true;
         result = validateHostResult(operationId, await abortable(this.host.write(current, prepared.request, signal), signal));
