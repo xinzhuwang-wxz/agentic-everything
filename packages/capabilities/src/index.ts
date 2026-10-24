@@ -129,7 +129,7 @@ export class ToolBroker {
     const write = !definitions[name as keyof typeof definitions].read; authorize(principal, write);
     this.host.current(principal, write);
     const ticket = this.host.read(principal, parsed.ticketId);
-    if (write && ticket.version !== (parsed as { expectedVersion: number }).expectedVersion) throw new PolicyError('RESOURCE_VERSION_CONFLICT');
+    if (write && (!('expectedVersion' in parsed) || ticket.version !== parsed.expectedVersion)) throw new PolicyError('RESOURCE_VERSION_CONFLICT');
     if (name === 'read_ticket_members') this.host.members(principal, ticket.id);
     let preview: JsonObject = { ticketId: ticket.id };
     if (name === 'change_ticket_priority') preview = { ticketId: ticket.id, title: ticket.title, before: ticket.priority, after: (parsed as z.infer<typeof writeArgs>).priority, version: ticket.version };
