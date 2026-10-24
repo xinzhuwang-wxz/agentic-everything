@@ -15,30 +15,30 @@ function setup() {
   const applied = applyApprovedPlan({ sourceRoot, destination: join(parent, 'candidate'), assessment, plan, approval });
   return { parent, sourceRoot, assessment, plan, approval, applied, outputDirectory: join(parent, 'delivery') };
 }
-test('delivery preserves exact chain, copies only owned files, and retains missing gates', () => {
+test('delivery preserves exact chain, copies only owned files, and retains missing gates', async () => {
   const f = setup(); writeFileSync(join(f.sourceRoot, 'unrelated.txt'), 'private user note');
-  const manifest = createDelivery(f); assert.equal(manifest.status, 'partial'); assert.equal(manifest.toolVersion, '0.1.0');
+  const manifest = await createDelivery(f); assert.equal(manifest.status, 'partial'); assert.equal(manifest.toolVersion, '0.1.0');
   assert.equal(manifest.chain.planHash, digest(f.plan)); assert.equal(manifest.checks.find(c => c.name === 'black-box-business-differential')?.status, 'not-run');
   assert.deepEqual(readdirSync(join(f.outputDirectory, 'source/src')).sort(), ['App.tsx', 'ae']);
-  assert.equal(checkDelivery(f.outputDirectory).valid, true);
-  assert.throws(() => createDelivery(f), /EEXIST/);
+  assert.equal((await checkDelivery(f.outputDirectory)).valid, true);
+  await assert.rejects(() => createDelivery(f), /EEXIST/);
   assert.equal(readFileSync(join(f.sourceRoot, 'unrelated.txt'), 'utf8'), 'private user note');
 });
-test('delivery rejects expiry, scope, source and candidate drift before output', () => {
+test('delivery rejects expiry, scope, source and candidate drift before output', async () => {
   const f = setup();
-  assert.throws(() => createDelivery({ ...f, approval: { ...f.approval, expiresAt: '2020-01-01T00:00:00.000Z' } }), /expired/);
-  assert.throws(() => createDelivery({ ...f, approval: { ...f.approval, networkAllowlist: ['evil.invalid'] } }), /scope/);
-  assert.throws(() => createDelivery({ ...f, outputDirectory: join(f.sourceRoot, 'export') }), /outside/);
+  await assert.rejects(() => createDelivery({ ...f, approval: { ...f.approval, expiresAt: '2020-01-01T00:00:00.000Z' } }), /expired/);
+  await assert.rejects(() => createDelivery({ ...f, approval: { ...f.approval, networkAllowlist: ['evil.invalid'] } }), /scope/);
+  await assert.rejects(() => createDelivery({ ...f, outputDirectory: join(f.sourceRoot, 'export') }), /outside/);
   writeFileSync(join(f.applied.patch.worktree, 'src/api.ts'), '// drift');
-  assert.throws(() => createDelivery(f), /Candidate source drift/);
+  await assert.rejects(() => createDelivery(f), /Candidate source drift/);
   writeFileSync(join(f.sourceRoot, 'src/App.tsx'), '// drift');
-  assert.throws(() => createDelivery(f), /Dirty source/);
+  await assert.rejects(() => createDelivery(f), /Dirty source/);
 });
-test('package rejects bytes, unlisted files, symlink roots, forged PASS and complete status', () => {
-  const f = setup(); createDelivery(f);
+test('package rejects bytes, unlisted files, symlink roots, forged PASS and complete status', async () => {
+  const f = setup(); await createDelivery(f);
   const manifestPath = join(f.outputDirectory, 'manifest.json'); const original = readFileSync(manifestPath, 'utf8');
   const manifest = JSON.parse(original);
-  manifest.status = 'complete'; writeFileSync(manifestPath, JSON.stringify(manifest)); assert.equal(checkDelivery(f.outputDirectory).valid, false);
+  manifest.status = 'complete'; writeFileSync(manifestPath, JSON.stringify(manifest)); assert.equal((await checkDelivery(f.outputDirectory)).valid, false);
   writeFileSync(manifestPath, original);
   const verificationPath = join(f.outputDirectory, 'verification.json');
   const verification = JSON.parse(readFileSync(verificationPath, 'utf8'));
@@ -46,16 +46,29 @@ test('package rejects bytes, unlisted files, symlink roots, forged PASS and comp
   const forged = JSON.stringify(verification); writeFileSync(verificationPath, forged);
   manifest.status = 'partial'; manifest.checks = verification.checks; manifest.chain.verificationHash = digest(verification);
   const ref = manifest.artifacts.find((a: { path: string }) => a.path === 'verification.json'); ref.sha256 = sha256(forged); ref.bytes = Buffer.byteLength(forged);
-  writeFileSync(manifestPath, JSON.stringify(manifest)); assert.match(checkDelivery(f.outputDirectory).errors.join(' '), /Unsupported verification claim/);
-  const g = setup(); createDelivery(g); symlinkSync(g.outputDirectory, join(g.parent, 'alias')); assert.equal(checkDelivery(join(g.parent, 'alias')).valid, false);
-  writeFileSync(join(g.outputDirectory, 'unexpected.txt'), 'not authorized'); assert.equal(checkDelivery(g.outputDirectory).valid, false);
-  const h = setup(); createDelivery(h); writeFileSync(join(h.outputDirectory, 'source/src/App.tsx'), '// drift'); assert.equal(checkDelivery(h.outputDirectory).valid, false);
+  writeFileSync(manifestPath, JSON.stringify(manifest)); assert.match((await checkDelivery(f.outputDirectory)).errors.join(' '), /Unsupported verification claim/);
+  const g = setup(); await createDelivery(g); symlinkSync(g.outputDirectory, join(g.parent, 'alias')); assert.equal((await checkDelivery(join(g.parent, 'alias'))).valid, false);
+  writeFileSync(join(g.outputDirectory, 'unexpected.txt'), 'not authorized'); assert.equal((await checkDelivery(g.outputDirectory)).valid, false);
+  const h = setup(); await createDelivery(h); writeFileSync(join(h.outputDirectory, 'source/src/App.tsx'), '// drift'); assert.equal((await checkDelivery(h.outputDirectory)).valid, false);
 });
-test('packaging rejects forged rollback, patch scope and candidate hashes', () => {
+test('packaging rejects forged rollback, patch scope and candidate hashes', async () => {
   const f = setup();
-  assert.throws(() => createDelivery({ ...f, applied: { ...f.applied, originals: { ...f.applied.originals, 'src/App.tsx': '// forged' } } }), /Rollback baseline/);
-  assert.throws(() => createDelivery({ ...f, applied: { ...f.applied, patch: { ...f.applied.patch, changes: [...f.applied.patch.changes, { path: '.env', beforeHash: null, afterHash: '0'.repeat(64) }] } } }), /Patch scope/);
+  await assert.rejects(() => createDelivery({ ...f, applied: { ...f.applied, originals: { ...f.applied.originals, 'src/App.tsx': '// forged' } } }), /Rollback baseline/);
+  await assert.rejects(() => createDelivery({ ...f, applied: { ...f.applied, patch: { ...f.applied.patch, changes: [...f.applied.patch.changes, { path: '.env', beforeHash: null, afterHash: '0'.repeat(64) }] } } }), /Patch scope/);
   const app = f.applied.patch.changes[0]!; const value = readFileSync(join(f.applied.patch.worktree, app.path), 'utf8') + '\n// forged';
   writeFileSync(join(f.applied.patch.worktree, app.path), value);
-  assert.throws(() => createDelivery({ ...f, applied: { ...f.applied, patch: { ...f.applied.patch, changes: [{ ...app, afterHash: sha256(value) }, f.applied.patch.changes[1]!] } } }), /does not match recipe/);
+  await assert.rejects(() => createDelivery({ ...f, applied: { ...f.applied, patch: { ...f.applied.patch, changes: [{ ...app, afterHash: sha256(value) }, f.applied.patch.changes[1]!] } } }), /does not match recipe/);
+});
+
+test('fixed fixture verification requires explicit plan and matching approval scope', () => {
+  const f = setup();
+  assert.equal(f.plan.verificationAuthorization, undefined);
+  assert.equal(f.approval.verificationAuthorization, undefined);
+  const plan = proposePlan(f.assessment, { verificationProfile: 'react-helpdesk-synthetic-v1' });
+  assert.deepEqual(plan.verificationAuthorization?.actions, ['baseline-differential', 'host-build', 'runtime-http', 'browser']);
+  const approval = approvePlan(plan, { approverId: 'fixture', authorizationRef: 'explicit-harness-approval' });
+  assert.deepEqual(approval.verificationAuthorization, plan.verificationAuthorization);
+  assert.notEqual(digest(plan), digest(f.plan));
+  assert.throws(() => proposePlan({ ...f.assessment, evidence: f.assessment.evidence.map(e => e.path === 'src/tickets.ts' ? { ...e, sha256: '0'.repeat(64) } : e) }, { verificationProfile: 'react-helpdesk-synthetic-v1' }), /exact trusted/);
+  assert.throws(() => applyApprovedPlan({ sourceRoot: f.sourceRoot, destination: join(f.parent, 'unauthorized'), assessment: f.assessment, plan, approval: { ...approval, verificationAuthorization: undefined } as never }), /authorization scope/);
 });

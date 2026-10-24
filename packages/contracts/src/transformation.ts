@@ -14,12 +14,20 @@ export const ProjectAssessmentSchema = z.strictObject({
 });
 export type ProjectAssessment = z.infer<typeof ProjectAssessmentSchema>;
 export const RecipeRefSchema = z.strictObject({ id: z.string().min(1), version: z.string().min(1) });
+export const VerificationAuthorizationSchema = z.strictObject({
+  version: z.literal('1'), profile: z.literal('react-helpdesk-synthetic-v1'),
+  actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-http'), z.literal('browser')]),
+  isolation: z.literal('exact-fixture-temporary-worktree'), network: z.literal('loopback-only-no-external'),
+  maximumCostUsd: z.literal(0), maximumElapsedMs: z.literal(300000), maximumHeapMiB: z.literal(640),
+});
+export type VerificationAuthorization = z.infer<typeof VerificationAuthorizationSchema>;
 export const AdaptationPlanSchema = z.strictObject({
   schemaVersion: SchemaVersion, planId: z.string().min(1), projectId: z.string().min(1), baseCommit: z.string().min(1),
   assessmentHash: Sha256, goals: z.array(z.string()), nonGoals: z.array(z.string()), capabilities: z.array(z.string()),
   recipes: z.array(RecipeRefSchema), allowedPaths: z.array(RelativePath), dependencies: z.array(z.string()),
   commands: z.array(z.string()), networkAllowlist: z.array(z.string()), dataFlows: z.array(z.string()),
   migrations: z.array(z.string()), verification: z.array(z.string()), rollback: z.array(z.string()),
+  verificationAuthorization: VerificationAuthorizationSchema.optional(),
   cost: z.strictObject({ currency: z.literal('USD'), maximum: z.number().nonnegative(), paidCallsAllowed: z.boolean() }),
 });
 export type AdaptationPlan = z.infer<typeof AdaptationPlanSchema>;
@@ -29,7 +37,7 @@ export const ApprovedChangeSetSchema = z.strictObject({
   planHash: Sha256, baseCommit: z.string().min(1), allowedPaths: z.array(RelativePath),
   allowedCommands: z.array(z.string()), networkAllowlist: z.array(z.string()), maximumCostUsd: z.number().nonnegative(),
   excludedActions: z.array(z.string()), approvedAt: z.iso.datetime(), expiresAt: z.iso.datetime(),
-  authorizationRef: z.string().min(1),
+  authorizationRef: z.string().min(1), verificationAuthorization: VerificationAuthorizationSchema.optional(),
 });
 export type ApprovedChangeSet = z.infer<typeof ApprovedChangeSetSchema>;
 export const PatchArtifactSchema = z.strictObject({
