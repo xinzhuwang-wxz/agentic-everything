@@ -12,7 +12,7 @@
 
 AE 包含三个相互衔接、职责清楚的产品部分。
 
-1. **改造工具包。** 分发 Skill、MCP、CLI、版本化 recipes 和验证器，供用户已经在使用的开发智能体消费。输入是获准的客户仓库及业务目标，输出是项目画像、定制计划、批准范围内的代码改造、测试证据和交付清单。AE 不另造通用 coding agent。
+1. **改造工具包。** 分发 Skill、MCP、CLI、版本化 recipes 和验证器，供用户已经在使用的开发智能体消费。输入是获准的客户仓库及业务目标，输出是项目画像、改造前黑盒行为基线、定制计划、批准范围内的代码改造、前后对拍报告和交付清单。AE 不另造通用 coding agent。
 2. **改造后的控制面。** 界面型客户产品中的 Agentic tab，以及同一后端支持的独立 AE Console；无界面项目使用独立 Console 或 API/CLI 管理。管理员配置能力、连接器、agent、策略、测试和发布；普通用户查看自己可用的助手和任务。两种入口不是两份配置真源。
 3. **改造后的运行面。** 嵌入式助手、宿主上下文桥、身份交换、模型执行、工具代理、审批、持久任务、审计和恢复。业务执行继续通过宿主认可的 API 或 SDK，不绕过原系统权限。
 
@@ -25,6 +25,7 @@ AE 以 **TypeScript 核心、语言中立的宿主契约和独立分发体系**�
 - 宿主 API 优先，MCP 用于协议接入，浏览器自动化只作有授权且明确降级的最后一档。客户已有 agent runtime 可通过明确边界适配，不强迁、不重复建同一 run 的执行真源。MCP、AG-UI、Skill 都不授予业务权限。
 - 首条完整验收是外部开发智能体用 AE 改造一个原本没有 agent 能力的工单系统，而不是直接手写一个 AE 展示站。工单仅是架构与权限测试样本，不是 AE 的行业定位、业务白名单或产品上限。
 - 面向所有类型项目，依据项目特点选择理解/建议、草拟、受控动作或有界自主流程等改造程度。recipe、框架版本、平台与能力的支持级别表示当前执行成熟度，不是项目能否 Agentic 化的准入判断；不承诺今天所有软件都已自动适配、零人工或零失败。
+- 默认保持原系统业务语义：修改前完整测试并存档可观察输入/输出和副作用，改造后用相同条件对拍。合理的业务逻辑改善独立做成默认关闭的开关，最终在集中审阅页批量决定，不把每项发现都打断用户询问；开启也必须通过预先声明的差异合同。
 - 一次批准覆盖选定里程碑内正常的设计、复用、编码、修复、测试和可恢复改造，不把每次 import、文案和普通实现取舍重新交给用户批准。新增费用、部署发布、持久凭据、扩大访问、真实数据迁移及不可逆动作按实际风险另行确认。
 
 ### 1.3 判断项目是否成功
@@ -32,7 +33,7 @@ AE 以 **TypeScript 核心、语言中立的宿主契约和独立分发体系**�
 成功不是“能聊天”“tools 数量很多”或“框架组合很新”，而是：
 
 - 开发智能体能够准确指出一个既有产品应改哪里、为什么改、权限如何延续，且结论有源码证据。
-- 用户批准后，目标产品的原业务不被破坏，tab 与助手真正参与受授权的业务读写。
+- 用户批准后，目标产品的原业务不被破坏，tab 与助手真正参与受授权的业务读写；改善开关全关时业务行为与归档基线一致，开启时只出现经选择、预声明并验证的预期变化。
 - 同一能力在刷新、断线、重启、重复确认、权限撤销与未知执行结果下仍可解释、可追踪、不重复产生副作用。
 - 换一个不同栈宿主，不重建整套后端，也不把“人工定制”冒充“自动 recipe 支持”。
 - 安装、升级、回退、费用、限制及验收结果对开发者透明，未验证项不显示绿色通过。
@@ -41,7 +42,7 @@ AE 以 **TypeScript 核心、语言中立的宿主契约和独立分发体系**�
 
 ### 2.1 原生 AE 的产品原则
 
-AE 的核心是面向各类软件的完整生命周期：证据化理解 → 确定项目特有的 Agentic 化目标与程度 → 专属计划 → 范围批准 → 隔离改造 → 真实验证 → 可逆交付。改造工具包、控制面与运行面使用统一的版本化契约，但不混用开发权限和业务执行权限。
+AE 的核心是面向各类软件的完整生命周期：证据化理解与改造前基线 → 确定项目特有的 Agentic 化目标与程度 → 专属计划 → 范围批准 → 隔离改造 → 前后对拍与集中审阅 → 可逆交付。改造工具包、控制面与运行面使用统一的版本化契约，但不混用开发权限和业务执行权限。
 
 产品从一开始以以下约束设计：能力来源与已接纳版本分开；发布快照不可变；运行绑定 release；管理身份与业务身份分离；模型不决定授权；工具执行经过校验、策略、调用和结果分类；未知结果先核对；知识权限在返回前再检查。可靠性来自清晰合同和可复现测试，不依赖模型自行遵守提示词。
 
@@ -63,7 +64,7 @@ AE 的核心是面向各类软件的完整生命周期：证据化理解 → 确
 
 开发者选择 AE Skill/MCP 的固定版本，交给现有开发智能体，并指定仓库与目标业务。智能体先只读分析框架、路由、领域模型、身份、租户、事务和测试，追踪至少一个真实业务流，给出可核对的结论与未知项。AE 输出专属方案：该项目适合怎样的 Agentic 化程度、拟增加哪些能力、哪些绝不能暴露、交互入口应在现有页面还是 API/CLI、哪些文件及数据结构会变、费用与权限需求、如何验收和回退。
 
-用户批准后，在隔离分支或 worktree 内执行确定性 recipe 与必要的定制 patch。保留客户未提交改动，先建立基线，再跑原业务回归、AE 契约、安全、恢复和界面验收。交付包含代码差异、版本锁定、能力配置、证据、限制、升级和回退说明。部署、推送和真实系统凭据不因“同意计划”自动被授权。
+在修改任何业务实现前，先在隔离、可重置环境中采集并归档原系统的黑盒输入、输出和副作用，固定版本、数据种子、归一化规则与覆盖范围。用户批准后，在隔离分支或 worktree 内执行确定性 recipe 与必要的定制 patch，保留客户未提交改动；再用同一业务条件对拍，同时完成 AE 契约、安全、恢复和界面验收。发现合理的业务逻辑改善时先登记、隔离到默认关闭的开关并编写预期差异测试，最后统一给用户审阅选择，不逐点打断。交付包含代码差异、版本锁定、基线档案、对拍报告、开关选择、能力配置、证据、限制、升级和回退说明。部署、推送和真实系统凭据不因“同意计划”自动被授权。
 
 ### 3.2 管理员配置与发布
 
@@ -94,6 +95,8 @@ AE 的核心是面向各类软件的完整生命周期：证据化理解 → 确
 | Skill、MCP、CLI 与固定版本安装 | 共享改造合同和有界工具入口 | 一：固定来源/hash；外部开发智能体实际消费 |
 | 改造任务 context、questions、heartbeat、artifact、verification | Transformation 任务协议和证据管理 | 一：任务状态可恢复；产物声明与观察证据分开 |
 | 源码与业务理解 | 多语言 detector、AST、OpenAPI 与领域证据 | 一至二：未知不误报；能力需审核，不全量暴露 endpoints |
+| 行为基线与前后对拍 | BaselineSuite/Run、ComparisonReport、输出与副作用比较 | 一：改前归档；改善全关保持原业务语义；未知/不可比较不算通过 |
+| 可选业务改善与集中审阅 | BehaviorImprovement、默认 OFF 开关、预声明差异合同 | 一：最终批量选择；ON 只允许预期变化且未受影响用例全过 |
 | 改造与交付门槛 | 独立记录计划、patch、build、契约、runtime 和业务事实 | 一：各门槛分别有真实证据，不用单一绿色状态掩盖未测项 |
 | 应用、主体与管理权限 | HostApplication、IdentityBinding、RBAC/资源授权 | 一：沿用宿主身份，tenant/应用/资源越权测试 |
 | Agent 草稿、测试、发布与回滚 | 不可变 AgentRelease 和版本 pin | 一：run 固定 release，撤权即时限制新动作 |
@@ -144,11 +147,15 @@ flowchart TB
     DEV["现有开发智能体"] --> DIST["AE Skill / MCP / CLI<br/>同一版本化契约"]
     REPO["客户仓库与业务目标<br/>保留原语言和原测试"] --> ASSESS["ProjectAssessment<br/>证据 / 业务流 / 身份 / 未知项"]
     DIST --> ASSESS
-    ASSESS --> PLAN["AdaptationPlan<br/>改造程度 / 能力 / 接入点 / 文件 / 验收 / 回退"]
+    ASSESS --> BASELINE["改造前黑盒基线<br/>输入 / 输出 / 副作用 / 版本化存档"]
+    BASELINE --> PLAN["AdaptationPlan<br/>改造程度 / 能力 / 接入点 / 文件 / 验收 / 回退"]
     PLAN --> GRANT["用户批准范围<br/>plan hash + base commit"]
     GRANT --> PATCH["隔离 worktree<br/>recipe + 定制 patch"]
-    PATCH --> VERIFY["原业务回归 + 安全恢复 + UI验收"]
-    VERIFY --> PACKAGE["可逆交付<br/>代码 / 配置 / 锁定版本 / 证据"]
+    PATCH --> COMPARE["相同业务条件对拍<br/>OFF 原行为一致 / ON 预声明差异"]
+    BASELINE --> COMPARE
+    COMPARE --> REVIEW["集中审阅<br/>改善开关默认 OFF / 批量选择"]
+    REVIEW --> VERIFY["选定组合复验<br/>未受影响用例 + 安全恢复 + UI验收"]
+    VERIFY --> PACKAGE["可逆交付<br/>代码 / 配置 / 基线 / 对拍报告 / 回退"]
   end
   subgraph HOST["客户宿主  继续拥有业务真源与最终权限"]
     PAGE["业务页面 / App / 小程序 / API / CLI"]
@@ -260,22 +267,31 @@ AdaptationProfile 表达该项目的改造程度，而非一个全开/全关的�
 ### 7.2 改造 artifact 与状态
 
 - ProjectAssessment：source commit、检测栈、业务地图、身份/权限地图、Agentic 化机会与约束、证据、执行支持等级、unknown、基线状态。
-- AdaptationPlan：目标、非目标、AdaptationProfile、能力清单、recipe 组合或定制 adapter、文件/依赖/命令/数据流范围、迁移、验证、回退、成本假设和 hash。
+- AdaptationPlan：目标、非目标、AdaptationProfile、能力清单、recipe 组合或定制 adapter、文件/依赖/命令/数据流范围、BaselineSuite 引用、改善候选与预声明差异合同、迁移、验证、回退、成本假设和 hash。
 - ApprovedChangeSet：审批者、plan hash、base commit、批准的修改/执行/网络/费用范围、有效性与明确排除项。批准文本不是模型自行填写的布尔值。
 - PatchArtifact：变更路径、原始/结果 hash、recipe 版本、patch、前置条件、应用记录；重复 apply 不重复插 route/provider/import。
-- VerificationReport：命令/环境/版本/时间、期望与实际结果、pass/fail/not-run、日志/截图/业务回执引用，不把自报“成功”当平台观测。
-- DeliveryManifest：最终代码版本、依赖、能力/release、全部门槛、已知限制、升级/回退、许可与证据索引，不包含秘密。
+- BaselineSuite：用例与输入、初始状态/数据种子、隔离/回放条件、观察点、输出与副作用断言、归一化版本、覆盖与缺口；固定 source commit、schema/version 和内容 hash，修改生成新版本。
+- BaselineRun：suite/hash、被测系统版本、环境与依赖版本、seed/clock/replay 引用、实际输出/副作用、稳定性和执行状态；归档不可原地覆盖，敏感内容最小化并记录脱敏策略。
+- ComparisonReport：基线与候选 run、suite/归一化/预期差异合同 hash、开关组合、逐例结果、未预期差异、未执行/不可比较、覆盖和证据。报告陈述事实，不自动授予接受差异的权限。
+- BehaviorImprovement：稳定 id/version、问题与理由、影响业务范围、默认 OFF 开关、适用前提、预期旧/新结果及副作用差异、未受影响断言、依赖/冲突、风险分类、验证证据、审阅决定和回退条件。安全、授权或数据完整性缺陷不作为可保留行为登记。
+- VerificationReport：命令/环境/版本/时间、期望与实际结果、pass/fail/not-run、ComparisonReport、日志/截图/业务回执引用，不把自报“成功”当平台观测。
+- DeliveryManifest：最终代码版本、依赖、能力/release、基线/对拍/开关配置 hash、全部门槛、已知限制、升级/回退、许可与证据索引，不包含秘密。
 
 ```mermaid
 stateDiagram-v2
   [*] --> Assessed
-  Assessed --> Planned
+  Assessed --> BaselineArchived: 修改前捕获并固定行为证据
+  BaselineArchived --> Planned
   Planned --> AwaitingApproval
   AwaitingApproval --> Approved: 批准绑定计划和源码
   AwaitingApproval --> Rejected
   Approved --> Applying: 校验前置条件
-  Applying --> Verifying
+  Applying --> Comparing
+  Comparing --> ReviewReady: OFF一致且候选改善测试通过
+  ReviewReady --> Verifying: 集中选择后复验开关组合
   Verifying --> Delivered: 所有必需门槛通过
+  Comparing --> Applying: 批准范围内修复未预期差异
+  Comparing --> Blocked: 安全风险或无法确定结果
   Verifying --> Applying: 批准范围内修复
   Applying --> Blocked: 漂移或越界
   Verifying --> Blocked: 缺权限或真实外部条件
@@ -289,7 +305,7 @@ stateDiagram-v2
 
 Skill 提供方法、顺序、业务理解要求、风险和验收 references；MCP 提供 schema 明确的工具；CLI 是两者共享的确定性执行入口。使用 Agent Skills 渐进加载，不把整份参考资料塞进每次 prompt。Skill 的 allowed-tools 或 README 不能覆盖开发智能体宿主的权限策略。
 
-最小工具面：`inspect_project`、`trace_business_flow`、`propose_capabilities`、`validate_plan`、`preview_patch`、`apply_approved_plan`、`verify_adaptation`、`describe_rollback`。每个工具接收明确 repo handle/commit/plan reference，返回机器可读 artifact 和可读摘要。默认只读；有副作用的方法必须接受有效批准句柄、校验路径和计划范围。
+最小工具面：`inspect_project`、`trace_business_flow`、`propose_capabilities`、`validate_plan`、`preview_patch`、`apply_approved_plan`、`capture_baseline`、`compare_behavior`、`review_improvements`、`verify_adaptation`、`describe_rollback`。每个工具接收明确 repo handle/commit/plan reference，返回机器可读 artifact 和可读摘要。静态发现工具默认只读；baseline capture 和 replay 若会执行项目或写 fixture，必须显式选择获准隔离环境、受限命令与 reset 策略。其余有副作用的方法必须接受有效批准句柄、校验路径和计划范围。
 
 不提供无限制 read_any_path、run_shell、任意 URL 下载/执行。需要运行项目命令时，优先由现有开发智能体在其受控环境执行；若 AE 附带执行器，也只能运行已审核的命令/路径/网络 allowlist，设时间、进程、输出和磁盘上限。项目的测试、构建、包 lifecycle scripts 本身也是代码执行，不能因为名叫“验证”而在含生产秘密的环境直接运行。
 
@@ -298,6 +314,18 @@ Skill 提供方法、顺序、业务理解要求、风险和验收 references；
 RecipeVersion 包含 id、版本、支持的语言/框架版本、检测证据、适用条件、冲突声明、读写路径、patch strategy、依赖与许可、验证命令、回退、golden fixtures 和支持等级。组成维度是 host UI、identity、backend、capability、deployment，但必须通过实际组合测试，不能假定任意笛卡尔积成立。
 
 AST/codemod 处理稳定结构；开发智能体处理有证据的业务 glue；业务身份、授权和高风险操作不得仅靠 regex 自动推导。新 recipe 进入 registry 前需要恶意输入、重复应用、版本漂移、原业务回归、回退和许可证测试。未知 recipe 不自动下载执行，发布物固定版本/hash，升级显示实际变更。
+
+### 7.5 行为保存与可选改善
+
+AE 的默认义务是增加 Agentic 能力而不悄悄改变原业务规则。黑盒基线从外部入口观察输入、返回值、状态码/错误、用户可见结果，以及数据库业务状态变化、文件产物、消息/通知、外部请求等副作用。改前和改后使用相同初始状态与输入序列，不能只比较一句自然语言答复或 HTTP 200。新增加的 AE 入口和功能单独验收；它们通过同一业务能力触发的既有操作，仍应满足原业务语义。
+
+一般业务规则即使看起来不理想，也不自动替用户纠正。将合理改善做成独立 BehaviorImprovement，开关默认 OFF；发现时记录并在已批准范围内准备实现/测试，最终在一个集中审阅页展示“原行为、建议行为、原因、影响、证据和回退”，用户可批量选择部分开启、全部保持关闭或暂不决定。未选择、未批准的改善保持关闭。只有缺少必要事实、存在重大风险或触及新的授权边界时立即提出具体阻塞，不因每个普通建议反复打断。
+
+ON 不是“允许出现差异”的通行证。每项改善必须在比较候选输出前固定 expected-diff 合同，声明受影响用例、字段/业务结果、副作用及允许的新值/关系；开启后只接受该合同描述的变化，所有未受影响用例和断言继续通过。不得在看到意外结果后自动扩大白名单、重写基线或批准所有 diff。改善间的依赖/冲突必须显式建模，最终选择的实际组合也要复验。
+
+安全、越权、隐私泄露、破坏数据完整性或明显数据损坏不是可以默认保留的“旧习惯”。一旦发现，阻断受影响危险路径，清楚报告风险和修复边界；无开关可以绕过安全门禁。独立安全修复仍需符合授权，但不能为了对拍通过重新启用危险行为。其差异按独立安全证据解释，不混进一般业务改善选择。
+
+开关配置在服务端固定到 release 和交付清单；客户端勾选只是审阅输入，不自行改变执行语义。关闭改善恢复后续操作的原行为，不自动撤销已经写入的数据。涉及数据形状、历史状态或外部效果的改善须提供真实回退/补偿前提，无法安全切换的不得伪装成无成本 ON/OFF。
 
 ## 八 控制面与运行模块职责
 
@@ -335,13 +363,22 @@ Event API 负责鉴权、序号、恢复游标、快照和安全 payload；Audit
 
 Knowledge 使用可撤销来源、版本、grant generation、导入任务和权限再校验，不因命中向量就返回内容。只有实际检索需求才引入向量组件，优先减少新增基础设施。Automation 为同一 runtime 增加受权触发器，持有明确发起主体、允许操作和预算；定时到点不是新权限，继续执行时仍检查撤权和策略。
 
+### 8.9 行为验证与改善管理
+
+独立 `@ae/verification` 模块负责行为 artifact 的严格 schema、内容 hash、比较器、报告与门禁；transformation/测试 harness 负责选择输入、隔离环境、调用捕获与对拍并关联计划，UI 负责集中展示和批量审阅。模块不直接获得生产业务执行权，也不让模型决定“哪些差异可以忽略”。基线档案、候选结果和审阅状态分离，报告可追溯到固定输入及配置。
+
+领域概念与首版接口对齐：BaselineSuite/Run 由 `BaselineArchive { manifest, hash }` 承载，manifest 包含 provenance、safety、normalization、coverage 及 case 的 test/observation/hash；ComparisonReport 对应 `DifferentialReport`；BehaviorImprovement 对应 `Improvement`，仅允许 business-behavior 类别，defaultEnabled 为 false，expectedAllowedDiff 精确绑定 caseId、path、before/after。配置绑定 baseline/candidate/registry hash 与审阅引用。首版归一化限于显式声明的标量叶子字段，记录 kind、reason 和 evidence，并固定到基线；它不能自行证明字段确属非确定性，审阅必须排除业务、安全、授权和数据完整性承载字段。已知 safetyFindings 在 baseline 或 candidate 执行前阻断，不由开关放行。工具入口使用 captureBaseline、compareBaseline、writeBaseline、readBaseline、toVerificationCheck；这是模块职责和接口对齐，不表示实际捕获、UI 接线或全部验收已经完成。
+
+首版归档接受调用方已经脱敏的 fixture JSON，不声称自动发现并清除秘密；真实数据的准入、最小化和脱敏由捕获端先完成并验证。归档采用内容寻址、只创建写入和读取时 hash 校验，不宣称 WORM 或能阻止有特权者改写文件。生产交付另需访问控制、可信 digest/签名锚点、保留和恢复策略。隔离环境与副作用拦截由 harness/adapter 提供，比较器本身不是执行沙箱。
+
 ## 九 核心数据与外部接口
 
 ### 9.1 领域对象
 
-核心对象分四组，全部带 schemaVersion 和适用的 tenant/application 边界。
+核心对象分五组，全部带 schemaVersion 和适用的 tenant/application 边界。
 
 - 改造：ProjectAssessment、EvidenceRef、AdaptationPlan、RecipeVersion、ApprovedChangeSet、PatchArtifact、VerificationReport、DeliveryManifest。
+- 行为验证：BaselineSuite、BaselineRun、ComparisonReport、BehaviorImprovement；变更开关与选择快照关联具体 release/交付版本。
 - 配置：Tenant、HostApplication、IdentityBinding、ConnectorInstallation、SourceRevision、CapabilityVersion、AgentRelease、PolicyVersion。
 - 运行：Conversation、ContextSnapshot、Run、Step、ToolInvocation、Approval、ExecutionReceipt、RunEvent、AuditEvent、BudgetReservation。
 - 质量与扩展：EvaluationCase/Run、KnowledgeSource/GrantGeneration、AutomationDefinition/Occurrence；不启用的模块不创建假数据入口。
@@ -449,7 +486,7 @@ Cancel 停止未开始的步骤，向可取消 I/O 传递 AbortSignal，明确�
 
 AE 视觉语言应克制、清晰、贴合业务软件。独立 Console 可有完整品牌；嵌入表面优先服从宿主 typography、色彩、间距、圆角、暗色模式、导航和可访问性。使用 AE 自有品牌资产，不将第三方壁纸、商标或装饰默认纳入产品。颜色表示真实状态，不能用大片渐变和动画掩盖失败。
 
-Agentic tab 的核心信息是“这个产品现在能让助手做什么、谁有权做、当前发布了什么、执行是否可靠”，不是功能列表墙。建议组织为概览、能力、助手与发布、运行与审批、连接器、策略与预算、评测；未启用的高级模块隐藏或明确说明，不放不可点击假功能。
+Agentic tab 的核心信息是“这个产品现在能让助手做什么、谁有权做、当前发布了什么、执行是否可靠”，不是功能列表墙。开发者改造视图还提供单一行为审阅页：基线与覆盖、前后对拍、未预期差异、默认关闭的改善列表、组合选择、测试和回退证据同屏可查；选择可批量操作，但不把一键全选等同于任意差异获准。建议组织为概览、能力、助手与发布、运行与审批、连接器、策略与预算、评测；未启用的高级模块隐藏或明确说明，不放不可点击假功能。
 
 ### 12.2 嵌入助手的必要界面
 
@@ -511,7 +548,8 @@ agentic-everything/
   apps/api/                     HTTP入口和组合根
   apps/worker/                  durable worker组合根
   packages/contracts/          JSON Schema 类型 OpenAPI 事件
-  packages/transformation/     assessment plan patch verification
+  packages/transformation/     assessment plan patch 验证流程编排
+  packages/verification/       黑盒基线 对拍 改善合同与门禁
   packages/cli/                Skill和MCP共享命令
   packages/mcp-server/         有界工具入口
   packages/runtime-core/       Run状态和业务执行合同
@@ -548,15 +586,15 @@ agentic-everything/
 
 **成果：** 外部开发智能体加载 AE，通过完整 assess → plan → approve → apply → verify → deliver，把一个原本没有 agent 能力的工单 fixture 改造成有 Agentic tab、嵌入助手与 TS runtime 的可逆产品。
 
-包含：契约与支持分级；Skill/MCP/CLI 最小工具面；一个固定组合的 agent/durable/UI qualification；身份交换、能力 registry、发布、审批、执行账本、事件和审计；两个租户、管理员/处理人/只读三类角色；查询工单/成员与修改负责人/优先级；fake model CI；故障注入和界面验收。获准模型预算后再做少量真实模型任务，不把离线模式包装成智能效果实测。
+包含：契约与支持分级；改造前黑盒基线归档、输出/副作用对拍、默认 OFF 改善开关与集中审阅；Skill/MCP/CLI 最小工具面；一个固定组合的 agent/durable/UI qualification；身份交换、能力 registry、发布、审批、执行账本、事件和审计；两个租户、管理员/处理人/只读三类角色；查询工单/成员与修改负责人/优先级；fake model CI；故障注入和界面验收。获准模型预算后再做少量真实模型任务，不把离线模式包装成智能效果实测。
 
-**退出门槛：** 原业务回归无新增失败；改造流程产物可追溯；未授权写入为零；重复确认/崩溃窗口不重复 mutation；没有查询回执的 adapter 正确停在 unknown；批准过期/参数变化/权限撤销拒绝；页面刷新、断线、取消和回退通过。SDK+DBOS 无法通过则替换该层，在阶段内解决，不把不可靠组合带到后续。
+**退出门槛：** baseline 在改前固定且可回放；所有一般业务改善 OFF 时安全合法的原业务输出/副作用一致，安全修复独立验收；选定 ON 时仅预期差异发生且未受影响用例全部通过；最终组合复验及开关/代码回退成立；原业务回归无新增失败；改造流程产物可追溯；未授权写入为零；重复确认/崩溃窗口不重复 mutation；没有查询回执的 adapter 正确停在 unknown；批准过期/参数变化/权限撤销拒绝；页面刷新、断线、取消和回退通过。SDK+DBOS 无法通过则替换该层，在阶段内解决，不把不可靠组合带到后续。
 
 ### 15.2 阶段二 可重复跨栈接入
 
 **成果：** 不重写客户语言，第二个非 React 或非 TS 栈宿主完成通用改造生命周期和其自身业务验收；Java/Spring recipe 和一种 remote MCP 能力通过契约测试；安装、版本、诊断和升级形成可供开发者使用的 beta。
 
-包含：recipe 组合/冲突、AST 改造幂等、source drift、dirty worktree、回退；语言中立身份/capability SDK；同一 backend 的多表面 UI；确定性 workflow 子集；第二模型/provider 合同资格；连接器出站策略；版本化导入/导出；完整 DX 文档和自动诊断。第二宿主至少包含不同于工单字段修改的任务形态，验证方案会随项目而变、内核保持统一。比较手工接入与 AE 流程的修改量、时间、返工和缺陷，记录真实成本。
+包含：recipe 组合/冲突、AST 改造幂等、source drift、dirty worktree、回退；语言中立身份/capability SDK；同一 backend 的多表面 UI；确定性 workflow 子集；第二模型/provider 合同资格；连接器出站策略；版本化导入/导出；完整 DX 文档和自动诊断。第二宿主至少包含不同于工单字段修改的任务形态，验证方案会随项目而变、内核保持统一；使用同一 Baseline/Comparison 合同验证其自己的黑盒业务语义，而非复制工单断言。比较手工接入与 AE 流程的修改量、时间、返工和缺陷，记录真实成本。
 
 **退出门槛：** 两个不同栈 fixture 均由 AE 流程产生而非人工预接好；核心 runtime/权限不按客户复制；recipe 重跑无重复 patch；不支持框架能解释降级；来源更新不静默扩大权限；MCP 声明子集有互通证据；安装/升级/卸载不破坏原业务。
 
@@ -566,7 +604,7 @@ agentic-everything/
 
 包含：备份恢复、旧 run 版本恢复、灰度/回滚、密钥轮换、预算/限流、租户隔离、删除/保留、审计与安全审查；可选知识模块的权限/导入/撤销闭环；automation 的有界触发；A2A 明确子集资格；AE 自有配置导入/导出与 schema 升级 dry-run；一个移动或小程序目标的有界 bridge 实验。没有适合真实目标时以契约/fixture 与未验证状态交付，不能伪称平台上线。
 
-**退出门槛：** 干净环境按文档安装；备份可恢复，旧运行可正确处理；数据隔离和撤权通过；实际发布/部署前取得对应授权与费用信息；所有能力有支持级别、owner、证据与故障手册。复杂画布、通用 managed execution、市场、永久记忆和未验收的全端 SDK 明确排除首版，不能占用核心关键路径。
+**退出门槛：** 干净环境按文档安装；基线与对拍档案可校验恢复、脱敏/保留策略落实，发布包含固定的改善配置和回退验证；备份可恢复，旧运行可正确处理；数据隔离和撤权通过；实际发布/部署前取得对应授权与费用信息；所有能力有支持级别、owner、证据与故障手册。复杂画布、通用 managed execution、市场、永久记忆和未验收的全端 SDK 明确排除首版，不能占用核心关键路径。
 
 ### 15.4 并行 worktree 与文件所有权
 
@@ -579,7 +617,7 @@ agentic-everything/
 | runtime | runtime-core、runtime-adapters、policy、capabilities | contracts；不改 UI、recipe 和迁移定义 |
 | surfaces | apps/console、packages/ui、host-sdk | contracts；用契约mock推进，mock不可当业务验收 |
 | adapters | connectors、recipes；fixture子目录按平台再分owner | contracts；不复制 runtime权限逻辑 |
-| verification | tests、evals、安全/恢复测试与验收报告 | contracts；可先编写黑盒合同，持续压测已集成模块 |
+| verification | packages/verification、tests、evals、行为基线/对拍及安全/恢复证据 | contracts；拥有比较器和改善门禁，持续验证已集成模块 |
 | integration | apps/api、apps/worker、deploy、root lockfile/build/CI、主计划 | 收敛各线，负责组合、环境、最终业务验收 |
 
 root lockfile、根配置、migration、共享 schema 只由指定 owner 写；其他工作线提出小型合并请求，不跨 worktree 改同一文件。不把 git worktree 当数据/凭据沙箱。每个 PR 包含契约影响、测试、风险和可回退说明，合并前跑相关合同；关键接口变化先对消费者运行兼容测试。
@@ -601,7 +639,7 @@ flowchart LR
   O --> D["授权后发布交付"]
 ```
 
-关键路径是“身份/能力/审批/事件契约 → 可靠业务写入 → 由 AE 生成的第一宿主 → 第二栈复用 → 生产恢复与发布”。视觉打磨、更多官方调研、后置平台实验和可选知识功能可并行，但不能阻塞核心完成，也不能绕过关键路径的安全门槛。
+关键路径是“身份/能力/审批/事件与行为基线契约 → 修改前基线归档 → 可靠业务写入 → 第一宿主对拍与改善集中审阅 → 第二栈复用 → 生产恢复与发布”。视觉打磨、更多官方调研、后置平台实验和可选知识功能可并行，但不能阻塞核心完成，也不能绕过关键路径的安全门槛。
 
 ## 十六 测试 评测 与真实业务验收
 
@@ -610,35 +648,53 @@ flowchart LR
 AE 将“代码准备好”拆成可观察的交付事实；每一层都有独立门槛，不能由自报完成或健康检查代替业务验收。
 
 1. **SourcePlanApproved**：证据、业务流、范围、风险与计划 hash 完整，批准有效。
-2. **PatchApplied**：仅修改批准文件/范围，前置条件成立，无覆盖用户改动，重复执行无重复 patch。
-3. **BuildVerified**：在记录环境中实际 typecheck/build/test，而非配置存在即通过。
-4. **ContractVerified**：身份、能力、版本、审批、事件、错误、幂等与协议互通测试通过。
-5. **RuntimeConnected**：真实进程、数据库与宿主 callback 可用，不只是 health endpoint 返回 200。
-6. **BusinessAccepted**：用户页面完成业务任务，宿主数据和回执证明结果正确，UI 截图/录像只是补充证据。
-7. **RecoveryAccepted**：故障、取消、重复、未知结果、升级与回退符合合同。
-8. **ReleaseQualified**：许可、SBOM、安全、运维、支持矩阵与发布所需授权齐备。
+2. **BaselineArchived**：改造前 BaselineSuite/Run 已在获准隔离环境执行、固定并校验，输入/输出/副作用、覆盖缺口和归一化规则完整。
+3. **PatchApplied**：仅修改批准文件/范围，前置条件成立，无覆盖用户改动，重复执行无重复 patch。
+4. **BuildVerified**：在记录环境中实际 typecheck/build/test，而非配置存在即通过。
+5. **ContractVerified**：身份、能力、版本、审批、事件、错误、幂等与协议互通测试通过。
+6. **BehaviorParityVerified**：所有一般业务改善 OFF，用相同初始状态/输入对拍，安全合法的原业务输出与副作用一致；安全修复差异另列授权与验证证据，不算普通改善、不改原基线掩盖；不把不可比较、漏测或新增意外效果算通过。
+7. **ImprovementExpectedVerified**：集中审阅选定的 ON 配置只产生预声明差异，预期变化确实发生，全部未受影响断言通过；组合依赖/冲突和回退通过。未选或未获准项目保持 OFF。
+8. **RuntimeConnected**：真实进程、数据库与宿主 callback 可用，不只是 health endpoint 返回 200。
+9. **BusinessAccepted**：用户在原产品入口完成业务任务，宿主数据和回执证明结果正确，UI 截图/录像只是补充证据。
+10. **RecoveryAccepted**：故障、取消、重复、未知结果、版本升级、改善开关关闭与代码/数据回退符合各自合同。
+11. **ReleaseQualified**：固定基线、ComparisonReport、改善配置、许可、SBOM、安全、运维、支持矩阵与发布所需授权齐备。
 
 每项明确 pass/fail/not-run/blocked，附真实命令、环境、版本、时间和证据引用。一个 stage 不用平均分冲抵跨租户泄漏或未授权写入。
 
-### 16.2 第一组业务 fixture 的黑盒验收
+### 16.2 黑盒基线与差异比较方法
+
+**先测再改并存档。** 为各类项目建立外部入口与业务行为清单，覆盖正常、边界、空值/非法输入、失败、权限角色、租户、状态转换、时间条件和必要的重复/并发路径。用现有测试、获准业务样例和可解释补充用例组成 BaselineSuite，记录已覆盖与未覆盖的入口/条件；“完整”以可核对的业务清单衡量，不承诺有限测试证明所有可能输入。未运行、环境缺失、不稳定或无法观察的关键用例明确阻塞受影响改造，不先改完再补造基线。
+
+**相同输入和状态，隔离执行。** 基线和候选使用分别可重置的 seeded 数据/文件快照，相同输入序列、身份、配置和依赖约束；必要时通过受控 adapter 回放外部响应。真实发送、支付、删除等副作用在捕获端拦截并登记预期请求/效果。禁止在生产同时跑改造前后写操作，也不向生产回放具有副作用的历史请求。若仅在模拟/回放环境验证，报告明确限定覆盖，不冒充真实外部系统通过。
+
+**输出与副作用都比较。** 按项目定义可观察值：API 响应/状态/错误、CLI stdout/stderr/exit code、页面业务结果、生成文件、业务数据变化、消息/通知/外部请求的对象、次数与内容、审计/事件及异步终态。新 AE 界面的视觉变化与新增能力单独验收，原业务效应不因入口变成助手而改变。异步过程以明确稳定点/期限收集，不能在写入尚未完成时提前宣布一致。
+
+**归一化预声明且有边界。** 固定 normalization 版本/hash，只规范与业务无关且事先声明的时间戳、随机 ID、无语义排序或格式。优先固定 clock/random seed、明确外部回放；无法稳定的字段使用有依据的容差/不变量并报告不确定性。不得全局删字段、模糊匹配全部文本，或忽略金额、权限、资源目标、业务状态、写入次数等关键差异。模型自然语言可用事先定义的格式/语义检查，但业务事实与副作用仍按明确断言比较，不能由另一个模型随意判断“差不多”。
+
+**档案与报告可追溯。** 固定 source commit、测试/依赖/环境版本、数据快照 hash、seed/replay、用例、观察结果、归一化与改善合同；敏感输入输出先最小化/脱敏，权限和保留期限明确。脱敏若删掉必要断言必须标记覆盖损失，不能继续宣称完整。新规则或新基线生成新版本并解释原因，不能为了让候选通过而覆盖原档案。hash 提供一致性检查，不替代身份、访问控制和可信签名。
+
+**OFF 与 ON 两套判断。** OFF 需要安全合法业务的 normalized 结果及全部应观察副作用保持一致；已经发现的安全/授权/数据损坏问题先进入阻断与独立修复验证，不允许为追求相等而复现危险行为。ON 需要精确匹配预声明 before/after 的预期差异，而且预期变化不能缺失。未受影响 case/路径不因某开关启用而豁免；任何额外变化、缺失断言、候选缺例、覆盖下降或 unknown 都按合同阻断或明确不合格。集中审阅选择实际组合后重新执行验证，选择本身不自动批准尚未解释的差异。
+
+### 16.3 第一组业务 fixture 的黑盒验收
 
 第一组选择工单作为可核证读写与权限测试样本；验收从改造前 fixture 开始，保持已有登录和工单操作。管理员发布工单助手；只读用户只能查询；处理人按权限修改；第二租户无法读取第一租户工单。用户在详情页问状态，得到正确来源；要求改负责人和优先级，看到真实差异，批准后宿主只写一次，页面与审计同步反映结果。
 
 注入崩溃点：审批创建前后、消费前后、发请求前后、宿主提交后 AE receipt 前、事件入库后发流前、provider usage 尾事件前。分别验证结果、重试身份、核对方式和 UI 状态。对无幂等/无回执 adapter 证明会安全停止，而不是硬性要求其做到物理上不可能的 exactly-once。
 
-### 16.3 必须覆盖的负向矩阵
+### 16.4 必须覆盖的负向矩阵
 
 - 身份：伪造 role/tenant/project/userId、session 过期、跨 run/会话/审批访问、管理员与业务主体混淆。
 - 审批：拒绝、过期、重复、换人、换参数/目标/金额、资源版本变更、同意后撤权。
 - 可靠性：重复点击/事件、多个 worker、stale lease、进程重启、SSE 断开、超时后成功、取消在途。
 - 输入与网络：恶意 README/工单文本、工具输出注入、未知 MCP tool、SSRF/重定向、超大响应、错误 schema、日志秘密。
 - 改造：未知框架、源码不完整、dirty worktree、AST 失败、版本漂移、重复 apply、不可恢复迁移、回退后原业务。
+- 行为对拍：基线被改写、错误 source/hash/环境、未固定随机/时间、归一化误删关键字段、漏测副作用、候选缺例、意外差异、开启但预期变化未发生、未受影响用例回退、开关组合冲突、无批准引用、危险旧行为试图作为改善开关、关闭后无法恢复原行为。
 - 知识与自动化启用时：来源撤销/替换、旧 chunk、触发重复/漏跑、时区、权限撤销和预算耗尽。
 - UI：键盘/读屏、中文长内容、移动窄屏、页面切换、主题隔离、审批失效与部分成功展示。
 
-### 16.4 测量与发布标准
+### 16.5 测量与发布标准
 
-零容忍门槛：未授权/漏批写入、跨租户数据泄漏、确定性测试中重复业务 mutation、批准范围外文件覆盖。任何一项出现即阻断发布。未知结果率要真实报告，不能以“不重试所以没有失败”掩盖业务不可完成。
+零容忍门槛：未授权/漏批写入、跨租户数据泄漏、确定性测试中重复业务 mutation、批准范围外文件覆盖、未解释的业务输出/副作用漂移、通过归一化或改基线掩盖安全与数据完整性差异。任何一项出现即阻断发布。未知结果率要真实报告，不能以“不重试所以没有失败”掩盖业务不可完成。
 
 质量指标包括任务成功率、业务事实正确率、能力选择/参数正确率、澄清必要性、误拒率、恢复成功率、adapter 错误率、p50/p95 时间、tokens/工具调用/每成功任务成本、接入改动量与返工。阶段一建立固定基线与留出集，再设任务级阈值；没有实测前不编造百分比、SLA 或“低于几秒”。真实模型评测与 fake mode 分开标注，模型/提示/recipe 版本和预算固定。
 
@@ -712,7 +768,7 @@ AE 将“代码准备好”拆成可观察的交付事实；每一层都有独�
 
 ### 20.2 里程碑交付
 
-三个里程碑分别交付可检查的代码/版本、运行或演示方式、原业务与新增业务测试、权限/故障证据、支持矩阵、已知限制和回退材料。最终包含独立 TS 核心、Skill/MCP/CLI、可重复 recipes、Console/宿主入口与助手、适配合同、部署/运维材料、API 文档、许可证/SBOM 和真实验收报告。
+三个里程碑分别交付可检查的代码/版本、运行或演示方式、改造前行为基线、前后对拍报告、默认 OFF 改善与最终选择配置、原业务与新增业务测试、权限/故障证据、支持矩阵、已知限制和回退材料。最终包含独立 TS 核心、Skill/MCP/CLI、可重复 recipes、Console/宿主入口与助手、适配合同、部署/运维材料、API 文档、许可证/SBOM 和真实验收报告。
 
 ### 20.3 已批准执行范围
 
@@ -721,6 +777,12 @@ AE 作为独立原生产品，按本计划开发 TypeScript 核心并完成三�
 整体批准**不自动授权**改用户电脑或现有服务器、修改其他项目、接真实客户生产数据、提交/部署到生产、购买服务、创建持久凭据/扩大权限、上传客户源码到新第三方、接受额外法律义务或执行不可逆数据迁移。出现实际需要时，说明具体目标、数据/费用/影响，按边界单独确认。
 
 当前先用工单 fixture、私有自托管优先和独立子智能体模拟 provider 推进，不要求现在决定全部平台。真实宿主、模型/数据地域和客户明确的业务能力需求在接入时纳入专属计划；没有这些信息不影响独立可逆基础工作的推进，也不授权擅自选择真实客户系统。
+
+### 20.4 AE 验收后的真实项目案例
+
+AE 自身完成验收后，再单独制作约五个有差异的真实开源项目案例，覆盖不同规模、技术栈和任务形态，优先许可证允许改造与再分发的项目。每个案例必须真实使用 AE 改造及行为基线/对拍，不以自制 fixture 冒充外部项目验证，也不计为当前阶段一/二的新增门槛。
+
+届时通过用户 Mac 上的 GitHub CLI，在用户拥有的账号下建立 `<原项目名>-agentic` 仓库。AE README 用案例表关联原仓库、实际派生仓库、关键变化和真实截图；每个派生仓库 README 说明改造前后、功能、运行方法及基线/对拍证据，并保留原项目许可证、版权与归属。当前不开始选项目、下载或发布，不填写虚构 URL/截图；到达验收条件后按当时的仓库、权限和发布范围执行，核心开发始终优先。
 
 ## 二十一 已核验来源与待验证假设
 
