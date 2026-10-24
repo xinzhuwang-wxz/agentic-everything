@@ -31,7 +31,7 @@ export interface ApiOptions {
 /** Bounded, process-local demonstration. No production authentication or durable delivery claim. */
 export function createApi(options: ApiOptions): Hono {
   const app = new Hono();
-  const intents = new Map<string, { hash: string; result: Promise<ApiRunView> }>();
+  const intents = new Map<string, { hash: string; result: Promise<string> }>();
   const api = new URL(options.apiOrigin);
   const ui = new URL(options.allowedOrigin);
   for (const origin of [api, ui]) if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname) || origin.origin !== origin.href.slice(0, -1)) throw new Error('Only exact loopback origins are supported by this fixture');
@@ -92,13 +92,13 @@ export function createApi(options: ApiOptions): Hono {
     const key = JSON.stringify([p.tenantId, p.applicationId, p.subjectId, intent]);
     const hash = digest(parsed.data); // Server publication changes do not change this client intent.
     const existing = intents.get(key);
-    if (existing) { if (hash !== existing.hash) throw new HttpError('IDEMPOTENCY_CONFLICT', 409); return c.json(await existing.result); }
+    if (existing) { if (hash !== existing.hash) throw new HttpError('IDEMPOTENCY_CONFLICT', 409); return c.json(await options.runtime.get(await existing.result, p)); }
     if (intents.size >= (options.maxIntents ?? 1000)) throw new HttpError('FIXTURE_CAPACITY_REACHED', 429);
     // Reserve before execution, including concurrent starts. Retain rejected/unknown outcomes; never blindly dispatch again.
     const release = options.controlPlane?.activeRelease(p);
-    const result = Promise.resolve().then(() => options.runtime.start({ principal: p, releaseId: release?.releaseId ?? options.releaseId, ...(release ? { release: structuredClone(release) } : {}), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) }));
+    const result = Promise.resolve().then(() => options.runtime.start({ principal: p, releaseId: release?.releaseId ?? options.releaseId, ...(release ? { release: structuredClone(release) } : {}), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) })).then(view => view.runId);
     intents.set(key, { hash, result });
-    return c.json(await result, 201);
+    return c.json(await options.runtime.get(await result, p), 201);
   });
   app.get('/api/runs/:runId', async c => c.json(await options.runtime.get(c.req.param('runId'), await principal(c.req.raw))));
   app.post('/api/runs/:runId/approval', async c => {

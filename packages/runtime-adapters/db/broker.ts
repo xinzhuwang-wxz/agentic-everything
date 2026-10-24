@@ -12,7 +12,7 @@ export interface DurableTicketHost {
 }
 export class PersistentToolBroker {
   constructor(readonly store: PersistentStore, readonly host: DurableTicketHost, private fault?: (point: string) => Promise<void>) {}
-  async current(principal: Principal, write = false): Promise<Principal> { const p = await this.host.currentPrincipal(principal); if (!samePrincipal(p, principal)) throw new PolicyError('PRINCIPAL_CHANGED'); authorize(p, write); return p; }
+  async current(principal: Principal, write = false): Promise<Principal> { const identity = structuredClone(principal); const p = await this.host.currentPrincipal(structuredClone(identity)); if (!samePrincipal(p, identity)) throw new PolicyError('PRINCIPAL_CHANGED'); authorize(p, write); return p; }
   async prepare(principal: Principal, runId: string, callId: string, name: string, args: JsonObject): Promise<PreparedTool> {
     const p = await this.current(principal, name !== 'read_ticket');
     if (typeof args.ticketId !== 'string') throw new PolicyError('INVALID_ARGUMENTS');
@@ -27,7 +27,7 @@ export class PersistentToolBroker {
   }
   async execute(run: StoredRun, name: string, args: JsonObject, callId: string, approvalId?: string, signal?: AbortSignal): Promise<ToolResult> {
     const write = name !== 'read_ticket';
-    const p = await this.current(run.principal, write);
+    const p = await this.current(run.principal);
     const operationId = digest({ runId: run.view.runId, callId, tenant: p.tenantId, application: p.applicationId });
     const existing = (await this.store.pool.query('SELECT * FROM ae_operations_v1 WHERE id=$1', [operationId])).rows[0];
     if (existing) {

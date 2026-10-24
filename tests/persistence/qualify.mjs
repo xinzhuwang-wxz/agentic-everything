@@ -37,7 +37,7 @@ class Worker extends EventEmitter {
     this.label = `${++workerNumber}-${killPoint || 'normal'}`;
     this.log = join(directory, `${this.label}.log`);
     this.child = spawn(process.execPath, [workerPath, databaseUrl, killPoint], {
-      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC' },
+      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC', NODE_OPTIONS: '--max-old-space-size=768' },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     activeWorkers.add(this);
@@ -196,7 +196,10 @@ try {
     const duplicate = await worker.request('decide', paused.runId, f.principal, decision(paused.approval));
     assert.deepEqual(duplicate, result, 'Duplicate identical decision returns the same persisted result');
     await assert.rejects(worker.request('decide', paused.runId, f.principal, { ...decision(paused.approval), decision: 'reject' }), /ALREADY_DECIDED/);
-    assert.deepEqual(await host.inspect(f.principal, f.ticketId, paused.runId), inspection, 'Duplicate/conflicting decisions must not call model or host again');
+    const repeated = await host.inspect(f.principal, f.ticketId, paused.runId);
+    assert.ok(count(repeated, 'read') > count(inspection, 'read'), 'Duplicate views must recheck live host read access');
+    const withoutReadChecks = evidence => ({ ...evidence, calls: evidence.calls.filter(call => call.kind !== 'read') });
+    assert.deepEqual(withoutReadChecks(repeated), withoutReadChecks(inspection), 'Duplicate/conflicting decisions must not redispatch model, writes, or receipt queries');
     await worker.shutdown();
     // A third process must read the exact same terminal result and receipt.
     worker = await startWorker();
@@ -478,6 +481,40 @@ try {
     await worker.shutdown();
     cases.push('tampered decision denied without poisoning subsequent valid approval');
     observe('passed', { case: 'tampered-decision', runId: paused.runId });
+  }
+
+  {
+    const f = await fixture('resource-read-disclosure');
+    const earlier = `earlier-${prefix}`;
+    await host.pool.query("INSERT INTO qualification_host.tickets (tenant_id,application_id,id,title,priority,version) VALUES ($1,$2,$3,'SYNTHETIC_RESTRICTED_TITLE','low',1)", [f.principal.tenantId, f.principal.applicationId, earlier]);
+    f.input.input += ` Read extra-ticket:${earlier} first.`;
+    let worker = await startWorker();
+    let view = await worker.request('start', f.input);
+    assert.equal(view.status, 'awaiting-approval');
+    assert.ok(JSON.stringify(view).includes('SYNTHETIC_RESTRICTED_TITLE'));
+    for (const stage of ['paused', 'completed']) {
+      if (stage === 'completed') view = await worker.request('decide', view.runId, f.principal, decision(view.approval));
+      const before = (await host.pool.query('SELECT body FROM ae_runs_v1 WHERE id=$1', [view.runId])).rows[0].body;
+      const inspection = await host.inspect(f.principal, f.ticketId, view.runId);
+      await host.pool.query('INSERT INTO qualification_host.read_denials VALUES($1,$2,$3,$4)', [f.principal.tenantId, f.principal.applicationId, f.principal.subjectId, earlier]);
+      await worker.kill(); worker = await startWorker();
+      await assert.rejects(worker.request('get', view.runId, f.principal), /RESOURCE_DENIED/);
+      await assert.rejects(worker.request('list', f.principal), /RESOURCE_DENIED/);
+      await assert.rejects(worker.request('cancel', view.runId, f.principal), /RESOURCE_DENIED/);
+      if (stage === 'paused') await assert.rejects(worker.request('decide', view.runId, f.principal, decision(view.approval)), /RESOURCE_DENIED/);
+      assert.deepEqual((await host.pool.query('SELECT body FROM ae_runs_v1 WHERE id=$1', [view.runId])).rows[0].body, before, 'Presentation denial must not change canonical state, grants, preview, or receipts');
+      const after = await host.inspect(f.principal, f.ticketId, view.runId);
+      assert.deepEqual(after.receipts, inspection.receipts); assert.equal(after.mutationCount, inspection.mutationCount); assert.deepEqual(after.model, inspection.model);
+      await host.pool.query('DELETE FROM qualification_host.read_denials WHERE subject_id=$1', [f.principal.subjectId]);
+      assert.deepEqual(await worker.request('get', view.runId, f.principal), view);
+    }
+    await host.revokeWrite(f.principal);
+    assert.deepEqual(await worker.request('get', view.runId, f.principal), view, 'Read-allowed write-revoked history remains available');
+    assert.deepEqual(await worker.request('list', f.principal), [view]);
+    assertOneCommittedWrite(view, await host.inspect(f.principal, f.ticketId, view.runId), view.receipts.find(r => r.data?.id === f.ticketId && r.data?.version === 2).operationId);
+    await worker.shutdown();
+    cases.push('resource read ACL revoked on earlier contributor across process restart: GET/list/decision/cancel deny without altering paused or completed state; restored reads exact; write-revoked history readable');
+    observe('passed', { case: 'resource-read-disclosure', runId: view.runId });
   }
 
   const report = { passed: true, prefix, directory, postgres: version, workerProcesses: workerNumber, cases,

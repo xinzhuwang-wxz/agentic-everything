@@ -33,6 +33,10 @@ export class SyntheticDurableHost {
         roles jsonb NOT NULL, scopes jsonb NOT NULL,
         PRIMARY KEY (tenant_id, application_id, subject_id)
       );
+      CREATE TABLE IF NOT EXISTS qualification_host.read_denials (
+        tenant_id text NOT NULL, application_id text NOT NULL, subject_id text NOT NULL, target_id text NOT NULL,
+        PRIMARY KEY (tenant_id, application_id, subject_id, target_id)
+      );
       CREATE TABLE IF NOT EXISTS qualification_host.tickets (
         tenant_id text NOT NULL, application_id text NOT NULL, id text NOT NULL,
         title text NOT NULL, priority text NOT NULL CHECK (priority IN ('low', 'high')),
@@ -84,6 +88,8 @@ export class SyntheticDurableHost {
   async read(principal, id) {
     const current = await this.currentPrincipal(principal);
     this.authorize(current, false);
+    const denied = await this.pool.query('SELECT 1 FROM qualification_host.read_denials WHERE tenant_id=$1 AND application_id=$2 AND subject_id=$3 AND target_id=$4', [...identity(current), id]);
+    if (denied.rows.length) throw new PolicyError('RESOURCE_DENIED');
     await this.record('read', current, undefined, id);
     const { rows } = await this.pool.query('SELECT * FROM qualification_host.tickets WHERE tenant_id=$1 AND application_id=$2 AND id=$3', [current.tenantId, current.applicationId, id]);
     if (!rows[0]) throw new PolicyError('HOST_TICKET_NOT_FOUND');
@@ -147,13 +153,14 @@ export function createModel(host) {
     // Stateless simulated provider: derive the next turn from SDK conversation messages.
     // Nothing is keyed to process-local counters, so fresh processes cannot hide replay.
     const toolMessages = request.messages.filter(message => message.role === 'tool');
-    const stage = toolMessages.length === 0 ? 'read' : toolMessages.length === 1 ? 'write' : 'final';
     const input = request.messages.find(message => message.role === 'user')?.content ?? '';
+    const extraTicket = /extra-ticket:([a-zA-Z0-9_-]+)/.exec(input)?.[1];
+    const stage = extraTicket && toolMessages.length === 0 ? 'extra-read' : toolMessages.length === (extraTicket ? 1 : 0) ? 'read' : toolMessages.length === (extraTicket ? 2 : 1) ? 'write' : 'final';
     const ticketId = /qualification-ticket:([a-zA-Z0-9_-]+)/.exec(input)?.[1];
     if (!ticketId) throw new Error('Missing explicit synthetic ticket in model input');
     await host.pool.query('INSERT INTO qualification_host.model_calls (run_id,request_id,stage,messages,worker_pid) VALUES ($1,$2,$3,$4,$5)',
       [request.runId, request.requestId, stage, JSON.stringify(request.messages), process.pid]);
-    const toolCalls = stage === 'read' ? [{ callId: 'qualified-read-1', name: 'read_ticket', arguments: { ticketId } }]
+    const toolCalls = stage === 'extra-read' ? [{ callId: 'qualified-extra-read', name: 'read_ticket', arguments: { ticketId: extraTicket } }] : stage === 'read' ? [{ callId: 'qualified-read-1', name: 'read_ticket', arguments: { ticketId } }]
       : stage === 'write' ? [{ callId: 'qualified-write-1', name: 'change_ticket_priority', arguments: { ticketId, priority: 'high', expectedVersion: 1 } }] : [];
     return { schemaVersion: '1', requestId: request.requestId, mode: 'simulated', message: stage === 'final' ? 'The durable host receipt confirms high priority.' : '',
       toolCalls, finishReason: toolCalls.length ? 'tool-calls' : 'stop' };

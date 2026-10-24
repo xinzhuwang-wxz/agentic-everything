@@ -36,8 +36,8 @@ export class PersistentRuntime {
     await (await DBOS.startWorkflow(this.workflow, { workflowID: this.workflowId(runId, 'initial') })({ runId, phase: 'initial', start: structuredClone(input) })).getResult();
     return this.get(runId, input.principal);
   }
-  async get(runId: string, principal: Principal): Promise<PersistentRunView> { await this.broker.current(principal); return (await this.store.load(runId, principal)).view; }
-  async list(principal: Principal): Promise<PersistentRunView[]> { await this.broker.current(principal); const rows = await this.store.pool.query('SELECT body FROM ae_runs_v1 WHERE body->\'principal\'->>\'tenantId\'=$1 AND body->\'principal\'->>\'applicationId\'=$2 AND body->\'principal\'->>\'subjectId\'=$3', [principal.tenantId, principal.applicationId, principal.subjectId]); return rows.rows.map(row => (row.body as StoredRun).view); }
+  async get(runId: string, principal: Principal): Promise<PersistentRunView> { const run = await this.store.load(runId, principal); await this.assertReadable(run, principal); return run.view; }
+  async list(principal: Principal): Promise<PersistentRunView[]> { await this.broker.current(principal); const rows = await this.store.pool.query('SELECT body FROM ae_runs_v1 WHERE body->\'principal\'->>\'tenantId\'=$1 AND body->\'principal\'->>\'applicationId\'=$2 AND body->\'principal\'->>\'subjectId\'=$3', [principal.tenantId, principal.applicationId, principal.subjectId]); return Promise.all(rows.rows.map(async row => { const run = row.body as StoredRun; await this.assertReadable(run, principal); return run.view; })); }
   async decide(runId: string, principal: Principal, decision: ApprovalDecision): Promise<PersistentRunView> {
     await this.get(runId, principal);
     await this.store.validateDecision(runId, principal, decision);
@@ -61,11 +61,19 @@ export class PersistentRuntime {
     return this.get(runId, principal);
   }
   async reconcile(runId: string, principal: Principal): Promise<PersistentRunView> {
-    const r = await this.store.load(runId, principal); await this.broker.current(principal);
+    const r = await this.store.load(runId, principal); await this.assertReadable(r, principal);
     if (!['outcome-unknown', 'manual-review'].includes(r.view.status) || !r.pending) throw new PolicyError('RUN_NOT_UNKNOWN');
     const result = validateHostResult(r.pending.request.operationId, await this.options.host.query(await this.broker.current(principal), r.pending.request.operationId));
     await this.broker.record(runId, r.pending.request.operationId, result, true);
     return this.get(runId, principal);
+  }
+  private async assertReadable(run: StoredRun, principal: Principal): Promise<void> {
+    const current = await this.broker.current(principal);
+    // Private prepared operation targets, including earlier reads, not model/receipt claims.
+    const operations = await this.store.pool.query('SELECT prepared FROM ae_operations_v1 WHERE run_id=$1', [run.view.runId]);
+    const targets = new Set<string>(operations.rows.map(row => row.prepared.request.targetId as string));
+    if (run.pending) targets.add(run.pending.request.targetId);
+    for (const target of targets) await this.options.host.read(current, target);
   }
   private workflowId(runId: string, phase: string): string { return `ae-v1:${runId}:${phase}`; }
   private async runPhase(phase: Phase): Promise<void> {
@@ -90,8 +98,8 @@ export class PersistentRuntime {
         const current = await this.broker.current(run.principal, write);
         const latest = await this.store.load(phase.runId);
         if (latest.cancelled) throw new PolicyError('CANCELLED');
-        const target = targetId ?? latest.pending?.request.targetId;
-        if (target) await this.options.host.read(current, target);
+        await this.assertReadable(latest, run.principal);
+        if (targetId) await this.options.host.read(current, targetId);
       } catch (error) { if (error instanceof PolicyError) governedFailure = error.code; throw error; }
     };
     const provider: ModelProvider = { complete: async (request, signal) => {

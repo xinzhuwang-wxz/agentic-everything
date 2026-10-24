@@ -64,7 +64,7 @@ input.on('line', async line => {
       emit({ event: 'response', id, result: null });
       return;
     }
-    if (!['start', 'get', 'decide', 'cancel', 'reconcile', 'shutdown'].includes(method)) throw new Error('Unsupported worker method');
+    if (!['start', 'get', 'list', 'decide', 'cancel', 'reconcile', 'shutdown'].includes(method)) throw new Error('Unsupported worker method');
     const result = await runtime[method](...args);
     if (method === 'shutdown') {
       await host.close();

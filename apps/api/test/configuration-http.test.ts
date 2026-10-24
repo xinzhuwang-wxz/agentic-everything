@@ -80,6 +80,9 @@ test('HTTP configuration publication pins runs without granting business authori
   assert.equal((await post(`/api/configuration/drafts/${readOnly.draftId}/validate`, { expectedRevision: readOnly.draftRevision })).status, 404);
   session = { ...admin, roles: ['agentic:admin'], scopes: [] };
   await publish(['read_ticket', 'change_ticket_priority']);
-  const unprivileged = await (await post('/api/runs', { input: 'raise priority' }, 'admin-not-editor')).json() as RunView;
-  assert.deepEqual(catalogs.get(unprivileged.runId), []); assert.equal(host.mutationCount, 1);
+  const modelRuns = catalogs.size;
+  const unprivileged = await post('/api/runs', { input: 'raise priority' }, 'admin-not-editor');
+  assert.equal(unprivileged.status, 403); assert.equal((await unprivileged.json()).error.code, 'ROLE_DENIED');
+  assert.equal(catalogs.size, modelRuns, 'Configuration authority cannot disclose run/model data without business read authority');
+  assert.equal(host.mutationCount, 1);
 });

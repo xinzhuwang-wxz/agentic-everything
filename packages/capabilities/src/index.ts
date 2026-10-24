@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import type { CapabilityVersion, JsonObject, Principal, ToolRequest, ToolResult } from '@ae/contracts';
-import { authorize, digest, InMemoryApprovalLedger, PolicyError, type ApprovalView } from '@ae/policy';
+import { authorize, digest, InMemoryApprovalLedger, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 
 export interface Ticket { id: string; tenantId: string; title: string; priority: 'low' | 'high'; version: number }
 export interface TicketBusinessPort {
@@ -20,31 +20,41 @@ export const ticketCapabilities: CapabilityVersion[] = Object.entries(schemas).m
 
 /** Host adapter: retains ordinary permissions independently of model/broker approval. */
 export class AuthorizedTicketHost {
-  private operations = new Map<string, { hash: string; result: ToolResult }>();
+  private operations = new Map<string, { hash: string; targetId: string; result: ToolResult }>();
   private writes = 0;
   constructor(private business: TicketBusinessPort, private currentPrincipal: (principal: Principal) => Principal = p => p) {}
   private key(p: Principal, operationId: string): string { return JSON.stringify([p.tenantId, p.applicationId, p.subjectId, operationId]); }
+  current(principal: Principal, write = false): Principal {
+    // The resolver may refresh rights, never replace or mutate the authenticated identity.
+    const identity = structuredClone(principal);
+    const p = this.currentPrincipal(structuredClone(identity));
+    if (!samePrincipal(identity, p)) throw new PolicyError('PRINCIPAL_CHANGED');
+    authorize(p, write); return structuredClone(p);
+  }
   read(principal: Principal, id: string): Ticket {
-    const p = this.currentPrincipal(principal); authorize(p, false);
+    const p = this.current(principal);
     const ticket = this.business.readTicket(p.tenantId, id);
     if (ticket.tenantId !== p.tenantId) throw new PolicyError('TENANT_DENIED');
     return structuredClone(ticket);
   }
   write(principal: Principal, request: ToolRequest): ToolResult {
-    const p = this.currentPrincipal(principal); authorize(p, true);
+    const p = this.current(principal);
     const args = writeArgs.parse(request.arguments);
     const key = this.key(p, request.operationId), hash = digest(request.arguments), existing = this.operations.get(key);
-    if (existing) { if (existing.hash !== hash) throw new PolicyError('IDEMPOTENCY_CONFLICT'); return structuredClone(existing.result); }
+    if (existing) { if (existing.hash !== hash) throw new PolicyError('IDEMPOTENCY_CONFLICT'); this.read(p, existing.targetId); return structuredClone(existing.result); }
     this.read(p, args.ticketId);
+    this.current(p, true);
     const ticket = this.business.changePriority(p.tenantId, args.ticketId, args.priority, args.expectedVersion);
     this.writes++;
     const result: ToolResult = { status: 'succeeded', operationId: request.operationId, receiptId: randomUUID(), data: { ...ticket } };
-    this.operations.set(key, { hash, result });
+    this.operations.set(key, { hash, targetId: args.ticketId, result });
     return structuredClone(result);
   }
   query(principal: Principal, operationId: string): ToolResult {
-    authorize(this.currentPrincipal(principal), false);
-    return structuredClone(this.operations.get(this.key(principal, operationId))?.result ?? { status: 'outcome-unknown', operationId, message: 'No authoritative host receipt; manual reconciliation required.' });
+    const p = this.current(principal);
+    const existing = this.operations.get(this.key(p, operationId));
+    if (existing) this.read(p, existing.targetId);
+    return structuredClone(existing?.result ?? { status: 'outcome-unknown', operationId, message: 'No authoritative host receipt; manual reconciliation required.' });
   }
   get mutationCount(): number { return this.writes; }
 }
@@ -75,10 +85,11 @@ export class ToolBroker {
     const hash = digest(request);
     try {
       if (signal?.aborted) throw new PolicyError('CANCELLED');
-      authorize(principal, prepared.write);
+      this.host.current(principal);
       this.host.read(principal, request.targetId); // Re-authorize even cached receipts after role revocation.
       const existing = this.ledger.get(key);
       if (existing) { if (existing.hash !== hash) throw new PolicyError('IDEMPOTENCY_CONFLICT'); return structuredClone(existing.result); }
+      this.host.current(principal, prepared.write);
       // Re-resolve current host authorization/version after approval; never trust saved page data.
       this.prepare(principal, request.runId, request.invocationId, request.capabilityId, request.arguments);
       if (prepared.write) {
