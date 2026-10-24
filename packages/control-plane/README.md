@@ -1,6 +1,6 @@
 # Bounded configuration and releases
 
-This is an in-memory M1 control-plane fixture, not production administration or durable configuration storage. Restart loses drafts and releases. The same HTTP service and shared UI serve the console and native host tab. It creates no model loop, scheduler, provider account, credentials, connector, or arbitrary tool endpoint.
+The default M1 control-plane fixture is in-memory: restart loses drafts and releases. An explicit PostgreSQL mode persists them as described below; neither mode claims production administration qualification. The same HTTP service and shared UI serve the console and native host tab. It creates no model loop, scheduler, provider account, credentials, connector, or arbitrary tool endpoint.
 
 ## Trusted integration
 
@@ -23,3 +23,13 @@ Configuration limits: 80-character name, 8,000-character instructions, 32 select
 ## Verification
 
 `control.test.ts` covers role/tenant/application isolation, current admin revocation, hash tampering, immutable snapshots, optimistic revisions, idempotent publication, fixed registry selection, rejected secrets/URLs, capability-version intersection and real Hono requests. `packages/ui/test/configuration.test.tsx` mounts React controls against the real store and covers save/validate/publish, no implicit publication, disabled writes, denied management, focused errors, dirty validation invalidation, duplicate pending actions and stale identity responses. Runtime enforcement and browser/production qualification are separate integration gates.
+
+## Opt-in PostgreSQL control store
+
+`@ae/control-plane/postgres` exports `PostgresControlPlane(databaseUrl, registeredCapabilities, currentPrincipal?)`. Call `initialize()` once before serving and `close()` on shutdown. The URL is trusted server configuration only and should be the same database used by the opt-in runtime; the independent `ae_control` SQL schema stores drafts, immutable releases, and active pointers. The store implements the explicit async `ControlPlanePort`. `asAsyncControlPlane(memory)` adapts the memory fixture for the same interface, and the HTTP module awaits either implementation.
+
+Publication is one transaction under a tenant/application-scoped advisory lock. An exact draft revision has one release row, and an idempotent retry returns it without reactivating an older release. Updates require the current draft revision. Current administrator authority is rechecked before work and immediately before commit. Resolver identity is snapshotted before calling, so even an in-place callback mutation is rejected. Ordinary management readers receive no historical configuration documents. Release content is schema/hash checked on reads; capability execution still requires current runtime and host authorization.
+
+`postgres_qualified` identifies this explicit database-backed mode, not production authentication, availability or deployment certification. The synchronous memory implementation still reports `memory_fixture`; no automatic fallback or migration takes place.
+
+After a build, run `bash packages/control-plane/test/postgres/run.sh /path/to/official/postgresql/17/bin [port]`. This starts an isolated PostgreSQL 17.11 cluster on loopback, uses only synthetic data, launches separate Node processes to prove restart and concurrent publication behavior, tests permission and revision failures, and stops its own cluster in the same shell invocation. It does not touch an existing runtime database.

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { AgentConfigurationSchema, AgentReleaseSchema, type AgentDraft, type AgentRelease, type CapabilityVersion, type Principal } from '@ae/contracts';
 import { digest, PolicyError } from '@ae/policy';
-export interface ConfigurationState { durability: 'memory_fixture'; canConfigure: boolean; capabilities: CapabilityVersion[]; drafts: AgentDraft[]; releases: AgentRelease[]; activeReleaseId?: string }
+export interface ConfigurationState { durability: 'memory_fixture' | 'postgres_qualified'; canConfigure: boolean; capabilities: CapabilityVersion[]; drafts: AgentDraft[]; releases: AgentRelease[]; activeReleaseId?: string }
 /** Bounded control store only. No runtime, queue, credentials or permission grants. */
 export class InMemoryControlPlane {
   private drafts = new Map<string, AgentDraft>();
@@ -10,11 +10,11 @@ export class InMemoryControlPlane {
   private registry: CapabilityVersion[];
   constructor(capabilities: CapabilityVersion[], private currentPrincipal: (p: Principal) => Principal = p => p) { this.registry = structuredClone(capabilities); }
   private key(p: Principal): string { return JSON.stringify([p.tenantId, p.applicationId]); }
-  private current(p: Principal): Principal { const current = this.currentPrincipal(p); if (current.tenantId !== p.tenantId || current.applicationId !== p.applicationId || current.subjectId !== p.subjectId) throw new PolicyError('CONFIGURATION_IDENTITY_DENIED'); return current; }
+  private current(p: Principal): Principal { const identity = structuredClone(p); const current = this.currentPrincipal(structuredClone(p)); if (current.tenantId !== identity.tenantId || current.applicationId !== identity.applicationId || current.subjectId !== identity.subjectId) throw new PolicyError('CONFIGURATION_IDENTITY_DENIED'); return current; }
   private admin(p: Principal): void { if (!this.current(p).roles.includes('agentic:admin')) throw new PolicyError('CONFIGURATION_ADMIN_DENIED'); }
   private owns(p: Principal, value: {tenantId: string; applicationId: string}): boolean { return this.key(p) === this.key(value as Principal); }
   private draft(p: Principal, id: string): AgentDraft { this.admin(p); const draft = this.drafts.get(id); if (!draft || !this.owns(p, draft)) throw new PolicyError('CONFIGURATION_NOT_FOUND'); return draft; }
-  state(p: Principal): ConfigurationState {
+  state(p: Principal): ConfigurationState & {durability: 'memory_fixture'} {
     const canConfigure = this.current(p).roles.includes('agentic:admin');
     return structuredClone({ durability: 'memory_fixture', canConfigure, capabilities: canConfigure ? this.registry : [], drafts: canConfigure ? [...this.drafts.values()].filter(d => this.owns(p, d)) : [], releases: canConfigure ? [...this.releases.values()].filter(r => this.owns(p, r)) : [], ...(this.active.has(this.key(p)) ? { activeReleaseId: this.active.get(this.key(p))! } : {}) });
   }
@@ -64,4 +64,16 @@ export function verifyRelease(release: AgentRelease): void {
   if (!AgentReleaseSchema.safeParse(release).success) throw new PolicyError('RELEASE_INTEGRITY_DENIED');
   const { releaseId, contentHash, ...content } = release;
   if (digest(content) !== contentHash || releaseId !== `release-${contentHash}`) throw new PolicyError('RELEASE_INTEGRITY_DENIED');
+}
+
+export interface ControlPlanePort {
+  state(p: Principal): Promise<ConfigurationState>;
+  save(p: Principal, input: unknown, draftId?: string, expectedRevision?: number): Promise<AgentDraft>;
+  validate(p: Principal, draftId: string, expectedRevision: number): Promise<{valid: true; changes: string[]}>;
+  publish(p: Principal, draftId: string, expectedRevision: number): Promise<AgentRelease>;
+  activeRelease(p: Principal): Promise<AgentRelease | undefined>;
+}
+/** Explicit asynchronous adapter; legacy fixture callers may retain synchronous tests. */
+export function asAsyncControlPlane(memory: InMemoryControlPlane): ControlPlanePort {
+  return { state: async p => memory.state(p), save: async (p, input, id, revision) => memory.save(p, input, id, revision), validate: async (p, id, revision) => memory.validate(p, id, revision), publish: async (p, id, revision) => memory.publish(p, id, revision), activeRelease: async p => memory.activeRelease(p) };
 }

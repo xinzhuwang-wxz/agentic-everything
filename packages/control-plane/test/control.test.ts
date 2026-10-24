@@ -54,3 +54,4 @@ test('HTTP trusted identity cannot be forged using role headers/body; actual sav
   const state=await (await app.request('/')).json() as {releases:unknown[]};assert.equal(state.releases.length,1);
   principal={...admin,tenantId:'b'};assert.equal((await send(`/drafts/${draft.draftId}/publish`,{expectedRevision:1})).status,404);
 });
+test('in-place current principal mutation cannot silently change identity',()=>{for(const field of ['tenantId','applicationId','subjectId'] as const){const p=structuredClone(admin);const control=new InMemoryControlPlane(ticketCapabilities,current=>{current[field]='attacker';return current;});assert.throws(()=>control.state(p),/CONFIGURATION_IDENTITY_DENIED/);assert.deepEqual(p,admin);}});
