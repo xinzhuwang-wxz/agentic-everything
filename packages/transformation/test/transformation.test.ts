@@ -51,7 +51,7 @@ test('source drift and already dirty target input are preserved and rejected', (
 });
 test('unsupported stack yields honest L0 and cannot be planned', () => {
   const f = setup(); writeFileSync(join(f.source, 'package.json'), '{"dependencies":{"vue":"3.0.0"}}');
-  const assessment = assessProject(f.source); assert.equal(assessment.supportLevel, 'L0'); assert.throws(() => proposePlan(assessment), /Unsupported/);
+  const assessment = assessProject(f.source); assert.equal(assessment.supportLevel, 'L0'); assert.throws(() => proposePlan(assessment), /No installed recipe coverage/);
 });
 test('rollback refuses later edits before restoring any file', () => {
   const f = setup(); const applied = applyApprovedPlan({ ...f, sourceRoot: f.source });
@@ -116,4 +116,23 @@ test('baseline and transformed host both build as real browser applications', as
   assert.match(readFileSync(join(f.destination, 'src/App.tsx'), 'utf8'), /onChanged={refreshTicket}/);
   assert.equal(readFileSync(join(f.destination, 'src/api.ts'), 'utf8'), readFileSync(join(f.source, 'src/api.ts'), 'utf8'));
   revertAdaptation(applied);
+});
+
+test('different-domain Python software gets generic evidence, never a helpdesk diagnosis or automatic rewrite', () => {
+  const parent = mkdtempSync(join(tmpdir(), 'ae-inventory-')); const source = join(parent, 'source');
+  cpSync(resolve('fixtures/existing-python-inventory'), source, { recursive: true });
+  const git = (...args: string[]) => execFileSync('git', ['-C', source, ...args], { encoding: 'utf8', stdio: 'pipe' });
+  git('init'); git('config', 'user.name', 'AE fixture'); git('config', 'user.email', 'fixture@example.invalid'); git('add', '.'); git('commit', '-m', 'Existing inventory');
+  const before = readFileSync(join(source, 'inventory.py'), 'utf8');
+  const assessment = assessProject(source);
+  assert.match(assessment.projectId, /^project-/);
+  assert.ok(assessment.detectedStack.includes('Python manifest observed'));
+  assert.ok(assessment.evidence.some(item => item.path === 'pyproject.toml'));
+  assert.equal(assessment.supportLevel, 'L0');
+  assert.equal(assessment.businessFlows.length, 0);
+  assert.match(assessment.unknowns.join(' '), /coverage limitation/);
+  assert.doesNotMatch(JSON.stringify(assessment), /helpdesk|readTicket|changePriority/);
+  assert.throws(() => proposePlan(assessment), /developer review/);
+  assert.equal(readFileSync(join(source, 'inventory.py'), 'utf8'), before);
+  assert.equal(git('status', '--porcelain'), '');
 });
