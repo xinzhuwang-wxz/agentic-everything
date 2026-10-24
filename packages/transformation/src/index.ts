@@ -110,7 +110,7 @@ export function verifyAdaptation(applied: AppliedTransformation): VerificationRe
     try { parse(change.path, value ?? ''); checks.push({ name: 'syntax:' + change.path, status: 'pass', expected: 'Parseable TSX', actual: 'TypeScript parser accepted', evidence: [] }); } catch { checks.push({ name: 'syntax:' + change.path, status: 'fail', expected: 'Parseable TSX', actual: 'Parse error', evidence: [] }); }
   }
   checks.push({ name: 'original-business-source', status: sha256(read(root, helpdeskRecipe.businessPath) ?? '') === applied.businessHash ? 'pass' : 'fail', expected: applied.businessHash, actual: sha256(read(root, helpdeskRecipe.businessPath) ?? ''), evidence: [] });
-  for (const name of ['host-typecheck', 'host-business-tests', 'authenticated-runtime', 'browser-acceptance']) checks.push({ name, status: 'not-run', expected: 'Separately authorized isolated execution and observed evidence', actual: 'Static verifier does not execute customer code', evidence: [] });
+  for (const name of ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance']) checks.push({ name, status: 'not-run', expected: 'Separately authorized isolated execution and observed evidence', actual: 'Static verifier does not execute customer code', evidence: [] });
   return { schemaVersion: '1', planHash: patch.planHash, observedAt: new Date().toISOString(), environment: 'Node static verifier; no customer code execution', checks };
 }
 export function revertAdaptation(applied: AppliedTransformation): void {
@@ -125,3 +125,17 @@ export function revertAdaptation(applied: AppliedTransformation): void {
   }
   for (const change of applied.patch.changes) { const target = safePath(root, change.path); const original = applied.originals[change.path]!; if (original === null) unlinkSync(target); else writeFileSync(target, original); }
 }
+
+/** Source-bound fingerprint for a reviewed baseline/candidate behavioral harness. Includes absent output files. */
+export function expectedBaselineCodeHash(assessment: ProjectAssessment, plan: AdaptationPlan): string {
+  if (digest(assessment) !== plan.assessmentHash) throw new Error('Assessment does not match plan');
+  const hashes = new Map<string, string | null>(assessment.evidence.map(item => [item.path, item.sha256]));
+  for (const path of plan.allowedPaths) if (!hashes.has(path)) hashes.set(path, null);
+  return digest([...hashes].sort(([a], [b]) => a.localeCompare(b)));
+}
+export function adaptationCodeHash(root: string, assessment: ProjectAssessment, plan: AdaptationPlan): string {
+  if (digest(assessment) !== plan.assessmentHash) throw new Error('Assessment does not match plan');
+  const paths = [...new Set([...assessment.evidence.map(item => item.path), ...plan.allowedPaths])].sort((a,b) => a.localeCompare(b));
+  return digest(paths.map(path => { const value = read(repo(root), path); return [path, value === null ? null : sha256(value)]; }));
+}
+export { verifyAdaptationWithBehavior } from './behavior.js';
