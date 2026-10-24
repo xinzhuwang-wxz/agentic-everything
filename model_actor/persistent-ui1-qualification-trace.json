@@ -1,0 +1,58 @@
+{
+  "kind": "independent_subagent_api_simulation_synthetic_persistent_ui1",
+  "containsRawConversation": false,
+  "status": "five_model_rounds_completed",
+  "rounds": [
+    {
+      "requestId": "fa3d9f9f-b1a6-41af-8d5d-dd02746492cb",
+      "requestHash": "753816512884fe5516b4d40ae074ea2902818a1ee42976443d2df1d4398863cf",
+      "responseHash": "8c0888a3cadf2790e13366ce96b71ae5436ee0b90296d8271b45a4e7dd6f61fa",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    },
+    {
+      "requestId": "e7ce6fc8-2031-42f4-90d5-ff23a4b57f49",
+      "requestHash": "cb5f156275c380e108603dff958258c603cfd93d003a7f9a05720b100abd5d4e",
+      "responseHash": "a5ac4ca943aa6a4df71128988db963199128f985a6afdaeca1fc4b42c34a342a",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "change_ticket_priority"
+      ]
+    },
+    {
+      "requestId": "7ba58644-eac3-4cf6-a30c-3a2d378737b8",
+      "requestHash": "3bd9350595318d5d40764534e5e15bb85bb37ed5a8d6065cbc65cd8eb87b791d",
+      "responseHash": "c47c84be7e8899a8ae39c40522ff0093f323bbaef1bf272a19dcc6fc90823be1",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "stop",
+      "toolNames": []
+    },
+    {
+      "requestId": "d27274ec-3451-4ac6-a329-2d61ee46961c",
+      "requestHash": "adf298e3caa3afef713a71c9a2a54f1f344a1f3123d224e98f868c87e9ce89a6",
+      "responseHash": "145573309155cfa60fe1508c7defd62f99836edb00c719d553420938bc715d53",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    },
+    {
+      "requestId": "9be0f497-b9a2-4c2a-80f9-38e6d3d7baa1",
+      "requestHash": "38e1c85902d27783711f2f65f0a6d4227fc9178fb1122f004b81bfd449fadce8",
+      "responseHash": "d33733d43eaec5d9c279ae598c25a194d8ce861a429d86fb10b6dc7ef71793b7",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "stop",
+      "toolNames": []
+    }
+  ]
+}
