@@ -20,7 +20,7 @@ test('existing host gains actual integration only in isolated worktree and rever
   writeFileSync(join(fixture.source, 'personal-note.txt'), 'unrelated dirty user note');
   const applied = applyApprovedPlan({ ...fixture, sourceRoot: fixture.source });
   assert.equal(readFileSync(join(fixture.source, 'src/App.tsx'), 'utf8'), original);
-  assert.match(readFileSync(join(fixture.destination, 'src/App.tsx'), 'utf8'), /<HelpdeskAgenticMount \/>/);
+  assert.match(readFileSync(join(fixture.destination, 'src/App.tsx'), 'utf8'), /<HelpdeskAgenticMount onChanged={refreshTicket} \/>/);
   assert.match(readFileSync(join(fixture.destination, 'src/ae/AgenticMount.tsx'), 'utf8'), /@ae\/host-sdk/);
   assert.equal(readFileSync(join(fixture.destination, 'src/tickets.ts'), 'utf8'), business);
   const report = verifyAdaptation(applied);
@@ -92,4 +92,28 @@ test('tracked credentials never enter the isolated worktree', () => {
   const assessment = assessProject(f.source); const plan = proposePlan(assessment); const approval = approvePlan(plan, { approverId: 'user', authorizationRef: 'approved' });
   assert.throws(() => applyApprovedPlan({ ...f, sourceRoot: f.source, assessment, plan, approval }), /secret files/);
   assert.equal(existsSync(f.destination), false);
+});
+
+test('baseline and transformed host both build as real browser applications', async () => {
+  const f = setup();
+  // Trusted local fixture only: this test is not part of the static customer-code verifier.
+  const { build } = await import('vite');
+  const resolvePackages = [
+    { find: /^react\/jsx-runtime$/, replacement: resolve('node_modules/react/jsx-runtime.js') },
+    { find: /^react$/, replacement: resolve('node_modules/react/index.js') },
+    { find: /^react-dom\/client$/, replacement: resolve('node_modules/react-dom/client.js') },
+    { find: '@ae/host-sdk', replacement: resolve('packages/host-sdk/src/index.ts') },
+    { find: '@ae/ui/styles.css', replacement: resolve('packages/ui/src/styles.css') },
+    { find: '@ae/ui', replacement: resolve('packages/ui/src/index.ts') },
+  ];
+  const bundle = (root: string) => build({ configFile: false, root, logLevel: 'silent', resolve: { alias: resolvePackages }, build: { outDir: join(f.parent, root === f.source ? 'before-build' : 'after-build') } });
+  await bundle(f.source);
+  const applied = applyApprovedPlan({ ...f, sourceRoot: f.source });
+  await bundle(f.destination);
+  assert.equal(existsSync(join(f.parent, 'before-build/index.html')), true);
+  assert.equal(existsSync(join(f.parent, 'after-build/index.html')), true);
+  assert.match(readFileSync(join(f.destination, 'src/ae/AgenticMount.tsx'), 'utf8'), /run.status === 'succeeded'/);
+  assert.match(readFileSync(join(f.destination, 'src/App.tsx'), 'utf8'), /onChanged={refreshTicket}/);
+  assert.equal(readFileSync(join(f.destination, 'src/api.ts'), 'utf8'), readFileSync(join(f.source, 'src/api.ts'), 'utf8'));
+  revertAdaptation(applied);
 });

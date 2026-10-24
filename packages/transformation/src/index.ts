@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import ts from 'typescript';
 import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type VerificationReport } from '@ae/contracts';
 
-const INPUTS = ['package.json', 'src/App.tsx', 'src/tickets.ts'];
+const INPUTS = ['package.json', 'src/App.tsx', 'src/tickets.ts', 'src/api.ts', 'src/main.tsx', 'index.html', 'vite.config.ts'];
 const OUTPUTS = ['src/App.tsx', 'src/ae/AgenticMount.tsx'];
 const RECIPE = { id: 'react-helpdesk', version: '1.0.0' };
 const MAX_FILE_BYTES = 256 * 1024;
@@ -63,12 +63,13 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
     const reactVersion = pkg.dependencies?.react ?? '';
     if (/^[~^]?19\./.test(reactVersion)) detectedStack = ['TypeScript', 'React 19'];
     mainOpening(contents.get('src/App.tsx') ?? '');
+    if (!(contents.get('src/App.tsx') ?? '').includes('const refreshTicket = useCallback(') || !(contents.get('src/api.ts') ?? '').includes('/api/tickets/')) throw new Error('Missing reviewed host read/refresh seam');
     const service = parse('src/tickets.ts', contents.get('src/tickets.ts') ?? '');
     const exports = service.statements.filter(ts.isFunctionDeclaration).filter(n => n.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)).map(n => n.name?.text);
     supported = detectedStack.length > 0 && exports.includes('readTicket') && exports.includes('changePriority');
   } catch { unknowns.push('Required bounded recipe pattern is missing or cannot be parsed.'); }
   if (!supported) unknowns.push('Unsupported framework or layout: no patch can be applied.');
-  return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'helpdesk-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: supported ? ['Observed App imports readTicket; existing ticket domain functions remain host-owned.'] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: supported ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
+  return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'helpdesk-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: supported ? ['Observed host page reads its HTTP ticket endpoint; existing ticket domain functions remain server-owned.'] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: supported ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
 }
 export function proposePlan(assessment: ProjectAssessment): AdaptationPlan {
   ProjectAssessmentSchema.parse(assessment);
@@ -80,13 +81,13 @@ export function approvePlan(plan: AdaptationPlan, input: { approverId: string; a
   if (!input.approverId.trim() || !input.authorizationRef.trim()) throw new Error('Explicit approver and authorization evidence are required');
   return ApprovedChangeSetSchema.parse({ schemaVersion: '1', approvalId: randomUUID(), approverId: input.approverId, authorizationRef: input.authorizationRef, planHash: digest(plan), baseCommit: plan.baseCommit, allowedPaths: plan.allowedPaths, allowedCommands: [], networkAllowlist: [], maximumCostUsd: 0, excludedActions: ['deployment', 'publishing', 'dependency installation', 'source execution', 'paid model calls'], approvedAt: new Date().toISOString(), expiresAt: input.expiresAt ?? new Date(Date.now() + 3600000).toISOString() });
 }
-const MOUNT = `import React from 'react';\nimport { AgenticMount } from '@ae/host-sdk';\nimport '@ae/ui/styles.css';\n\n// The server authenticates the host session. Never place a credential in this module.\nexport function HelpdeskAgenticMount() {\n  return <AgenticMount apiBase="/api" ticketId="ticket-1" />;\n}\n`;
+const MOUNT = `import React from 'react';\nimport { AgenticMount } from '@ae/host-sdk';\nimport '@ae/ui/styles.css';\n\n// The server authenticates the host session. Never place a credential in this module.\nexport function HelpdeskAgenticMount({ onChanged }: { onChanged: () => void | Promise<void> }) {\n  return <AgenticMount apiBase="/api" ticketId="ticket-1" onRunChange={run => { if (run.status === 'succeeded') void onChanged(); }} />;\n}\n`;
 export function previewPatch(root: string, plan: AdaptationPlan, assessment: ProjectAssessment): { path: string; before: string | null; after: string }[] {
   if (digest(assessment) !== plan.assessmentHash || digest(proposePlan(assessment)) !== digest(plan)) throw new Error('Plan does not match the assessed recipe');
   const app = read(root, 'src/App.tsx'); if (app === null) throw new Error('Missing App');
   if (read(root, OUTPUTS[1]!) !== null || app.includes('HelpdeskAgenticMount')) throw new Error('Integration already exists or conflicts');
   const position = mainOpening(app);
-  const after = "import { HelpdeskAgenticMount } from './ae/AgenticMount.js';\n" + app.slice(0, position) + '<HelpdeskAgenticMount />' + app.slice(position);
+  const after = "import { HelpdeskAgenticMount } from './ae/AgenticMount.js';\n" + app.slice(0, position) + '<HelpdeskAgenticMount onChanged={refreshTicket} />' + app.slice(position);
   return [{ path: OUTPUTS[0]!, before: app, after }, { path: OUTPUTS[1]!, before: null, after: MOUNT }];
 }
 export interface AppliedTransformation { patch: PatchArtifact; originals: Record<string, string | null>; businessHash: string; }
