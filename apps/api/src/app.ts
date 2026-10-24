@@ -1,14 +1,24 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ApprovalDecisionSchema, type Principal } from '@ae/contracts';
-import { GovernedRuntime, type RunView } from '@ae/runtime-core';
+import { ApprovalDecisionSchema, type Principal, type AgentRelease, type ApprovalDecision } from '@ae/contracts';
+import { type RunView } from '@ae/runtime-core';
+import { InMemoryControlPlane, releasedCatalog } from '@ae/control-plane';
+import { createConfigurationRoutes } from '@ae/control-plane/http';
 import { ToolBroker } from '@ae/capabilities';
 import { digest, PolicyError } from '@ae/policy';
 
 const StartSchema = z.strictObject({ input: z.string().trim().min(1).max(16384), context: z.strictObject({ ticketId: z.string().min(1).max(100) }).optional() });
 class HttpError extends Error { constructor(readonly code: string, readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429) { super(code); } }
+export type ApiRunView = Omit<RunView, 'persistence'> & { persistence: 'in-memory-fixture' | 'postgres-dbos' };
+export interface RuntimePort {
+  start(input: { principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: { ticketId: string } }): ApiRunView | Promise<ApiRunView>;
+  get(runId: string, principal: Principal): ApiRunView | Promise<ApiRunView>;
+  decide(runId: string, principal: Principal, decision: ApprovalDecision): ApiRunView | Promise<ApiRunView>;
+  cancel(runId: string, principal: Principal): ApiRunView | Promise<ApiRunView>;
+}
 export interface ApiOptions {
-  runtime: GovernedRuntime;
+  runtime: RuntimePort;
+  controlPlane?: InMemoryControlPlane;
   broker: ToolBroker;
   /** Host session/auth middleware supplies this function. Headers/body are never a principal. */
   resolvePrincipal: (request: Request) => Principal | undefined | Promise<Principal | undefined>;
@@ -21,7 +31,7 @@ export interface ApiOptions {
 /** Bounded, process-local demonstration. No production authentication or durable delivery claim. */
 export function createApi(options: ApiOptions): Hono {
   const app = new Hono();
-  const intents = new Map<string, { hash: string; result: Promise<RunView> }>();
+  const intents = new Map<string, { hash: string; result: Promise<ApiRunView> }>();
   const api = new URL(options.apiOrigin);
   const ui = new URL(options.allowedOrigin);
   for (const origin of [api, ui]) if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname) || origin.origin !== origin.href.slice(0, -1)) throw new Error('Only exact loopback origins are supported by this fixture');
@@ -66,8 +76,9 @@ export function createApi(options: ApiOptions): Hono {
     if (reader) for (;;) { const part = await reader.read(); if (part.done) break; bytes += part.value.byteLength; if (bytes > 32768) { await reader.cancel(); throw new HttpError('PAYLOAD_TOO_LARGE', 413); } chunks.push(part.value); }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new HttpError('INVALID_JSON', 400); }
   };
-  app.get('/api/meta', async c => { await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: options.releaseId, durability: 'memory_fixture' }); });
-  app.get('/api/capabilities', async c => c.json({ capabilities: options.broker.catalog(await principal(c.req.raw)) }));
+  if (options.controlPlane) app.route('/api/configuration', createConfigurationRoutes(options.controlPlane, options.resolvePrincipal));
+  app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: options.controlPlane?.activeRelease(p)?.releaseId ?? options.releaseId, durability: 'memory_fixture' }); });
+  app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = options.controlPlane?.activeRelease(p); const catalog = options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : catalog }); });
   app.get('/api/tickets/:ticketId', async c => {
     const p = await principal(c.req.raw);
     try { return c.json({ ticket: options.broker.host.read(p, c.req.param('ticketId')) }); }
@@ -79,16 +90,17 @@ export function createApi(options: ApiOptions): Hono {
     const intent = c.req.header('idempotency-key');
     if (!intent || !/^[a-zA-Z0-9_.:-]{1,128}$/.test(intent)) throw new HttpError('IDEMPOTENCY_KEY_REQUIRED', 400);
     const key = JSON.stringify([p.tenantId, p.applicationId, p.subjectId, intent]);
-    const hash = digest({ ...parsed.data, releaseId: options.releaseId });
+    const hash = digest(parsed.data); // Server publication changes do not change this client intent.
     const existing = intents.get(key);
     if (existing) { if (hash !== existing.hash) throw new HttpError('IDEMPOTENCY_CONFLICT', 409); return c.json(await existing.result); }
     if (intents.size >= (options.maxIntents ?? 1000)) throw new HttpError('FIXTURE_CAPACITY_REACHED', 429);
     // Reserve before execution, including concurrent starts. Retain rejected/unknown outcomes; never blindly dispatch again.
-    const result = Promise.resolve().then(() => options.runtime.start({ principal: p, releaseId: options.releaseId, input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) }));
+    const release = options.controlPlane?.activeRelease(p);
+    const result = Promise.resolve().then(() => options.runtime.start({ principal: p, releaseId: release?.releaseId ?? options.releaseId, ...(release ? { release: structuredClone(release) } : {}), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) }));
     intents.set(key, { hash, result });
     return c.json(await result, 201);
   });
-  app.get('/api/runs/:runId', async c => c.json(options.runtime.get(c.req.param('runId'), await principal(c.req.raw))));
+  app.get('/api/runs/:runId', async c => c.json(await options.runtime.get(c.req.param('runId'), await principal(c.req.raw))));
   app.post('/api/runs/:runId/approval', async c => {
     const p = await principal(c.req.raw), parsed = ApprovalDecisionSchema.safeParse(await body(c.req.raw));
     if (!parsed.success) throw new HttpError('INVALID_APPROVAL', 400);
@@ -97,7 +109,7 @@ export function createApi(options: ApiOptions): Hono {
   app.post('/api/runs/:runId/cancel', async c => {
     const p = await principal(c.req.raw);
     if (!z.strictObject({}).safeParse(await body(c.req.raw)).success) throw new HttpError('INVALID_CANCEL', 400);
-    return c.json(options.runtime.cancel(c.req.param('runId'), p));
+    return c.json(await options.runtime.cancel(c.req.param('runId'), p));
   });
   app.notFound(c => c.json({ error: { code: 'NOT_FOUND', message: 'NOT_FOUND' } }, 404));
   return app;

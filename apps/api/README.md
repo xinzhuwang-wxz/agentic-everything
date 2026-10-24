@@ -21,7 +21,8 @@ HTTP loopback origin. A Vite /api proxy must use changeOrigin:true. Do not expos
 this fixture to a network or disable browser security.
 
 The server closure supplies a synthetic tenant-a / fixture-editor identity,
-with editor role and tickets:read + tickets:write scopes. There is no login,
+with editor and agentic:admin roles and tickets:read + tickets:write scopes.
+The separate admin role enables fixture configuration, not additional business authority. There is no login,
 credential, or browser-controlled identity selector. Production composition
 must inject a trusted host session resolver into createApi and qualify it
 separately. Each execution still traverses host authorization and version checks.
@@ -56,3 +57,23 @@ Agents runtime and real HTTP sockets. It proves approval-gated existing business
 mutation/readback, duplicate prevention, tenant/owner isolation, rejection,
 cancellation, strict input, JSON, Origin/Host and payload controls. It does not
 substitute for independent-subagent File IPC qualification or rendered browser QA.
+
+## Configuration and release integration
+
+The server mounts the shared control-plane routes under /api/configuration behind
+the same exact Host/Origin/JSON protections. Draft creation, revision-bound
+validation and publication require the trusted agentic:admin role. The bounded
+control store and default runtime remain memory fixtures.
+
+A newly reserved run intent snapshots the current published release and matching
+ID on the server. Client-supplied release, identity, roles and tenant fields are
+rejected. Repeating the same intent after publication returns the original run;
+only changed client input conflicts. Existing runs retain their pinned release,
+while new runs use the new capability selection intersected with current host
+permissions. GET /api/meta and /api/capabilities reflect the active selection.
+
+RuntimePort is structural and accepts asynchronous get/decide/cancel/start. Its
+response type admits postgres-dbos persistence for separately qualified adapters,
+but this server does not select that backend or claim durable operation. A runtime
+used with controlPlane must implement immutable release snapshots; the persistent
+adapter must not be combined with it until that support is qualified.
