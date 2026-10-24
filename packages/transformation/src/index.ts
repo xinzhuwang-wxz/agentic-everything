@@ -73,6 +73,10 @@ export function proposePlan(assessment: ProjectAssessment, options?: { verificat
   if (options && (options.verificationProfile !== 'react-helpdesk-synthetic-v1' || !matchesTrustedFixtureAssessment(assessment))) throw new Error('Verification profile requires exact trusted synthetic fixture evidence');
   return AdaptationPlanSchema.parse({ ...(options ? { verificationAuthorization: { version: '1', profile: options.verificationProfile, actions: ['baseline-differential', 'host-build', 'runtime-http', 'browser'], isolation: 'exact-fixture-temporary-worktree', network: 'loopback-only-no-external', maximumCostUsd: 0, maximumElapsedMs: 300000, maximumHeapMiB: 640 } } : {}), schemaVersion: '1', planId: 'adapt-' + digest(assessment).slice(0, 16), projectId: assessment.projectId, baseCommit: assessment.baseCommit, assessmentHash: digest(assessment), ...helpdeskRecipe.planDetails, recipes: [helpdeskRecipe.ref], allowedPaths: helpdeskRecipe.outputs });
 }
+/** Public recipe metadata is copied from the implementation, never separately versioned by a transport. */
+export function installedRecipeDescriptors() {
+  return [{ ref: { ...helpdeskRecipe.ref }, outputPaths: [...helpdeskRecipe.outputs] }];
+}
 export function approvePlan(plan: AdaptationPlan, input: { approverId: string; authorizationRef: string; expiresAt?: string }): ApprovedChangeSet {
   AdaptationPlanSchema.parse(plan);
   if (!input.approverId.trim() || !input.authorizationRef.trim()) throw new Error('Explicit approver and authorization evidence are required');

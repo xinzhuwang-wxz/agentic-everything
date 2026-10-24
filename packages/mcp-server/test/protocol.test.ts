@@ -41,9 +41,10 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
     assert.deepEqual(assessment, assessProject(f.root));
     const planned = data(await client.callTool({ name: 'ae_plan', arguments: { recipeId: 'react-helpdesk' } }));
     assert.deepEqual(planned.plan, proposePlan(assessment)); assert.equal(planned.planHash, digest(planned.plan));
+    assert.deepEqual({ id: description.recipes[0].id, version: description.recipes[0].version }, planned.plan.recipes[0], 'MCP description and actual plan use the same installed recipe revision');
     const preview = data(await client.callTool({ name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: planned.planHash } }));
     assert.equal(preview.changes.length, 2); assert.match(preview.changes[0].after, /HelpdeskAgenticMount/);
-    const patch = { schemaVersion: '1', planHash: planned.planHash, baseCommit: assessment.baseCommit, recipe: { id: 'react-helpdesk', version: '1.0.0' }, appliedAt: new Date().toISOString(), changes: preview.changes.map((c: {path: string; before: string | null; after: string}) => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })) };
+    const patch = { schemaVersion: '1', planHash: planned.planHash, baseCommit: assessment.baseCommit, recipe: planned.plan.recipes[0], appliedAt: new Date().toISOString(), changes: preview.changes.map((c: {path: string; before: string | null; after: string}) => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })) };
     const verify = data(await client.callTool({ name: 'ae_verify', arguments: { patch, businessHash: sha256(readFileSync(join(f.root, 'src/tickets.ts'), 'utf8')) } }));
     assert.ok(verify.checks.some((c: {status: string}) => c.status === 'fail'), 'Unapplied preview must not verify as applied');
     assert.ok(verify.checks.some((c: {name: string; status: string}) => c.name === 'host-business-tests' && c.status === 'not-run'));
@@ -56,6 +57,9 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
       { name: 'ae_plan', arguments: { recipeId: 'react-helpdesk', approval: true } },
       { name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: 'invalid' } },
       { name: 'ae_verify', arguments: { patch: { ...patch, worktree: '/etc' }, businessHash: '0'.repeat(64) } },
+      { name: 'ae_verify', arguments: { patch: { ...patch, recipe: { ...patch.recipe, version: '0.0.0-stale' } }, businessHash: '0'.repeat(64) } },
+      { name: 'ae_verify', arguments: { patch: { ...patch, recipe: { ...patch.recipe, version: '1.0.0' } }, businessHash: '0'.repeat(64) } },
+      { name: 'ae_verify', arguments: { patch: { ...patch, recipe: { ...patch.recipe, id: 'unknown-recipe' } }, businessHash: '0'.repeat(64) } },
       { name: 'ae_verify', arguments: { patch: { ...patch, changes: [{ ...patch.changes[0], path: '../outside' }] }, businessHash: '0'.repeat(64) } },
       { name: 'ae_verify', arguments: { patch: { ...patch, changes: [{ ...patch.changes[0], path: '.env' }, patch.changes[1]] }, businessHash: '0'.repeat(64) } },
       { name: 'approvePlan', arguments: { approval: true } },

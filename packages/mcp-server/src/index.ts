@@ -3,14 +3,17 @@ import { isAbsolute, parse, relative, resolve, sep } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { PatchArtifactSchema, Sha256 } from '@ae/contracts';
-import { assessProject, proposePlan, previewPatch, verifyAdaptation, digest } from '@ae/transformation';
+import { assessProject, proposePlan, previewPatch, verifyAdaptation, installedRecipeDescriptors, digest } from '@ae/transformation';
 
 const recipeId = 'react-helpdesk';
-const recipePaths = ['src/App.tsx', 'src/ae/AgenticMount.tsx'];
+const recipe = installedRecipeDescriptors().find(candidate => candidate.ref.id === recipeId);
+if (!recipe) throw new Error('MCP recipe is not installed');
+const recipeRef = recipe.ref;
+const recipePaths = recipe.outputPaths;
 const recipeInput = z.strictObject({ recipeId: z.literal(recipeId) });
 const verificationInput = z.strictObject({
   patch: PatchArtifactSchema.omit({ worktree: true }).extend({
-    changes: PatchArtifactSchema.shape.changes.max(2),
+    changes: PatchArtifactSchema.shape.changes.max(recipePaths.length),
   }),
   businessHash: Sha256,
 });
@@ -46,7 +49,7 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
     inputSchema: z.strictObject({}), annotations,
   }, () => result({
     mode: 'read-only', scope: 'One operator-configured development Git repository; client roots never grant access.',
-    recipes: [{ id: recipeId, version: '1.0.0', support: 'Qualified first sample: React 19 helpdesk layout, not a product or industry boundary.' }],
+    recipes: [{ ...recipeRef, support: 'Qualified first sample: React 19 helpdesk layout, not a product or industry boundary.' }],
     generality: 'AE is for software of all kinds. Unknown layouts require evidence-led custom adaptation by the existing developer agent; no automatic patch is claimed.',
     limitations: ['No shell, arbitrary file reads, source execution, network access, or paid model calls.', 'No approval, apply, or revert tools. MCP arguments cannot create authority.', 'Verification is static and hash-based. Host tests, identity, runtime, and browser acceptance remain not-run.', 'Use the Skill/CLI workflow with separately authorized plan approval and isolated apply.'],
   }));
@@ -71,7 +74,7 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
     inputSchema: verificationInput, annotations,
   }, ({ patch, businessHash }) => guarded(() => {
     checkRoot();
-    if (patch.recipe.id !== recipeId || patch.recipe.version !== '1.0.0' || JSON.stringify(patch.changes.map(c => c.path)) !== JSON.stringify(recipePaths)) throw new Error('Unknown verification recipe or path scope');
+    if (patch.recipe.id !== recipeRef.id || patch.recipe.version !== recipeRef.version || JSON.stringify(patch.changes.map(c => c.path)) !== JSON.stringify(recipePaths)) throw new Error('Unknown verification recipe or path scope');
     return verifyAdaptation({ patch: { ...patch, worktree: root }, businessHash, originals: {} });
   }));
   return server;
