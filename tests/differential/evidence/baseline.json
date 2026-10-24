@@ -1,0 +1,131 @@
+{
+  "manifest": {
+    "schemaVersion": "1",
+    "capturedAt": "2026-10-24T13:42:10.953Z",
+    "provenance": {
+      "sourceVersion": "synthetic-legacy-v1",
+      "codeHash": "3f161738f84299c0d83d5e8d48d23fb061c5da2d01f358a30892c8cf4cac9074",
+      "environment": "Node v24.19.0 isolated in-memory fixture",
+      "environmentHash": "34af00d91e5a68f80672f72a06b3e31b3198c66b55814381a50c4117ef18e47c",
+      "dataHash": "fa1844c2988ad15ab7b49e0ece09684500fad94df916859fb9a43ff85f5bb477",
+      "schemaVersion": "synthetic-pagination-v1",
+      "adapterVersion": "fixture-adapter-v1"
+    },
+    "safety": "isolated-seeded-fixture",
+    "normalization": [
+      {
+        "path": [
+          "receipt",
+          "timestamp"
+        ],
+        "reason": "Synthetic clock label only",
+        "evidence": "tests/differential/synthetic.ts",
+        "kind": "nondeterministic"
+      }
+    ],
+    "coverage": {
+      "scope": "Three synthetic pagination cases; response, declared effects and receipt",
+      "unknowns": [
+        "No customer host tested",
+        "No real transport, concurrency, authorization or hidden effects tested",
+        "Finite inputs do not establish complete equivalence"
+      ]
+    },
+    "cases": [
+      {
+        "test": {
+          "id": "first-page",
+          "input": {
+            "offset": 0,
+            "limit": 2
+          },
+          "seed": [
+            "a",
+            "b",
+            "c"
+          ],
+          "covers": [
+            "page has successor"
+          ]
+        },
+        "observation": {
+          "output": {
+            "rows": [
+              "a",
+              "b"
+            ],
+            "hasMore": true
+          },
+          "sideEffects": [],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "hash": "2178e6fea70824715ec8ce3d8bb3baf453640cd60867efa626fc9300b8cef1ee"
+      },
+      {
+        "test": {
+          "id": "exact-end",
+          "input": {
+            "offset": 1,
+            "limit": 2
+          },
+          "seed": [
+            "a",
+            "b",
+            "c"
+          ],
+          "covers": [
+            "exact final page boundary"
+          ]
+        },
+        "observation": {
+          "output": {
+            "rows": [
+              "b",
+              "c"
+            ],
+            "hasMore": true
+          },
+          "sideEffects": [],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "hash": "75f15c63d5e62d547c105ddbda50174f497d3929f442fb8505acbbf787f04fe2"
+      },
+      {
+        "test": {
+          "id": "beyond-end",
+          "input": {
+            "offset": 3,
+            "limit": 2
+          },
+          "seed": [
+            "a",
+            "b",
+            "c"
+          ],
+          "covers": [
+            "empty page beyond end"
+          ]
+        },
+        "observation": {
+          "output": {
+            "rows": [],
+            "hasMore": false
+          },
+          "sideEffects": [],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "hash": "77bef0122abaea0b1fa1fe7712588329760112b4e500b7cc8b61348cdd548af0"
+      }
+    ]
+  },
+  "hash": "93fbd30b0ebffeb20c84286488f3b227f1aa832c24798f4d1c1413aebc30865b"
+}

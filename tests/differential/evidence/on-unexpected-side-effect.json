@@ -1,0 +1,186 @@
+{
+  "configuration": {
+    "baselineHash": "93fbd30b0ebffeb20c84286488f3b227f1aa832c24798f4d1c1413aebc30865b",
+    "candidateCodeHash": "3f161738f84299c0d83d5e8d48d23fb061c5da2d01f358a30892c8cf4cac9074",
+    "registryHash": "500f9b1302494561919d9e766ac659d6ca02f1b2f9884cf02eda77c08927edc7",
+    "enabled": [
+      {
+        "id": "pagination-final-page",
+        "version": "1",
+        "approvalRef": "synthetic-fixture-review-only",
+        "reviewer": "fixture-test-author"
+      }
+    ]
+  },
+  "improvements": [
+    {
+      "id": "pagination-final-page",
+      "version": "1",
+      "category": "business-behavior",
+      "reason": "Synthetic legacy >= comparison reports a successor at exact end",
+      "evidence": [
+        "Synthetic exact-end case"
+      ],
+      "impact": "Only final-page hasMore becomes false",
+      "defaultEnabled": false,
+      "reversibility": "Disable the version-bound switch to restore synthetic legacy behavior",
+      "expectedAllowedDiff": [
+        {
+          "caseId": "exact-end",
+          "path": [
+            "output",
+            "hasMore"
+          ],
+          "before": true,
+          "after": false
+        }
+      ]
+    }
+  ],
+  "report": {
+    "schemaVersion": "1",
+    "baselineHash": "93fbd30b0ebffeb20c84286488f3b227f1aa832c24798f4d1c1413aebc30865b",
+    "configurationHash": "2b8c254af116ca00b62d2c58cbbb050b1f668b461e712cbb1eac635ac6d4c88b",
+    "candidate": {
+      "sourceVersion": "synthetic-agentic-v1",
+      "codeHash": "3f161738f84299c0d83d5e8d48d23fb061c5da2d01f358a30892c8cf4cac9074",
+      "environment": "Node v24.19.0 isolated in-memory fixture",
+      "environmentHash": "34af00d91e5a68f80672f72a06b3e31b3198c66b55814381a50c4117ef18e47c",
+      "dataHash": "fa1844c2988ad15ab7b49e0ece09684500fad94df916859fb9a43ff85f5bb477",
+      "schemaVersion": "synthetic-pagination-v1",
+      "adapterVersion": "fixture-adapter-v1"
+    },
+    "passed": false,
+    "cases": [
+      {
+        "id": "first-page",
+        "observation": {
+          "output": {
+            "rows": [
+              "a",
+              "b"
+            ],
+            "hasMore": true
+          },
+          "sideEffects": [
+            {
+              "kind": "unexpected-write"
+            }
+          ],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "observationHash": "0291102202fdf6753689753e6e5f3259960fb8e4fc239a80d80bc70edc062e11",
+        "passed": false,
+        "differences": [
+          {
+            "caseId": "first-page",
+            "path": [
+              "sideEffects",
+              "0"
+            ],
+            "after": {
+              "kind": "unexpected-write"
+            }
+          }
+        ],
+        "missingExpected": []
+      },
+      {
+        "id": "exact-end",
+        "observation": {
+          "output": {
+            "rows": [
+              "b",
+              "c"
+            ],
+            "hasMore": false
+          },
+          "sideEffects": [
+            {
+              "kind": "unexpected-write"
+            }
+          ],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "observationHash": "0d67391676f608a52d8d572049464abc657138aaaac0cee9dc3871fd1ba66505",
+        "passed": false,
+        "differences": [
+          {
+            "caseId": "exact-end",
+            "path": [
+              "output",
+              "hasMore"
+            ],
+            "before": true,
+            "after": false,
+            "allowedBy": "pagination-final-page"
+          },
+          {
+            "caseId": "exact-end",
+            "path": [
+              "sideEffects",
+              "0"
+            ],
+            "after": {
+              "kind": "unexpected-write"
+            }
+          }
+        ],
+        "missingExpected": []
+      },
+      {
+        "id": "beyond-end",
+        "observation": {
+          "output": {
+            "rows": [],
+            "hasMore": false
+          },
+          "sideEffects": [
+            {
+              "kind": "unexpected-write"
+            }
+          ],
+          "receipt": {
+            "operation": "list",
+            "timestamp": "synthetic-clock-before"
+          }
+        },
+        "observationHash": "51ed4df8130fc8b9cb8881d613b980544c6fcc5b28e75d6b4ead59caee59c3c5",
+        "passed": false,
+        "differences": [
+          {
+            "caseId": "beyond-end",
+            "path": [
+              "sideEffects",
+              "0"
+            ],
+            "after": {
+              "kind": "unexpected-write"
+            }
+          }
+        ],
+        "missingExpected": []
+      }
+    ],
+    "coverage": {
+      "scope": "Three synthetic pagination cases; response, declared effects and receipt",
+      "unknowns": [
+        "No customer host tested",
+        "No real transport, concurrency, authorization or hidden effects tested",
+        "Finite inputs do not establish complete equivalence"
+      ]
+    },
+    "unknowns": [
+      "No customer host tested",
+      "No real transport, concurrency, authorization or hidden effects tested",
+      "Finite inputs do not establish complete equivalence",
+      "Finite cases are not proof for all inputs. Adapter isolation and approval references require independent review; this library is not a sandbox or approval authority."
+    ]
+  }
+}
