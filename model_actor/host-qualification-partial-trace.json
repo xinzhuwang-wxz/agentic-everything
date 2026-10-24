@@ -1,0 +1,49 @@
+{
+  "kind": "independent_subagent_api_simulation_generated_host_partial",
+  "containsRawConversation": false,
+  "status": "old_run_completed_new_read_only_run_interrupted_before_tool_result",
+  "rounds": [
+    {
+      "requestId": "3653d621-83cb-4b57-9a09-4be38d65c029",
+      "requestHash": "6418f064645fb12a670d3c74488b822d10b55db1cc4fc1caa86d03a0560c7ff8",
+      "responseHash": "ae13aecf445ebec7556b95ff648fbfe12f7e67cfcbd9dfff7d6927131dd05474",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    },
+    {
+      "requestId": "7851a67a-ea48-42db-8f36-a0141d3dfe87",
+      "requestHash": "175f1b3b00daca369df8144046b2fe423ee9c6344ab2848335c308ef77b883a3",
+      "responseHash": "e61548d273b144c09ae9c940d9a311187c2ce6e0a5aef6d173dc39026d34e808",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "change_ticket_priority"
+      ]
+    },
+    {
+      "requestId": "d303ca62-5f8f-4e73-8505-b2e15bbd7502",
+      "requestHash": "98f8a7a0f2e662f022c9312348b0853912a1cbbe0e6889f8ca20a53cf0ed2dff",
+      "responseHash": "b56dd5a97e4965f5ec8f7e4fcc45fb894e663c096742ec147ed58f3230189fe5",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "stop",
+      "toolNames": []
+    },
+    {
+      "requestId": "0b8a9864-5bfc-48f7-bb01-16f3692335f2",
+      "requestHash": "bf53f9bc2837f249c63fd2e59c91bc8e5907e662f9f0350999807ce7f9964b30",
+      "responseHash": "327bce1c073cb07e2cb0b5217d5199824e898e0374af3f07d30037691868ac7f",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    }
+  ]
+}
