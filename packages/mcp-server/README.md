@@ -51,3 +51,7 @@ Official sources:
 - https://ts.sdk.modelcontextprotocol.io/v2/
 - https://www.npmjs.com/package/@modelcontextprotocol/server
 - https://www.npmjs.com/package/@modelcontextprotocol/client
+
+## Configuration preflight
+
+`ae_preflight {"taskId":"<UUID>","step":"read_only"|"model"}` calls the shared `ConfigurationPreflight` service. It accepts no secrets, configuration URL, mode override, or checker arguments. The default self-hosted launch allows read-only work without credentials; a model step returns structured `needs_configuration` with `verification_unavailable`, not an unsupported claim that a key is absent. The default CLI/stdio has no real validator wired in and no deployed configuration URL. See [trusted local wiring and limitations](../../skills/ae-adapt/references/configuration.md). A trusted embedded MCP launcher can inject its own current-status checker and explicitly select a future hosted mode. Recheck the same task UUID after configuration; do not start a replacement task. This is a unified preflight contract/entry, not a completed configuration UI or real provider qualification.
