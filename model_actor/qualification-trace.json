@@ -1,0 +1,57 @@
+{
+  "kind": "independent_subagent_api_simulation",
+  "containsRawConversation": false,
+  "rounds": [
+    {
+      "requestId": "fbc4b9da-7805-4ee6-8104-913d6073294a",
+      "requestHash": "1f100684190cfc9ddf771bef94a119e0ba3c6f7dd358a42cd05828914b83ec6e",
+      "responseHash": "0bc7f2d0481774bc22a857eabd85b7b318c8219ce3bc02ca8fc0c7118355ee6d",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    },
+    {
+      "requestId": "41ec213d-c7fa-44d4-8c46-d571a31d7bbc",
+      "requestHash": "a111b26fc99a2039509f9423943c3d2f14a964de14c4beb5814abc78c73efad5",
+      "responseHash": "33c72a1a6e6c3c7bf3c4fed1b34561c1c6a1b3a5d4b78bc611bf12cdc9767ec1",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "change_ticket_priority"
+      ]
+    },
+    {
+      "requestId": "788051f8-a430-42aa-9256-e93c98b163f9",
+      "requestHash": "038d6c7f5b66dffbd25c7324051c9e0764f66684177be2e05c916da041a90896",
+      "responseHash": "5086a9daede6b6a8ccd033956c9770c3417589be27d9ac5cd5b4283d626d0ae4",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "stop",
+      "toolNames": []
+    },
+    {
+      "requestId": "829051f5-3636-4134-91be-a5be630cfd6a",
+      "requestHash": "a94e1806b942a6e829675efcb3fc0db25eadd92e50848d5ca20e8f401b4a6f38",
+      "responseHash": "86f7b424f52b268f3931fcdd7e55dabc9968408ff8d4e5596ae2b2c4b79f2d05",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "tool-calls",
+      "toolNames": [
+        "read_ticket"
+      ]
+    },
+    {
+      "requestId": "da1690ee-7d80-46fc-9ace-4fabd8265a79",
+      "requestHash": "9d9219f06a25e1aaba9157e8b4a7a0eaaaa6cf92ce520ec343cae4e8acde7a0f",
+      "responseHash": "ff0ab3d61cc66e7ef7e973725b5a15d47359c5fdff58d123d9dfd80e8095bacb",
+      "provider": "subagent_simulation",
+      "usage": "unmeasured",
+      "finishReason": "stop",
+      "toolNames": []
+    }
+  ]
+}
