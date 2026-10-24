@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AgenticPanel, type AeClient, type RunView, type RuntimeMeta } from '@ae/ui';
+import { AgenticPanel, createConfigurationClient, type ConfigurationClient, type AeClient, type RunView, type RuntimeMeta } from '@ae/ui';
 import type { ApprovalDecision, CapabilityVersion } from '@ae/contracts';
 export type { AeClient, RunView, RuntimeMeta } from '@ae/ui';
 export class AeTransportError extends Error { constructor(public readonly code:string,message:string,public readonly status:number){super(message);this.name='AeTransportError';} }
@@ -24,8 +24,9 @@ export function createAeClient({apiBase,fetch:fetcher=globalThis.fetch}:AeClient
   cancel:runId=>request<RunView>(`/runs/${encodeURIComponent(runId)}/cancel`,{}),
  };
 }
-export interface AgenticMountProps { apiBase:string; ticketId:string; client?:AeClient; title?:string; onRunChange?:(run:RunView)=>void }
-export function AgenticMount({apiBase,ticketId,client,title,onRunChange}:AgenticMountProps){
- const transport=useMemo(()=>client??createAeClient({apiBase}),[apiBase,client]);
- return <AgenticPanel client={transport} context={{ticketId}} storageKey={`ae:run:${apiBase}:${ticketId}`} {...(title===undefined?{}:{title})} {...(onRunChange===undefined?{}:{onRunChange})}/>;
+export interface AgenticMountProps { apiBase:string; ticketId:string; client?:AeClient; title?:string; onRunChange?:(run:RunView)=>void; configurationClient?:ConfigurationClient; sessionKey?:string }
+export function AgenticMount({apiBase,ticketId,client,title,onRunChange,configurationClient,sessionKey='fixture'}:AgenticMountProps){
+ const transport=useMemo(()=>client??createAeClient({apiBase}),[apiBase,client,sessionKey]);
+ const configuration=useMemo(()=>configurationClient??createConfigurationClient(apiBase),[apiBase,configurationClient,sessionKey]);
+ return <AgenticPanel key={sessionKey} configurationClient={configuration} client={transport} context={{ticketId}} storageKey={`ae:run:${apiBase}:${sessionKey}:${ticketId}`} {...(title===undefined?{}:{title})} {...(onRunChange===undefined?{}:{onRunChange})}/>;
 }

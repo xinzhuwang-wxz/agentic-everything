@@ -1,15 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ConfigurationPanel, type ConfigurationClient } from './configuration.js';
 import { AIInput } from './reuse/ai-input.js';
 import { StatusIsland } from './reuse/status-island.js';
 import * as Tabs from '@radix-ui/react-tabs';
 import type { CapabilityVersion } from '@ae/contracts';
 import type { AeClient, RuntimeMeta, RunView } from './types.js';
 export type { AeClient, RuntimeMeta, RunView } from './types.js';
-export interface AgenticPanelProps { client:AeClient; context:{ticketId:string}; title?:string; storageKey?:string; onRunChange?:(run:RunView)=>void }
+export interface AgenticPanelProps { client:AeClient; context:{ticketId:string}; title?:string; storageKey?:string; onRunChange?:(run:RunView)=>void; configurationClient?:ConfigurationClient }
 const labels:Record<string,string>={queued:'等待执行',running:'正在执行', 'awaiting-approval':'等待你的确认',succeeded:'已完成',failed:'执行失败',rejected:'已拒绝',cancelled:'已取消','outcome-unknown':'结果未知',reconciling:'正在核对结果','manual-review':'需要人工核查'};
 const active = new Set(['queued','running','reconciling']);
 const inspect = (value:unknown) => JSON.stringify(value,null,2);
-export function AgenticPanel({client,context,title='业务助手',storageKey,onRunChange}:AgenticPanelProps) {
+export function AgenticPanel({client,context,title='业务助手',storageKey,onRunChange,configurationClient}:AgenticPanelProps) {
  const [pendingInput,setPendingInput]=useState('');
  const [meta,setMeta]=useState<RuntimeMeta>(); const [capabilities,setCapabilities]=useState<CapabilityVersion[]>([]);
  const [run,setRun]=useState<RunView>(); const [input,setInput]=useState(''); const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const [lastInput,setLastInput]=useState('');
@@ -46,13 +47,14 @@ export function AgenticPanel({client,context,title='业务助手',storageKey,onR
  },[client,run?.runId,run?.status]);
  async function perform(action:()=>Promise<RunView>){if(locked.current)return;locked.current=true;setBusy(true);setError('');const current=generation.current;try{const next=await action();if(current===generation.current){setRun(next);setPendingInput('')}}catch(e){if(current===generation.current)setError(`${e instanceof Error?e.message:'请求失败'}。状态未确认，请刷新状态后再操作。`)}finally{if(current===generation.current){locked.current=false;setBusy(false)}}}
  const unresolved=!!pendingInput||!!run&&(active.has(run.status)||run.status==='awaiting-approval'||run.status==='outcome-unknown'||run.status==='manual-review');
+ const refreshConfiguration=useCallback(async()=>{const current=generation.current;try{const [m,c]=await Promise.all([client.meta(),client.capabilities()]);if(current===generation.current){setMeta(m);setCapabilities(c)}}catch{if(current===generation.current)setError('发布已返回，但当前能力视图刷新失败。请重新加载核对。')}},[client]);
  const approval=run?.status==='awaiting-approval'?run.approval:undefined;
  const expired=approval ? Date.parse(approval.binding.expiresAt)<=Date.now():false;
  return <section className="ae-panel" aria-label="Agentic 工作区">
   <header className="ae-header"><div className="ae-brand" aria-hidden="true">ae<span>·</span></div><div><p className="ae-eyebrow">AGENTIC EVERYTHING</p><h2>{title}</h2></div><span className={`ae-connection ${connected?'is-connected':''}`}>{connected?'运行时已连接':'运行时未连接'}</span></header>
   <div className="ae-context"><span>当前上下文</span><strong>{context.ticketId}</strong><span>权限由宿主服务端校验</span></div>
   {meta&&<div className="ae-mode">{meta.mode==='simulated'?'模拟模型 · 测试环境，不代表真实模型能力':'已连接模型提供方'}<span>Release {meta.releaseId}</span></div>}
-  <Tabs.Root defaultValue="assistant" className="ae-tabs"><Tabs.List aria-label="Agentic 导航" className="ae-tab-list"><Tabs.Trigger value="assistant">助手</Tabs.Trigger><Tabs.Trigger value="capabilities">能力与权限</Tabs.Trigger><Tabs.Trigger value="activity">执行记录</Tabs.Trigger></Tabs.List>
+  <Tabs.Root defaultValue="assistant" className="ae-tabs"><Tabs.List aria-label="Agentic 导航" className="ae-tab-list"><Tabs.Trigger value="assistant">助手</Tabs.Trigger><Tabs.Trigger value="capabilities">能力与权限</Tabs.Trigger><Tabs.Trigger value="activity">执行记录</Tabs.Trigger>{configurationClient&&<Tabs.Trigger value="configuration">配置与发布</Tabs.Trigger>}</Tabs.List>
   <Tabs.Content value="assistant" className="ae-tab-content">
    {!run&&<div className="ae-welcome"><span className="ae-orbit" aria-hidden="true">✳</span><h3>理解上下文，再采取行动。</h3><p>先读取业务数据。任何修改都会展示预览，确认后才交给服务端执行。</p><div className="ae-suggestions"><button disabled={!connected||busy} onClick={()=>setInput('读取当前工单')}>读取当前工单 <span>↗</span></button><button disabled={!connected||busy} onClick={()=>setInput('将当前工单优先级改为 high')}>预览优先级调整 <span>↗</span></button></div></div>}
    {run&&<div className="ae-conversation"><div className="ae-user-message">{lastInput||'已恢复的执行'}</div><div className="ae-result"><div className="ae-result-heading"><strong>AE</strong><StatusIsland run={run} label={labels[run.status]??run.status}/></div>{run.message&&<p>{run.message}</p>}
@@ -63,8 +65,9 @@ export function AgenticPanel({client,context,title='业务助手',storageKey,onR
    </div></div>}
    <AIInput value={input} onChange={setInput} contextLabel={context.ticketId} busy={busy} disabled={!!unresolved||!connected} onSubmit={()=>{const value=input.trim();if(!value||unresolved||!connected)return;setLastInput(value);setPendingInput(value);void perform(()=>client.start(value,{ticketId:context.ticketId}));setInput('')}}/>
   </Tabs.Content>
-  <Tabs.Content value="capabilities" className="ae-tab-content"><h3>已登记的业务能力</h3><p className="ae-muted">这是服务端返回的能力清单，不是前端权限开关。</p>{capabilities.length===0&&<p>暂无可验证的能力信息。</p>}<div className="ae-capabilities">{capabilities.map(c=><article key={`${c.capabilityId}@${c.version}`}><div><strong>{c.capabilityId}</strong><span>{c.risk==='read'?'只读':'写入 · 需权限校验'}</span></div><p>{c.description}</p><small>版本 {c.version} · {c.approvalRequired?'需要确认':'服务端策略'} · {c.requiredScopes.join(', ')}</small></article>)}</div><aside className="ae-notice">此版本只展示实际登记能力。模型配置、发布与权限管理尚未开放。</aside></Tabs.Content>
+  <Tabs.Content value="capabilities" className="ae-tab-content"><h3>已登记的业务能力</h3><p className="ae-muted">这是服务端返回的能力清单，不是前端权限开关。</p>{capabilities.length===0&&<p>暂无可验证的能力信息。</p>}<div className="ae-capabilities">{capabilities.map(c=><article key={`${c.capabilityId}@${c.version}`}><div><strong>{c.capabilityId}</strong><span>{c.risk==='read'?'只读':'写入 · 需权限校验'}</span></div><p>{c.description}</p><small>版本 {c.version} · {c.approvalRequired?'需要确认':'服务端策略'} · {c.requiredScopes.join(', ')}</small></article>)}</div><aside className="ae-notice">能力由宿主服务端登记。配置与发布仅调整后续任务的允许范围，不授予业务权限。</aside></Tabs.Content>
   <Tabs.Content value="activity" className="ae-tab-content"><h3>服务端事件</h3><p className="ae-muted">只展示收到的事件，不生成模拟执行进度。</p>{!run&&<p>发送一个请求后，执行记录会出现在这里。</p>}<ol className="ae-events">{run?.events.map(e=><li key={e.eventId}><span>{e.sequence.toString().padStart(2,'0')}</span><div><strong>{e.type}</strong><time>{new Date(e.timestamp).toLocaleTimeString('zh-CN')}</time><pre>{inspect(e.payload)}</pre></div></li>)}</ol></Tabs.Content>
+  {configurationClient&&<Tabs.Content value="configuration" className="ae-tab-content ae-configuration-tab"><ConfigurationPanel client={configurationClient} onPublished={refreshConfiguration}/></Tabs.Content>}
   </Tabs.Root>{error&&<div className="ae-error" role="alert">{error}{pendingInput&&<button disabled={busy} onClick={()=>perform(()=>client.start(pendingInput,{ticketId:context.ticketId}))}>核对原请求状态</button>}</div>}
  </section>;
 }
