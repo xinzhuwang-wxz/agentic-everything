@@ -4,9 +4,10 @@
 
 1. [Product overview](../README.md): the promise and current boundaries.
 2. [Get started](getting-started.md): copy a plain product, inspect and preview a patch.
-3. [First example](examples.md): before/after story and evidence map.
-4. [Integration](integrating.md): development-time Skill, host SDK, local runtime and remaining gates.
-5. [中文入口](README.zh-CN.md): concise Chinese introduction.
+3. [Delivery and evidence](delivery.md): one approved plan, bounded verification and an inspectable bundle.
+4. [First example](examples.md): before/after story and evidence map.
+5. [Integration](integrating.md): development-time Skill, host SDK, local runtime and remaining gates.
+6. [中文入口](README.zh-CN.md): concise Chinese introduction.
 
 ## Work on AE
 

@@ -7,3 +7,5 @@
 - BROWSER_READY: real visible entry, assistant, preview, confirmation, refresh and error recovery observed. Source strings or screenshots alone do not prove the entire journey.
 
 The existing developer agent records user approval; local approval JSON is not a cryptographic identity system and must not be accepted from an untrusted remote caller. Runtime authorization is separate and server-enforced. The recipe does not install dependencies, invoke source scripts, migrate a database, grant ongoing access or deploy. User-facing configuration carries no credentials. Source revert does not undo business transactions.
+
+- DELIVERY_INTEGRITY: bundle bytes, chain, scope and fresh source/candidate binding are inspectable. Integrity is not execution evidence or signed authorization. `deliver`/`delivery-check` return exit 2 for a valid partial bundle; `verify` returns 2 for not-run gates, 1 for failures. Historical runtime/UI qualification is not acceptance of another candidate. See [delivery](../../../docs/delivery.md).

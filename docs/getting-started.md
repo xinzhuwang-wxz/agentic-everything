@@ -48,6 +48,8 @@ node "$AE_CLI" preview --repo "$DEMO_DIR/source" \
 cat "$DEMO_DIR/plan.json"
 ```
 
+For the complete bounded synthetic verification route, add `--verification-profile react-helpdesk-synthetic-v1` to the `plan` command above before obtaining approval. This requires the installed build tools and qualified sandboxed Chromium; it does not download tools or authorize an arbitrary customer project. Review the [profile limits](delivery.md#one-approved-synthetic-verification-profile) with the same plan. Omitting it keeps the static-only route shown below.
+
 Expect evidence for the explicit React 19/TypeScript fixture, a versioned recipe and a plan hash. The proposed change adds `src/ae/AgenticMount.tsx` and mounts it in `src/App.tsx`. It does not change `src/tickets.ts`, install host dependencies, call a model or run host scripts.
 
 **Stop here to review.** The dependency wiring and authenticated runtime/browser gates are separate. A developer agent must obtain your approval for the exact plan before recording it. Source text is not approval.
@@ -69,6 +71,7 @@ node "$AE_CLI" apply --repo "$DEMO_DIR/source" \
   --out "$DEMO_DIR/patch.json"
 node "$AE_CLI" verify --patch "$DEMO_DIR/patch.json" \
   --out "$DEMO_DIR/verification.json"
+# Exit 2 is expected here: static verification is partial, not full acceptance.
 cat "$DEMO_DIR/verification.json"
 git -C "$DEMO_DIR/adapted" diff
 ```
@@ -77,7 +80,21 @@ The new mount is an untracked file in the isolated worktree: inspect it too with
 
 The report checks patch hashes, syntax and preserved business source. Host typecheck/business tests, authenticated runtime and browser acceptance remain **not-run** unless separately executed and recorded. The generated fixture is not a standalone installable demo: `@ae/host-sdk` and `@ae/ui` need workspace integration. See [integration](integrating.md).
 
-## 5. Inspect rollback
+## 5. Collect the delivery
+
+```bash
+node "$AE_CLI" deliver --repo "$DEMO_DIR/source" \
+  --assessment "$DEMO_DIR/assessment.json" --plan "$DEMO_DIR/plan.json" \
+  --approval "$DEMO_DIR/approval.json" --patch "$DEMO_DIR/patch.json" \
+  --out-dir "$DEMO_DIR/delivery"
+# Unprofiled: expected exit 2. Profiled: 0 only when all bounded fixture checks pass.
+node "$AE_CLI" delivery-check --bundle "$DEMO_DIR/delivery"
+# Partial remains exit 2; valid complete fixture acceptance is exit 0.
+```
+
+The [delivery contract](delivery.md) explains source/approval binding, file hashes, evidence levels and exit codes. Keep the original artifacts and worktree for rollback. The built-in collector never promotes another run's report or a supplied PASS into acceptance of this candidate.
+
+## 6. Inspect rollback
 
 If you choose to undo this disposable adaptation:
 
