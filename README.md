@@ -10,7 +10,7 @@ Keep your product's language, business logic and permissions. Add an embedded as
 
 ![AE journey: your developer agent uses AE to adapt an existing product, with reviewed changes and the host retaining authority.](docs/assets/ae-journey.svg)
 
-> **Early development preview.** The executable starting point is one React/TypeScript helpdesk recipe, a governed runtime, a loopback API and shared UI surfaces. The local model path is explicitly simulated. MCP transport and production durability are not implemented/qualified. [What works today →](#what-works-today)
+> **Early development preview.** The executable starting point is one React/TypeScript helpdesk recipe, a governed runtime, a loopback API and shared UI surfaces. The local model path is explicitly simulated. Read-only MCP stdio tools are implemented; authenticated remote MCP and production durability are not yet qualified. [What works today →](#what-works-today)
 
 ## From an existing app to an agentic product
 
@@ -31,7 +31,7 @@ Open this checkout in your existing developer agent and give it this prompt:
 
 > Read skills/ae-adapt/SKILL.md and docs/getting-started.md. Try AE on a disposable copy of the included helpdesk fixture. Show me the source assessment, proposed diff, plan hash and verification limits before applying changes. Preserve the host stack and business rules. Do not deploy, use paid APIs or modify another project.
 
-The Skill is available now as repository instructions. The broader integration design is **developer agent → AE Skill / planned MCP → tailored product adaptation**. AE is not a replacement coding agent, and MCP is not a runnable installation option yet.
+The Skill is available now as repository instructions. The broader integration design is **developer agent → AE Skill / read-only MCP toolkit → tailored product adaptation**. AE is not a replacement coding agent, and the local MCP toolkit is runnable after build; mutation authority stays with the developer host.
 
 ### Or start in a terminal
 
@@ -52,8 +52,9 @@ No model key, account or database is needed for these local checks. Dependency d
 | Runtime | One Agents JS loop, curated capabilities, host authorization, approval interruption and receipts | [Runtime evidence and limits](docs/RUNTIME_HANDOFF.md) |
 | API | Hono loopback composition, server-owned fixture identity, strict requests and in-process idempotency | [API guide](apps/api/README.md) |
 | Product surfaces | Embedded mount and standalone Console share components and the API contract | [Integration guide](docs/integrating.md) |
+| MCP | Official SDK stdio server with launch-bound assess/plan/preview/verify/describe tools | [MCP setup](packages/mcp-server/README.md) |
 | Model | Injectable model interface; independent file-IPC actor path labeled as simulation | [Qualification setup](docs/RUNTIME_HANDOFF.md#reproduction) |
-| Not ready | MCP transport, arbitrary-host recipes, production identity, PostgreSQL/DBOS durability, real-provider qualification and deployment | [Implementation plan](IMPLEMENTATION_PLAN.md) |
+| Not ready | Authenticated remote MCP, generic automatic recipes, production identity, integrated PostgreSQL/DBOS durability, real-provider qualification and deployment | [Implementation plan](IMPLEMENTATION_PLAN.md) |
 
 Static patch verification, mocked UI tests, real HTTP tests and browser acceptance are different evidence. A passing unit suite does not turn an unrun gate green. In-memory run/approval/operation state is lost on restart. Do not deploy this fixture or put customer data into it.
 
