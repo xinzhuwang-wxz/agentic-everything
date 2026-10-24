@@ -154,6 +154,25 @@ function assertOneCommittedWrite(view, inspection, operationId) {
   eventIntegrity(view);
 }
 
+async function assignmentFixture(name) {
+  const f = await fixture(name), members = await host.seedMembers(f.principal, f.ticketId);
+  f.input.input = `Read members and assign qualification-ticket:${f.ticketId} assignment-member:${members.active}.`;
+  return { ...f, members };
+}
+function assertOneCommittedAssignment(view, inspection, operationId, assigneeId) {
+  assert.equal(view.status, 'succeeded', JSON.stringify(view));
+  assert.equal(inspection.mutationCount, 1);
+  assert.equal(count(inspection, 'write'), 1, 'Assignment recovery must not dispatch a second write');
+  assert.equal(inspection.receipts.length, 1);
+  assert.equal(inspection.receipts[0].operationId, operationId);
+  assert.equal(inspection.ticket.assigneeId, assigneeId);
+  assert.equal(inspection.ticket.priority, 'low', 'Assignment cannot change priority');
+  assert.equal(inspection.ticket.version, 2);
+  assert.deepEqual(inspection.receipts[0].data, inspection.ticket);
+  assert.ok(view.receipts.some(receipt => receipt.status === 'succeeded' && receipt.operationId === operationId && receipt.receiptId === inspection.receipts[0].receiptId));
+  eventIntegrity(view);
+}
+
 try {
   await host.setup();
   const version = (await host.pool.query('SHOW server_version')).rows[0].server_version;
@@ -515,6 +534,78 @@ try {
     await worker.shutdown();
     cases.push('resource read ACL revoked on earlier contributor across process restart: GET/list/decision/cancel deny without altering paused or completed state; restored reads exact; write-revoked history readable');
     observe('passed', { case: 'resource-read-disclosure', runId: view.runId });
+  }
+
+  {
+    const f = await assignmentFixture('assignment-lost-response');
+    let worker = await startWorker();
+    const paused = await worker.request('start', f.input);
+    assert.equal(paused.status, 'awaiting-approval', JSON.stringify(paused));
+    assert.equal(paused.approval.binding.capabilityId, 'change_ticket_assignee');
+    assert.equal(paused.approval.preview.after, f.members.active);
+    const memberReceipt = paused.receipts.find(receipt => receipt.status === 'succeeded' && Array.isArray(receipt.data?.members));
+    assert.deepEqual(memberReceipt.data.members.map(member => member.id), [f.members.active], 'Only active members of this ticket are returned');
+    await worker.kill();
+    worker = await startWorker('unknown-checkpoint');
+    assert.deepEqual(await worker.request('get', paused.runId, f.principal), paused, 'Exact assignment approval and member receipt survive restart');
+    const pending = worker.request('decide', paused.runId, f.principal, decision(paused.approval)).then(value => ({ value }), error => ({ error }));
+    await worker.event('fault', event => event.point === 'after-tool-checkpoint');
+    const committed = await host.inspect(f.principal, f.ticketId, paused.runId);
+    assert.equal(committed.mutationCount, 1); assert.equal(committed.ticket.assigneeId, f.members.active);
+    assert.deepEqual(committed.model.map(call => call.stage), ['read', 'members', 'assign']);
+    const stored = await host.pool.query('SELECT result FROM ae_operations_v1 WHERE id=$1', [paused.approval.binding.operationId]);
+    assert.equal(stored.rows[0].result.status, 'outcome-unknown', 'Host committed, response was lost, and unknown result was checkpointed');
+    await worker.kill(); assert.ok((await pending).error);
+    worker = await startWorker();
+    const recovered = await waitFor(worker, paused.runId, f.principal, ['outcome-unknown']);
+    assert.equal(recovered.status, 'outcome-unknown');
+    const reconciled = await worker.request('reconcile', paused.runId, f.principal);
+    const inspection = await host.inspect(f.principal, f.ticketId, paused.runId);
+    assertOneCommittedAssignment(reconciled, inspection, paused.approval.binding.operationId, f.members.active);
+    assert.equal(count(inspection, 'query'), 1, 'The one explicit reconciliation queries the same operation once');
+    assert.deepEqual(inspection.receipts, committed.receipts, 'Reconciliation preserves the exact host receipt');
+    assert.deepEqual(inspection.model, committed.model, 'Unknown recovery does not invent another model turn');
+    assert.deepEqual(await worker.request('decide', paused.runId, f.principal, decision(paused.approval)), reconciled);
+    assert.equal(count(await host.inspect(f.principal, f.ticketId, paused.runId), 'write'), 1);
+    await worker.shutdown();
+    cases.push('member read → exact assignment approval/restart → host commit/lost response → SIGKILL/restart → one receipt reconciliation; one mutation, no write retry');
+    observe('passed', { case: 'assignment-lost-response', runId: paused.runId });
+  }
+
+  for (const invalid of ['foreign', 'inactive', 'unscoped']) {
+    const f = await assignmentFixture(`assignment-${invalid}`);
+    f.input.input = f.input.input.replace(`assignment-member:${f.members.active}`, `assignment-member:${f.members[invalid]}`);
+    const worker = await startWorker();
+    const failed = await worker.request('start', f.input);
+    assert.equal(failed.status, 'failed', JSON.stringify(failed));
+    assert.match(JSON.stringify(failed), /ASSIGNEE_DENIED/);
+    assert.equal(failed.approval, undefined, 'Unavailable members cannot receive an executable approval');
+    const inspection = await host.inspect(f.principal, f.ticketId, failed.runId);
+    assert.equal(inspection.mutationCount, 0); assert.equal(inspection.receipts.length, 0); assert.equal(count(inspection, 'write'), 0);
+    assert.equal(inspection.ticket.assigneeId, undefined);
+    await worker.shutdown();
+    cases.push(`${invalid} member assignment denied before approval or host dispatch; zero effects`);
+    observe('passed', { case: `assignment-${invalid}`, runId: failed.runId });
+  }
+
+  for (const revoked of ['version', 'member', 'role']) {
+    const f = await assignmentFixture(`assignment-revoked-${revoked}`);
+    let worker = await startWorker();
+    const paused = await worker.request('start', f.input);
+    assert.equal(paused.status, 'awaiting-approval', JSON.stringify(paused));
+    if (revoked === 'version') await host.pool.query('UPDATE qualification_host.tickets SET version=version+1 WHERE tenant_id=$1 AND application_id=$2 AND id=$3', [f.principal.tenantId, f.principal.applicationId, f.ticketId]);
+    if (revoked === 'member') await host.pool.query('UPDATE qualification_host.members SET active=false WHERE tenant_id=$1 AND application_id=$2 AND id=$3', [f.principal.tenantId, f.principal.applicationId, f.members.active]);
+    if (revoked === 'role') await host.revokeWrite(f.principal);
+    await worker.kill(); worker = await startWorker();
+    const failed = await worker.request('decide', paused.runId, f.principal, decision(paused.approval));
+    assert.equal(failed.status, 'failed', JSON.stringify(failed));
+    assert.match(JSON.stringify(failed), revoked === 'version' ? /RESOURCE_VERSION_CONFLICT/ : revoked === 'member' ? /ASSIGNEE_DENIED/ : /ROLE_DENIED|SCOPE_DENIED/);
+    const inspection = await host.inspect(f.principal, f.ticketId, paused.runId);
+    assert.equal(inspection.mutationCount, 0); assert.equal(inspection.receipts.length, 0); assert.equal(count(inspection, 'write'), 0);
+    assert.equal(inspection.ticket.assigneeId, undefined);
+    await worker.shutdown();
+    cases.push(`assignment ${revoked} changed after approval then restart; current preconditions deny dispatch, zero effects`);
+    observe('passed', { case: `assignment-revoked-${revoked}`, runId: paused.runId });
   }
 
   const report = { passed: true, prefix, directory, postgres: version, workerProcesses: workerNumber, cases,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ToolResultSchema, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
-import { AuthorizedTicketHost, ToolBroker, ticketCapabilities, type PreparedTool, type Ticket } from '@ae/capabilities';
+import { AuthorizedTicketHost, ToolBroker, ticketCapabilities, type PreparedTool, type Ticket, type Member } from '@ae/capabilities';
 import { authorize, digest, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { releasedCatalog } from '@ae/control-plane';
 import { PersistentStore, type StoredRun } from './store.js';
@@ -12,6 +12,8 @@ export interface DurableTicketHost {
   /** Optional current host capability revocation/version view; cannot expand the fixed registry. */
   currentCapabilities?(principal: Principal): Promise<CapabilityVersion[]>;
   read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Promise<Ticket>;
+  /** Ticket-scoped members. Declare new capabilities through currentCapabilities as well. */
+  listMembers?(principal: Principal, ticketId: string): Promise<Member[]>;
   write(principal: Principal, request: ToolRequest, signal?: AbortSignal): Promise<ToolResult>;
   query(principal: Principal, operationId: string): Promise<ToolResult>;
 }
@@ -20,20 +22,31 @@ export class PersistentToolBroker {
   async current(principal: Principal, write = false): Promise<Principal> { const identity = structuredClone(principal); const p = await this.host.currentPrincipal(structuredClone(identity)); if (!samePrincipal(p, identity)) throw new PolicyError('PRINCIPAL_CHANGED'); authorize(p, write); return p; }
   async catalog(principal: Principal, run?: StoredRun): Promise<CapabilityVersion[]> {
     const current = await this.current(principal);
-    const hostCatalog = this.host.currentCapabilities ? await this.host.currentCapabilities(structuredClone(current)) : ticketCapabilities;
-    const catalog = ticketCapabilities.filter(c => hostCatalog.some(h => h.capabilityId === c.capabilityId && h.version === c.version && h.bindingHash === c.bindingHash)).filter(c => { try { authorize(current, c.risk !== 'read'); return true; } catch { return false; } });
+    // Generic write() cannot attest assignment support. Legacy hosts keep the original
+    // tools; new tools require an explicit exact catalog plus the member-read method.
+    const hostCatalog = this.host.currentCapabilities ? await this.host.currentCapabilities(structuredClone(current)) : ticketCapabilities.filter(c => ['read_ticket', 'change_ticket_priority'].includes(c.capabilityId));
+    const catalog = ticketCapabilities.filter(c => !['read_ticket_members', 'change_ticket_assignee'].includes(c.capabilityId) || typeof this.host.listMembers === 'function').filter(c => hostCatalog.some(h => h.capabilityId === c.capabilityId && h.version === c.version && h.bindingHash === c.bindingHash)).filter(c => { try { authorize(current, c.risk !== 'read'); return true; } catch { return false; } });
     return run?.release ? releasedCatalog(run.release, current, catalog) : structuredClone(catalog);
   }
+  isWrite(name: string): boolean {
+    const capability = ticketCapabilities.find(c => c.capabilityId === name);
+    if (!capability) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
+    return capability.risk !== 'read';
+  }
   async assertCapability(run: StoredRun, name: string): Promise<void> {
-    await this.current(run.principal, name !== 'read_ticket');
+    await this.current(run.principal, this.isWrite(name));
     if (!(await this.catalog(run.principal, run)).some(c => c.capabilityId === name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
   }
   async prepare(principal: Principal, runId: string, callId: string, name: string, args: JsonObject): Promise<PreparedTool> {
-    const p = await this.current(principal, name !== 'read_ticket');
+    const p = await this.current(principal, this.isWrite(name));
+    if (!(await this.catalog(p)).some(c => c.capabilityId === name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
     if (typeof args.ticketId !== 'string') throw new PolicyError('INVALID_ARGUMENTS');
     const ticket = await this.host.read(p, args.ticketId);
     // Reuse the existing broker's schemas, operation identity, tenant/version validation and exact preview.
-    const broker = new ToolBroker(new AuthorizedTicketHost({ readTicket: () => ticket, changePriority: () => { throw new Error('Planning facade cannot write'); } }));
+    const members = ['read_ticket_members', 'change_ticket_assignee'].includes(name) ? await this.host.listMembers!(p, args.ticketId) : undefined;
+    const broker = new ToolBroker(new AuthorizedTicketHost({ readTicket: () => ticket, changePriority: () => { throw new Error('Planning facade cannot write'); },
+      ...(members ? { listMembers: () => members, changeAssignee: () => { throw new Error('Planning facade cannot write'); } } : {}),
+    }));
     return broker.prepare(p, runId, callId, name, args);
   }
   approval(principal: Principal, prepared: PreparedTool, releaseId: string): ApprovalView {
@@ -43,7 +56,7 @@ export class PersistentToolBroker {
   async execute(run: StoredRun, name: string, args: JsonObject, callId: string, approvalId?: string, signal?: AbortSignal): Promise<ToolResult> {
     if (run.release?.configuration.behavior && this.host.behaviorRegistryHash !== run.release.configuration.behavior.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
     await this.assertCapability(run, name);
-    const write = name !== 'read_ticket';
+    const write = this.isWrite(name);
     const p = await this.current(run.principal);
     const operationId = digest({ runId: run.view.runId, callId, tenant: p.tenantId, application: p.applicationId });
     const existing = (await this.store.pool.query('SELECT * FROM ae_operations_v1 WHERE id=$1', [operationId])).rows[0];
@@ -51,8 +64,9 @@ export class PersistentToolBroker {
       const saved = existing.prepared as PreparedTool;
       if (saved.request.capabilityId !== name || digest(saved.request.arguments) !== digest(args)) throw new PolicyError('IDEMPOTENCY_CONFLICT');
       await this.host.read(p, saved.request.targetId); // current authority even for cached successful receipts
+      if (['read_ticket_members', 'change_ticket_assignee'].includes(saved.request.capabilityId)) await this.host.listMembers!(p, saved.request.targetId);
       if (existing.result) return existing.result as ToolResult;
-      if (!saved.write) { const result: ToolResult = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, saved.request.targetId, run.release?.configuration.behavior) } }; await this.record(run.view.runId, operationId, result); return result; }
+      if (!saved.write) { const result: ToolResult = { status: 'succeeded', operationId, receiptId: randomUUID(), data: await this.readData(p, saved, run.release?.configuration.behavior) }; await this.record(run.view.runId, operationId, result); return result; }
       // Reservation survived a crash: never dispatch again, even if the host has no receipt.
       const result = validateHostResult(operationId, await this.host.query(p, operationId));
       if (result.status === 'succeeded') await this.record(run.view.runId, operationId, result);
@@ -92,10 +106,19 @@ export class PersistentToolBroker {
         result = !dispatched && e instanceof PolicyError ? { status: 'denied', code: e.code, message: e.code }
           : { status: 'outcome-unknown', operationId, message: 'Host write may have completed. Query the same operation; never blindly retry.' };
       }
-    } else result = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, prepared.request.targetId, run.release?.configuration.behavior) } };
+    } else result = { status: 'succeeded', operationId, receiptId: randomUUID(), data: await this.readData(p, prepared, run.release?.configuration.behavior) };
     result = await this.record(run.view.runId, operationId, result);
     if (write) await this.fault?.('after-receipt');
     return result;
+  }
+  private async readData(principal: Principal, prepared: PreparedTool, behavior?: BehaviorSelection): Promise<JsonObject> {
+    const ticket = await this.host.read(principal, prepared.request.targetId, behavior);
+    if (prepared.request.capabilityId === 'read_ticket') return { ...ticket };
+    if (prepared.request.capabilityId !== 'read_ticket_members' || !this.host.listMembers) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
+    const members = await this.host.listMembers(principal, prepared.request.targetId);
+    // Reuse the scoped-member projection; host output is data, not authority.
+    const facade = new AuthorizedTicketHost({ readTicket: () => ticket, listMembers: () => members, changePriority: () => { throw new Error('Read facade cannot write'); } });
+    return { ticketId: ticket.id, members: facade.members(principal, ticket.id).map(member => ({ ...member })) };
   }
   async record(runId: string, operationId: string, result: ToolResult, reconcile = false): Promise<ToolResult> {
     return this.store.update(runId, async (r, c) => {

@@ -3,13 +3,14 @@
 import pg from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { PolicyError } from '@ae/policy';
+import { ticketCapabilities } from '@ae/capabilities';
 
 const canonical = value => value === null || typeof value !== 'object' ? JSON.stringify(value)
   : Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
     : `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
 const hash = value => createHash('sha256').update(canonical(value)).digest('hex');
 const identity = p => [p.tenantId, p.applicationId, p.subjectId];
-const asTicket = row => ({ id: row.id, tenantId: row.tenant_id, title: row.title, priority: row.priority, version: row.version });
+const asTicket = row => ({ id: row.id, tenantId: row.tenant_id, title: row.title, priority: row.priority, version: row.version, ...(row.assignee_id ? { assigneeId: row.assignee_id } : {}) });
 
 export function validateDatabaseUrl(databaseUrl) {
   if (!databaseUrl) throw new Error('Pass an isolated synthetic PostgreSQL URL explicitly');
@@ -40,8 +41,18 @@ export class SyntheticDurableHost {
       CREATE TABLE IF NOT EXISTS qualification_host.tickets (
         tenant_id text NOT NULL, application_id text NOT NULL, id text NOT NULL,
         title text NOT NULL, priority text NOT NULL CHECK (priority IN ('low', 'high')),
-        version integer NOT NULL, mutation_count integer NOT NULL DEFAULT 0,
+        version integer NOT NULL, mutation_count integer NOT NULL DEFAULT 0, assignee_id text,
         PRIMARY KEY (tenant_id, application_id, id)
+      );
+      ALTER TABLE qualification_host.tickets ADD COLUMN IF NOT EXISTS assignee_id text;
+      CREATE TABLE IF NOT EXISTS qualification_host.members (
+        tenant_id text NOT NULL, application_id text NOT NULL, id text NOT NULL,
+        display_name text NOT NULL, active boolean NOT NULL,
+        PRIMARY KEY (tenant_id, application_id, id)
+      );
+      CREATE TABLE IF NOT EXISTS qualification_host.ticket_members (
+        tenant_id text NOT NULL, application_id text NOT NULL, ticket_id text NOT NULL, member_id text NOT NULL,
+        PRIMARY KEY (tenant_id, application_id, ticket_id, member_id)
       );
       CREATE TABLE IF NOT EXISTS qualification_host.receipts (
         tenant_id text NOT NULL, application_id text NOT NULL, subject_id text NOT NULL,
@@ -68,6 +79,17 @@ export class SyntheticDurableHost {
       (tenant_id,application_id,id,title,priority,version) VALUES ($1,$2,$3,$4,'low',1)`,
     [principal.tenantId, principal.applicationId, ticketId, `Synthetic qualification ${ticketId}`]);
   }
+  async seedMembers(principal, ticketId) {
+    const ids = { active: `member-${ticketId}`, inactive: `inactive-${ticketId}`, foreign: `foreign-${ticketId}`, unscoped: `unscoped-${ticketId}` };
+    for (const [kind, id] of Object.entries(ids)) {
+      await this.pool.query('INSERT INTO qualification_host.members VALUES($1,$2,$3,$4,$5)',
+        [kind === 'foreign' ? `${principal.tenantId}-foreign` : principal.tenantId, principal.applicationId, id, `Synthetic ${kind} member`, kind !== 'inactive']);
+      if (['active', 'inactive'].includes(kind)) await this.pool.query('INSERT INTO qualification_host.ticket_members VALUES($1,$2,$3,$4)',
+        [principal.tenantId, principal.applicationId, ticketId, id]);
+    }
+    return ids;
+  }
+  async currentCapabilities() { return structuredClone(ticketCapabilities); }
   async revokeWrite(principal) {
     await this.pool.query('UPDATE qualification_host.principals SET roles=$4, scopes=$5 WHERE tenant_id=$1 AND application_id=$2 AND subject_id=$3',
       [...identity(principal), JSON.stringify(['viewer']), JSON.stringify(['tickets:read'])]);
@@ -95,6 +117,16 @@ export class SyntheticDurableHost {
     if (!rows[0]) throw new PolicyError('HOST_TICKET_NOT_FOUND');
     return asTicket(rows[0]);
   }
+  async listMembers(principal, ticketId) {
+    const current = await this.currentPrincipal(principal);
+    await this.read(current, ticketId); // Membership uses this ticket's existing read authority.
+    await this.record('members', current, undefined, ticketId);
+    const { rows } = await this.pool.query(`SELECT m.* FROM qualification_host.members m
+      JOIN qualification_host.ticket_members tm ON tm.tenant_id=m.tenant_id AND tm.application_id=m.application_id AND tm.member_id=m.id
+      WHERE tm.tenant_id=$1 AND tm.application_id=$2 AND tm.ticket_id=$3 AND m.active=true ORDER BY m.id`,
+    [current.tenantId, current.applicationId, ticketId]);
+    return rows.map(row => ({ id: row.id, tenantId: row.tenant_id, displayName: row.display_name, active: row.active }));
+  }
   async write(principal, request) {
     await this.record('write', principal, request.operationId, request.targetId);
     const client = await this.pool.connect();
@@ -103,8 +135,13 @@ export class SyntheticDurableHost {
       const current = await this.currentPrincipal(principal, client);
       this.authorize(current, true);
       const args = request.arguments;
-      if (request.capabilityId !== 'change_ticket_priority' || request.targetId !== args.ticketId
-        || !['low', 'high'].includes(args.priority) || !Number.isInteger(args.expectedVersion)) throw new PolicyError('HOST_INVALID_REQUEST');
+      const assignment = request.capabilityId === 'change_ticket_assignee';
+      if ((!assignment && request.capabilityId !== 'change_ticket_priority') || request.targetId !== args.ticketId
+        || (assignment ? typeof args.assigneeId !== 'string' || !args.assigneeId : !['low', 'high'].includes(args.priority))
+        || !Number.isInteger(args.expectedVersion) || args.expectedVersion < 1
+        || request.expectedResourceVersion !== String(args.expectedVersion)) throw new PolicyError('HOST_INVALID_REQUEST');
+      const denied = await client.query('SELECT 1 FROM qualification_host.read_denials WHERE tenant_id=$1 AND application_id=$2 AND subject_id=$3 AND target_id=$4', [...identity(current), args.ticketId]);
+      if (denied.rows.length) throw new PolicyError('RESOURCE_DENIED');
       // Row lock serializes mutation+receipt for this target, including concurrent retries.
       const { rows } = await client.query('SELECT * FROM qualification_host.tickets WHERE tenant_id=$1 AND application_id=$2 AND id=$3 FOR UPDATE',
         [current.tenantId, current.applicationId, args.ticketId]);
@@ -118,8 +155,18 @@ export class SyntheticDurableHost {
         return old.rows[0].result;
       }
       if (rows[0].version !== args.expectedVersion) throw new PolicyError('RESOURCE_VERSION_CONFLICT');
-      const updated = await client.query(`UPDATE qualification_host.tickets SET priority=$4,version=version+1,mutation_count=mutation_count+1
-        WHERE tenant_id=$1 AND application_id=$2 AND id=$3 RETURNING *`, [current.tenantId, current.applicationId, args.ticketId, args.priority]);
+      if (assignment) {
+        const member = await client.query(`SELECT m.id FROM qualification_host.members m
+          JOIN qualification_host.ticket_members tm ON tm.tenant_id=m.tenant_id AND tm.application_id=m.application_id AND tm.member_id=m.id
+          WHERE tm.tenant_id=$1 AND tm.application_id=$2 AND tm.ticket_id=$3 AND m.id=$4 AND m.active=true FOR SHARE OF m, tm`,
+        [current.tenantId, current.applicationId, args.ticketId, args.assigneeId]);
+        if (!member.rows.length) throw new PolicyError('MEMBER_NOT_AVAILABLE');
+      }
+      const updated = assignment
+        ? await client.query(`UPDATE qualification_host.tickets SET assignee_id=$4,version=version+1,mutation_count=mutation_count+1
+          WHERE tenant_id=$1 AND application_id=$2 AND id=$3 RETURNING *`, [current.tenantId, current.applicationId, args.ticketId, args.assigneeId])
+        : await client.query(`UPDATE qualification_host.tickets SET priority=$4,version=version+1,mutation_count=mutation_count+1
+          WHERE tenant_id=$1 AND application_id=$2 AND id=$3 RETURNING *`, [current.tenantId, current.applicationId, args.ticketId, args.priority]);
       const result = { status: 'succeeded', operationId: request.operationId, receiptId: randomUUID(), data: asTicket(updated.rows[0]) };
       await client.query('INSERT INTO qualification_host.receipts VALUES ($1,$2,$3,$4,$5,$6)',
         [...identity(current), request.operationId, requestHash, JSON.stringify(result)]);
@@ -155,14 +202,18 @@ export function createModel(host) {
     const toolMessages = request.messages.filter(message => message.role === 'tool');
     const input = request.messages.find(message => message.role === 'user')?.content ?? '';
     const extraTicket = /extra-ticket:([a-zA-Z0-9_-]+)/.exec(input)?.[1];
-    const stage = extraTicket && toolMessages.length === 0 ? 'extra-read' : toolMessages.length === (extraTicket ? 1 : 0) ? 'read' : toolMessages.length === (extraTicket ? 2 : 1) ? 'write' : 'final';
+    const assignment = /assignment-member:([a-zA-Z0-9_-]+)/.exec(input)?.[1];
+    const stage = assignment ? ['read', 'members', 'assign', 'final'][Math.min(toolMessages.length, 3)]
+      : extraTicket && toolMessages.length === 0 ? 'extra-read' : toolMessages.length === (extraTicket ? 1 : 0) ? 'read' : toolMessages.length === (extraTicket ? 2 : 1) ? 'write' : 'final';
     const ticketId = /qualification-ticket:([a-zA-Z0-9_-]+)/.exec(input)?.[1];
     if (!ticketId) throw new Error('Missing explicit synthetic ticket in model input');
     await host.pool.query('INSERT INTO qualification_host.model_calls (run_id,request_id,stage,messages,worker_pid) VALUES ($1,$2,$3,$4,$5)',
       [request.runId, request.requestId, stage, JSON.stringify(request.messages), process.pid]);
     const toolCalls = stage === 'extra-read' ? [{ callId: 'qualified-extra-read', name: 'read_ticket', arguments: { ticketId: extraTicket } }] : stage === 'read' ? [{ callId: 'qualified-read-1', name: 'read_ticket', arguments: { ticketId } }]
+      : stage === 'members' ? [{ callId: 'qualified-members-1', name: 'read_ticket_members', arguments: { ticketId } }]
+      : stage === 'assign' ? [{ callId: 'qualified-assign-1', name: 'change_ticket_assignee', arguments: { ticketId, assigneeId: assignment, expectedVersion: 1 } }]
       : stage === 'write' ? [{ callId: 'qualified-write-1', name: 'change_ticket_priority', arguments: { ticketId, priority: 'high', expectedVersion: 1 } }] : [];
-    return { schemaVersion: '1', requestId: request.requestId, mode: 'simulated', message: stage === 'final' ? 'The durable host receipt confirms high priority.' : '',
+    return { schemaVersion: '1', requestId: request.requestId, mode: 'simulated', message: stage === 'final' ? assignment ? 'The durable host receipt confirms the assigned member.' : 'The durable host receipt confirms high priority.' : '',
       toolCalls, finishReason: toolCalls.length ? 'tool-calls' : 'stop' };
   } };
 }
