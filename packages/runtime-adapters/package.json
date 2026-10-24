@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./persistent": {
+      "types": "./db/runtime.ts",
+      "default": "./dist/db/runtime.js"
     }
   }
 }

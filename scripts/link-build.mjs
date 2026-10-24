@@ -10,3 +10,6 @@ for (const entry of await readdir('packages', { withFileTypes: true })) {
     if (error.code !== 'ENOENT') throw error;
   }
 }
+
+// The opt-in PostgreSQL adapter stays separate from browser/in-memory package entrypoints.
+await cp('dist/packages/runtime-adapters/db', 'packages/runtime-adapters/dist/db', { recursive: true });

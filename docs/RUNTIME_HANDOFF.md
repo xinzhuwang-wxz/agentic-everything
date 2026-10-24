@@ -48,11 +48,11 @@ Before low/v1, after high/v2; mutationCount=1; repeated approval rejected. Actor
 Run ID d96d6e70-dfb1-4f0c-b3fa-dc2d59ceaa79; receipt 729f77fa-899d-495c-a82b-671326894429.
 Local runtime transcripts are intentionally not committed; only synthetic qualification identifiers/results are recorded here.
 
-## Explicit unqualified gates
+## Original memory-adapter boundary
 
-No PostgreSQL service was configured or exercised. The in-memory approval/operation/run ledgers do not survive restart
-and cannot coordinate multiple workers. No DBOS durable execution, cross-process restart, transaction/outbox, replay,
-lease/fencing or exactly-once claim is made. durabilityQualification exports the pending gate, not a fake DBOS engine.
+The original GovernedRuntime path does not use PostgreSQL. The in-memory approval/operation/run ledgers do not survive restart
+and cannot coordinate multiple workers. That path makes no DBOS durable execution, cross-process restart, transaction/outbox, replay,
+lease/fencing or exactly-once claim. durabilityQualification exports the pending gate, not a fake DBOS engine.
 The source-contract remains: DBOS owns scheduling and persists each nondeterministic model decision before tools;
 approval consumption and invocation reservation must become atomic database operations; unknown host writes reconcile.
 Production deployment is blocked until those tests and real host authentication complete.
@@ -63,3 +63,12 @@ browser rendering, external HTTP adapters and production telemetry are not quali
 Second independent actor qualification also passed: differently worded inspect-only request for tenant-b viewer,
 read-only tool catalog, ticket-2 low/v1, no approval proposal and zero mutations across two dynamic model rounds.
 Final local check: npm run check passed 21 tests (6 foundation + 15 runtime/SDK/IPC), strict typecheck and source hygiene.
+
+
+## Opt-in persistent adapter (2026-10-24)
+
+A separate `@ae/runtime-adapters/persistent` entrypoint now implements `PersistentRuntime` with PostgreSQL business records, DBOS-owned SDK phases, private pinned SDK snapshots, transactional approval consumption/operation reservation, and a durable host receipt port. Its asynchronous public API mirrors start/get/list/decide/cancel/reconcile with `persistence: 'postgres-dbos'`. Existing memory fixtures and default HTTP composition are not silently replaced.
+
+The actual AE path passed 16 real PostgreSQL 17.11 cases across 30 fresh OS worker processes, including approval recovery, checkpoint/replay crash boundaries, duplicate/tampered decisions, three identity-isolation dimensions, revoked rights before replayed-data disclosure, monotonic reconciliation races, cancellation after commit and timeout-after-commit reconciliation. The synthetic host has a separate transactional durable ledger; no in-memory counter conceals replay. No arbitrary external exactly-once claim is made.
+
+See [persistent runtime qualification](PERSISTENT_RUNTIME_QUALIFICATION.md) and [adapter contract](../packages/runtime-adapters/db/README.md) for exact evidence, observed warnings, API/host obligations and remaining gates. Dynamic release configuration, production identity, real providers, schema upgrades and multi-worker deployment remain separate qualifications.
