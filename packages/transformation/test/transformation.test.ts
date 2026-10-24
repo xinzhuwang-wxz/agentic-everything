@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, writeFileSync, symlinkSync, existsSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync, symlinkSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { assessProject, proposePlan, approvePlan, applyApprovedPlan, verifyAdaptation, revertAdaptation, digest } from '../src/index.js';
@@ -135,4 +135,12 @@ test('different-domain Python software gets generic evidence, never a helpdesk d
   assert.throws(() => proposePlan(assessment), /developer review/);
   assert.equal(readFileSync(join(source, 'inventory.py'), 'utf8'), before);
   assert.equal(git('status', '--porcelain'), '');
+});
+
+test('credential directories are excluded from Git materialization, not only secret extensions', () => {
+  const f = setup(); mkdirSync(join(f.source, '.ssh')); writeFileSync(join(f.source, '.ssh/id_rsa'), 'synthetic fixture credential only');
+  f.git('add', '.ssh/id_rsa'); f.git('commit', '-m', 'Synthetic nested credential');
+  const assessment = assessProject(f.source); const plan = proposePlan(assessment); const approval = approvePlan(plan, { approverId: 'user', authorizationRef: 'approved' });
+  assert.throws(() => applyApprovedPlan({ ...f, sourceRoot: f.source, assessment, plan, approval }), /secret files/);
+  assert.equal(existsSync(f.destination), false);
 });

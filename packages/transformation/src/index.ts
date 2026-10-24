@@ -93,8 +93,8 @@ export function applyApprovedPlan(input: { sourceRoot: string; destination: stri
   const parent = realpathSync(dirname(destination));
   if (parent !== dirname(destination) || destination === root || destination.startsWith(root + '/')) throw new Error('Unsafe isolation destination');
   const changes = previewPatch(root, plan, assessment);
-  const trackedEntries = git(root, ['ls-tree', '-r', '--full-tree', plan.baseCommit]).split('\n');
-  if (trackedEntries.some(entry => entry.startsWith('120000 ') || /\t(?:.*\/)?(?:\.env(?:\..*)?|credentials?(?:\..*)?|secrets?(?:\..*)?|.*\.(?:pem|key|p12))$/i.test(entry))) throw new Error('Tracked symlinks or secret files cannot enter the isolated worktree');
+  const trackedEntries = git(root, ['ls-tree', '-rz', '--full-tree', plan.baseCommit]).split('\0');
+  if (trackedEntries.some(entry => entry.startsWith('120000 ') || /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.aws|\.npmrc|\.pypirc|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?|id_(?:rsa|ed25519)|[^/]*\.(?:pem|key|p12))(?:\/|$)/i.test(entry.split('\t')[1] ?? ''))) throw new Error('Tracked symlinks or secret files cannot enter the isolated worktree');
   if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw new Error('Configured Git filters require separate execution review');
   git(root, ['worktree', 'add', '--detach', destination, plan.baseCommit]);
   for (const change of changes) { const target = safePath(destination, change.path); mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, change.after, { flag: change.before === null ? 'wx' : 'w' }); }
