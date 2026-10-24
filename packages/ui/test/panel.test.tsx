@@ -40,3 +40,34 @@ test('mounted configuration saves and publishes via injected contracts, refreshe
  try{await act(async()=>root.render(<AgenticPanel client={api} context={{ticketId:'ticket-1'}} configurationClient={configuration}/>));await submit(container);await tab('配置与发布');await click(container,'保存草稿');assert.equal(saved,true);await click(container,'校验与查看变更');assert.match(container.textContent!,/instructions changed/);await click(container,'发布不可变版本');assert.equal(published,true);assert.equal(metaCalls,2);assert.match(container.textContent!,/release-new/);await tab('助手');assert.match(container.textContent!,/请核对本次修改/);assert.match(container.textContent!,/run-1/)}finally{await act(async()=>root.unmount());container.remove()}
 });
 test('host session boundary remounts configuration and clears prior admin form',async()=>{const {AgenticMount}=await import('../../host-sdk/src/index.js');let canConfigure=true,reads=0;const configuration={state:async()=>{reads++;return {durability:'memory_fixture' as const,canConfigure,capabilities:[],drafts:[],releases:[]}},save:async()=>{throw new Error('unused')},validate:async()=>{throw new Error('unused')},publish:async()=>{throw new Error('unused')}};const api=client();const container=document.createElement('div');document.body.append(container);const root=createRoot(container);async function open(){await act(async()=>{const t=button(container,'配置与发布');t.focus();t.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Enter',bubbles:true}))})}try{await act(async()=>root.render(<AgenticMount apiBase="/api" ticketId="ticket-1" client={api} configurationClient={configuration} sessionKey="user-a"/>));await open();assert.ok(container.querySelector('.ae-configuration form'));await act(async()=>root.render(<AgenticMount apiBase="/api" ticketId="ticket-1" client={api} configurationClient={configuration} sessionKey="user-a"/>));assert.equal(reads,1);canConfigure=false;await act(async()=>root.render(<AgenticMount apiBase="/api" ticketId="ticket-1" client={api} configurationClient={configuration} sessionKey="user-b"/>));await open();assert.equal(container.querySelector('.ae-configuration form'),null);assert.match(container.textContent!,/没有配置管理权限/);assert.equal(reads,2)}finally{await act(async()=>root.unmount());container.remove()}});
+test('inline host refresh callback notifies once per observable run, not parent rerenders or identical refetch',async()=>{
+ let starts=0,refreshes=0;const observed:Array<{runId:string;ticketId:string;marker:number}>=[];let setMarker!:(value:number)=>void;
+ let current:RunView={...blank};
+ const api=client({start:async()=>{current={...blank,runId:`completed-${++starts}`,receipts:[{status:'succeeded',operationId:`op-${starts}`,receiptId:`receipt-${starts}`,data:{a:1,b:2}}]};return structuredClone(current)},get:async()=>({...structuredClone(current),receipts:current.receipts.map(r=>r.status==='succeeded'?{...r,data:{b:2,a:1}}:r)})});
+ function Host({ticketId}:{ticketId:string}){
+  const [ticket,setTicket]=React.useState({version:0});const [marker,updateMarker]=React.useState(0);setMarker=updateMarker;
+  return <><output aria-label="host refresh count">{ticket.version}</output><AgenticPanel client={api} context={{ticketId}} onRunChange={view=>{
+   if(view.status!=='succeeded')return;
+   refreshes++;if(refreshes>5)throw new Error('bounded regression guard: callback refresh loop');
+   observed.push({runId:view.runId,ticketId,marker});setTicket({version:refreshes});
+  }}/></>;
+ }
+ const container=document.createElement('div');document.body.append(container);const root=createRoot(container);
+ try{
+  await act(async()=>root.render(<Host ticketId="ticket-1"/>));await submit(container);
+  assert.equal(refreshes,1);assert.equal(container.querySelector('output')!.textContent,'1');
+  await click(container,'刷新状态');await click(container,'刷新状态');assert.equal(refreshes,1,'equal snapshots, even reordered JSON keys, must not refresh host');
+  await act(async()=>setMarker(7));assert.equal(refreshes,1,'new inline callback must not replay last completion');
+  const field=container.querySelector('textarea')!;
+  await act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype,'value')!.set!.call(field,'再次读取');field.dispatchEvent(new dom.window.Event('input',{bubbles:true}))});
+  await act(async()=>container.querySelector('form')!.dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true})));
+  assert.equal(refreshes,2);assert.deepEqual(observed[1],{runId:'completed-2',ticketId:'ticket-1',marker:7},'notification uses latest closure');
+  await act(async()=>root.render(<Host ticketId="ticket-2"/>));assert.equal(refreshes,2,'context transition must not notify old run');
+  await submit(container);assert.equal(refreshes,3);assert.deepEqual(observed[2],{runId:'completed-3',ticketId:'ticket-2',marker:7});
+ }finally{await act(async()=>root.unmount());container.remove()}
+});
+test('late completion from old context never calls current host callback',async()=>{
+ let resolve!:(view:RunView)=>void;const notifications:string[]=[];const api=client({start:()=>new Promise<RunView>(r=>{resolve=r})});
+ const container=document.createElement('div');document.body.append(container);const root=createRoot(container);
+ try{await act(async()=>root.render(<AgenticPanel client={api} context={{ticketId:'old'}} onRunChange={view=>notifications.push(`old:${view.runId}`)}/>));await submit(container);await act(async()=>root.render(<AgenticPanel client={api} context={{ticketId:'new'}} onRunChange={view=>notifications.push(`new:${view.runId}`)}/>));await act(async()=>resolve({...blank,status:'succeeded'}));assert.deepEqual(notifications,[])}finally{await act(async()=>root.unmount());container.remove()}
+});

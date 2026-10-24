@@ -13,11 +13,17 @@ const inspect = (value:unknown) => JSON.stringify(value,null,2);
 export function AgenticPanel({client,context,title='业务助手',storageKey,onRunChange,configurationClient}:AgenticPanelProps) {
  const [pendingInput,setPendingInput]=useState('');
  const [meta,setMeta]=useState<RuntimeMeta>(); const [capabilities,setCapabilities]=useState<CapabilityVersion[]>([]);
- const [run,setRun]=useState<RunView>(); const [input,setInput]=useState(''); const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const [lastInput,setLastInput]=useState('');
+ const [runSnapshot,setRunSnapshot]=useState<{view:RunView;generation:number}>();
+ const run=runSnapshot?.view;
+ const setRun=(view:RunView|undefined)=>setRunSnapshot(view?{view,generation:generation.current}:undefined);
+ const onRunChangeRef=useRef(onRunChange);
+ const lastNotification=useRef<string|undefined>(undefined);
+ useEffect(()=>{onRunChangeRef.current=onRunChange},[onRunChange]); const [input,setInput]=useState(''); const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const [lastInput,setLastInput]=useState('');
  const locked=useRef(false); const generation=useRef(0); const [connected,setConnected]=useState(false);
  useEffect(()=>{
   let alive=true;
   generation.current++;
+  lastNotification.current=undefined;
   setRun(undefined); setError(''); setConnected(false); setMeta(undefined);
   setCapabilities([]); setLastInput(''); setPendingInput('');
   locked.current=true; setBusy(true);
@@ -39,10 +45,19 @@ export function AgenticPanel({client,context,title='业务助手',storageKey,onR
   void connect();
   return ()=>{alive=false;generation.current++};
  },[client,context.ticketId,storageKey]);
- useEffect(()=>{if(run)onRunChange?.(run)},[run,onRunChange]);
- useEffect(()=>{if(storageKey&&run){try{sessionStorage.setItem(storageKey,run.runId)}catch{}}},[storageKey,run?.runId]);
- useEffect(()=>{if(!run||!active.has(run.status))return;let stopped=false;let timer:ReturnType<typeof setTimeout>;
-  const poll=async()=>{try{const next=await client.get(run.runId);if(!stopped){setRun(next);setError('');timer=setTimeout(poll,1000)}}catch{if(!stopped){setError('连接中断，执行结果尚未确认。请刷新状态，不要重复提交。');}}};
+ // Callback identity is not an observable run change. Notify before a parent
+ // refresh can rerender us, and reject a snapshot owned by an older context.
+ useEffect(()=>{
+  if(!runSnapshot||runSnapshot.generation!==generation.current)return;
+  const view=runSnapshot.view;
+  const signature=JSON.stringify(view,(_key,value:unknown)=>value&&typeof value==='object'&&!Array.isArray(value)?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))):value);
+  if(signature===lastNotification.current)return;
+  lastNotification.current=signature;
+  onRunChangeRef.current?.(view);
+ },[runSnapshot]);
+ useEffect(()=>{if(storageKey&&runSnapshot&&runSnapshot.generation===generation.current){try{sessionStorage.setItem(storageKey,runSnapshot.view.runId)}catch{}}},[storageKey,run?.runId]);
+ useEffect(()=>{if(!run||!active.has(run.status))return;const current=generation.current;let stopped=false;let timer:ReturnType<typeof setTimeout>;
+  const poll=async()=>{try{const next=await client.get(run.runId);if(!stopped&&current===generation.current){setRun(next);setError('');timer=setTimeout(poll,1000)}}catch{if(!stopped&&current===generation.current){setError('连接中断，执行结果尚未确认。请刷新状态，不要重复提交。');}}};
   timer=setTimeout(poll,1000);return()=>{stopped=true;clearTimeout(timer)};
  },[client,run?.runId,run?.status]);
  async function perform(action:()=>Promise<RunView>){if(locked.current)return;locked.current=true;setBusy(true);setError('');const current=generation.current;try{const next=await action();if(current===generation.current){setRun(next);setPendingInput('')}}catch(e){if(current===generation.current)setError(`${e instanceof Error?e.message:'请求失败'}。状态未确认，请刷新状态后再操作。`)}finally{if(current===generation.current){locked.current=false;setBusy(false)}}}
