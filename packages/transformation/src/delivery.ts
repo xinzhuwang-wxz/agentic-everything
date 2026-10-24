@@ -28,7 +28,7 @@ function status(checks: VerificationReport['checks']): DeliveryManifest['status'
 const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
 const bytesHash = (value: Buffer) => createHash('sha256').update(value).digest('hex');
 function safeAbsolute(path: string): string {
-  const absolute = resolve(path); let current = sep;
+  const absolute = resolve(path); let current: string = sep;
   for (const part of absolute.split(sep).filter(Boolean)) {
     current = join(current, part);
     try { if (lstatSync(current).isSymbolicLink()) throw new Error('Symlink path is forbidden'); }
@@ -113,7 +113,7 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
       if (safeAbsolute(result.artifacts[key]!) !== join(out, 'evidence', name)) throw new Error('Unexpected harness artifact location');
       const bytes = read(out, 'evidence/' + name); evidenceFiles.set('evidence/' + name, bytes); evidence[key] = JSON.parse(bytes.toString('utf8'));
     }
-    await checkFixtureDeliveryEvidence(evidence as Parameters<typeof checkFixtureDeliveryEvidence>[0]);
+    await checkFixtureDeliveryEvidence({report:evidence.report,baseline:evidence.baseline,differential:evidence.differential,originalBuild:evidence.originalBuild,candidateBuild:evidence.candidateBuild,runtime:evidence.runtime,browser:evidence.browser});
     verification.checks = [...verification.checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     verification.observedAt = new Date().toISOString();
     verification.environment = 'Fixed react-helpdesk-synthetic-v1 isolated fixture harness; no customer code execution';
@@ -164,7 +164,7 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
     if (plan.verificationAuthorization) {
       const evidence: Record<string, unknown> = {};
       for (const [key, name] of Object.entries(EVIDENCE_FILES)) { const path = 'evidence/' + name; expectedPaths.push(path); evidence[key] = object(path); }
-      await checkFixtureDeliveryEvidence(evidence as Parameters<typeof checkFixtureDeliveryEvidence>[0]);
+      await checkFixtureDeliveryEvidence({report:evidence.report,baseline:evidence.baseline,differential:evidence.differential,originalBuild:evidence.originalBuild,candidateBuild:evidence.candidateBuild,runtime:evidence.runtime,browser:evidence.browser});
       checks = [...checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     }
     checks.push(authorizationCheck(approval, manifest.createdAt));
