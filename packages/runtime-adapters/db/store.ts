@@ -1,15 +1,16 @@
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
-import type { AgentRelease, Principal, RunStatus, RunEvent, ToolResult, ApprovalDecision, JsonObject } from '@ae/contracts';
+import type { ConversationRunBinding, AgentRelease, Principal, RunStatus, RunEvent, ToolResult, ApprovalDecision, JsonObject } from '@ae/contracts';
 import { PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { verifyRelease } from '@ae/control-plane';
+import { conversationMigration } from './conversations.js';
 import type { PreparedTool } from '@ae/capabilities';
 export interface Queryable { query(sql: string, values?: unknown[]): Promise<{ rows: Record<string, any>[]; rowCount: number | null }> }
 interface Client extends Queryable { release(): void }
 interface Pool extends Queryable { connect(): Promise<Client>; end(): Promise<void> }
 const PgPool = (createRequire(import.meta.url)('pg') as { Pool: new(options: { connectionString: string }) => Pool }).Pool;
 export interface PersistentRunView { runId: string; releaseId?: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'postgres-dbos'; modelMode: 'configured-model-port' }
-export interface StoredRun { view: PersistentRunView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: 'tickets-policy-v1'; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
+export interface StoredRun { conversation?: ConversationRunBinding; view: PersistentRunView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: 'tickets-policy-v1'; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
 // AE business ledger, never a scheduler. DBOS owns all execution/recovery.
 export const migration = `
 CREATE TABLE IF NOT EXISTS ae_runs_v1 (id text PRIMARY KEY, body jsonb NOT NULL);
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS ae_operations_v1 (id text PRIMARY KEY, run_id text NO
 export class PersistentStore {
   readonly pool: Pool;
   constructor(databaseUrl: string) { this.pool = new PgPool({ connectionString: databaseUrl }); }
-  async migrate(): Promise<void> { await this.pool.query(migration); }
+  async migrate(): Promise<void> { await this.pool.query(migration + conversationMigration); }
   async close(): Promise<void> { await this.pool.end(); }
   async transaction<T>(fn: (client: Queryable) => Promise<T>): Promise<T> { const c = await this.pool.connect(); try { await c.query('BEGIN'); const result = await fn(c); await c.query('COMMIT'); return result; } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); } }
   async load(id: string, principal?: Principal, client: Queryable = this.pool, lock = false): Promise<StoredRun> {

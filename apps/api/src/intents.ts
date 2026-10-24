@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { AgentReleaseSchema, PrincipalSchema, type Principal } from '@ae/contracts';
+import { AgentReleaseSchema, PrincipalSchema, ConversationRunBindingSchema, ConversationContextSchema, type ConversationContext, type Principal } from '@ae/contracts';
 import { verifyRelease } from '@ae/control-plane';
 import { digest, PolicyError, samePrincipal } from '@ae/policy';
-const StoredStartSchema=z.strictObject({runId:z.string(),principal:PrincipalSchema,releaseId:z.string(),release:AgentReleaseSchema,input:z.string().trim().min(1).max(16384),context:z.strictObject({ticketId:z.string().min(1).max(100)}).optional()});
-export type StoredIntentStart=Omit<z.infer<typeof StoredStartSchema>,'context'>&{context?:{ticketId:string}};
+const StoredStartSchema=z.strictObject({runId:z.string(),principal:PrincipalSchema,releaseId:z.string(),release:AgentReleaseSchema,input:z.string().trim().min(1).max(16384),context:ConversationContextSchema.optional(),conversation:ConversationRunBindingSchema.optional()});
+export type StoredIntentStart=Omit<z.infer<typeof StoredStartSchema>,'context'|'conversation'>&{context?:ConversationContext;conversation?:z.infer<typeof ConversationRunBindingSchema>};
 export interface IntentRow {intent_key:unknown;intent_token:unknown;input_hash:unknown;run_id:unknown;start_hash:unknown;start:unknown}
 /** Shared by startup and request replay. A content hash alone does not bind a ledger row. */
 export function validateIntentRow(row:IntentRow, expected?:{principal:Principal;intent:string}):StoredIntentStart{
   const parsed=StoredStartSchema.safeParse(row.start);
   if(!parsed.success||typeof row.intent_token!=='string'||!/^[a-zA-Z0-9_.:-]{1,128}$/.test(row.intent_token))throw new PolicyError('INTENT_BINDING_DENIED');
-  const {context,...base}=parsed.data;const start:StoredIntentStart={...base,...(context?{context}:{})};
-  const key=digest([start.principal.tenantId,start.principal.applicationId,start.principal.subjectId,row.intent_token]);
-  if(row.intent_key!==key||start.runId!==`intent-${key}`||row.run_id!==start.runId||row.start_hash!==digest(start)||row.input_hash!==digest({input:start.input,...(start.context?{context:start.context}:{})}))throw new PolicyError('INTENT_BINDING_DENIED');
+  const {context,conversation,...base}=parsed.data;const start:StoredIntentStart={...base,...(context?{context}:{}),...(conversation?{conversation}:{})};
+  const key=digest([start.principal.tenantId,start.principal.applicationId,start.principal.subjectId,...(start.conversation?[start.conversation.conversationId]:[]),row.intent_token]);
+  if(row.intent_key!==key||start.runId!==`intent-${key}`||row.run_id!==start.runId||row.start_hash!==digest(start)||row.input_hash!==digest({input:start.input,...(start.context?{context:start.context}:{}),...(start.conversation?{conversationId:start.conversation.conversationId}:{})}))throw new PolicyError('INTENT_BINDING_DENIED');
   if(expected&&(!samePrincipal(start.principal,expected.principal)||row.intent_token!==expected.intent))throw new PolicyError('INTENT_BINDING_DENIED');
   verifyRelease(start.release);
   if(start.releaseId!==start.release.releaseId||start.release.tenantId!==start.principal.tenantId||start.release.applicationId!==start.principal.applicationId)throw new PolicyError('INTENT_BINDING_DENIED');

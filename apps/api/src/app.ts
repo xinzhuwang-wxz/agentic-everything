@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ApprovalDecisionSchema, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
+import { ApprovalDecisionSchema, ConversationContextSchema, type JsonObject, type ConversationContext, type ConversationView, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
 import { type RunView } from '@ae/runtime-core';
 import { InMemoryControlPlane, releasedCatalog, type ControlPlanePort } from '@ae/control-plane';
 import { createConfigurationRoutes } from '@ae/control-plane/http';
@@ -23,7 +23,9 @@ export interface ApiOptions {
   durability?: 'memory_fixture' | 'postgres_qualified';
   requirePublishedRelease?: boolean;
   /** Optional durable intent ledger supplied only by trusted server composition. */
-  startIntent?: (input: {principal: Principal; intent: string; input: string; context?: {ticketId: string}}) => Promise<ApiRunView>;
+  startIntent?: (input: {principal: Principal; intent: string; input: string; context?: JsonObject; conversationId?: string}) => Promise<ApiRunView>;
+  /** Optional server-owned conversation projection; absent on the legacy in-memory fixture. */
+  conversations?: { create(principal: Principal, context: ConversationContext, intent: string): Promise<ConversationView>; get(id: string, principal: Principal): Promise<ConversationView> };
   /** Host session/auth middleware supplies this function. Headers/body are never a principal. */
   resolvePrincipal: (request: Request) => Principal | undefined | Promise<Principal | undefined>;
   releaseId: string;
@@ -42,7 +44,7 @@ export function createApi(options: ApiOptions): Hono {
   app.onError((error, c) => {
     if (error instanceof HttpError) return c.json({ error: { code: error.code, message: error.code } }, error.status);
     if (error instanceof PolicyError) {
-      const status = error.code === 'RUN_NOT_FOUND' ? 404 : /DENIED/.test(error.code) ? 403 : 409;
+      const status = ['RUN_NOT_FOUND', 'CONVERSATION_NOT_FOUND'].includes(error.code) ? 404 : /DENIED/.test(error.code) ? 403 : 409;
       return c.json({ error: { code: error.code, message: error.code } }, status);
     }
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'The request stopped safely. Do not repeat an uncertain write.' } }, 500);
@@ -90,6 +92,25 @@ export function createApi(options: ApiOptions): Hono {
     try { return c.json({ ticket: await options.broker.host.read(p, c.req.param('ticketId'), release?.configuration.behavior), behaviorReleaseId: release?.releaseId ?? null }); }
     catch (error) { if (error instanceof PolicyError) throw error; throw new HttpError('TICKET_NOT_FOUND', 404); }
   });
+  if (options.conversations && options.startIntent) {
+    const conversations = options.conversations, startIntent = options.startIntent;
+    const intent = (request: Request): string => {
+      const value = request.headers.get('idempotency-key');
+      if (!value || !/^[a-zA-Z0-9_.:-]{1,128}$/.test(value)) throw new HttpError('IDEMPOTENCY_KEY_REQUIRED', 400);
+      return value;
+    };
+    app.post('/api/conversations', async c => {
+      const p = await principal(c.req.raw), parsed = z.strictObject({ context: ConversationContextSchema }).safeParse(await body(c.req.raw));
+      if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);
+      return c.json(await conversations.create(p, parsed.data.context, intent(c.req.raw)), 201);
+    });
+    app.get('/api/conversations/:conversationId', async c => c.json(await conversations.get(c.req.param('conversationId'), await principal(c.req.raw))));
+    app.post('/api/conversations/:conversationId/runs', async c => {
+      const p = await principal(c.req.raw), parsed = z.strictObject({ input: z.string().trim().min(1).max(16384), context: ConversationContextSchema.optional() }).safeParse(await body(c.req.raw));
+      if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);
+      return c.json(await startIntent({ principal: p, intent: intent(c.req.raw), conversationId: c.req.param('conversationId'), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) }), 201);
+    });
+  }
   app.post('/api/runs', async c => {
     const p = await principal(c.req.raw), parsed = StartSchema.safeParse(await body(c.req.raw));
     if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);

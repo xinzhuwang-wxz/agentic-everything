@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "cases": [
+    "durable ordered text history survives SIGKILL without model or tool replay",
+    "real SDK second turn sees only prior authorized text; duplicate intent is one run",
+    "tenant/application/subject/context/conversation isolation and out-of-context tool denial",
+    "approved checkpoint restart cannot bypass changed field-grant authority or redisclose old SDK state",
+    "mid-model field revocation prevents assistant text persistence and public response",
+    "field-grant revocation after operation reservation blocks host dispatch",
+    "cancellation during final history-target authorization prevents host dispatch",
+    "completion uses transaction client with all nine other PG pool connections occupied",
+    "unknown blocks continuation; reconciliation atomically restores successful text history without repeating write",
+    "reconciliation text savepoint rolls back on late authority change while proven success receipt remains",
+    "unfinished turn blocks continuation; exact approval/call ID/release survive restart; one host mutation",
+    "field-grant epoch change blocks history and model disclosure despite unchanged owner/read access",
+    "current capability/role revocation and expiry fail closed",
+    "atomic conversation intent/turn reservation recovers commit-before-submit after SIGKILL",
+    "capacity admission rejects oversized retained text without dispatch or silent truncation",
+    "legacy /api/runs remains independent and compatible"
+  ],
+  "scope": "Synthetic HTTP + PostgreSQL17.11 + DBOS5.3.0 + official Agents SDK0.21.0; no provider calls, no UI claim"
+}

@@ -1,0 +1,7 @@
+{
+  "status": "pass",
+  "commandExitCode": 0,
+  "postgresStopExitCode": 0,
+  "postmasterPidRemoved": true,
+  "observedAt": "2026-10-24T22:25:52.599Z"
+}

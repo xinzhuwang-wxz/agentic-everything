@@ -1,25 +1,31 @@
 import { randomUUID } from 'node:crypto';
 import { Agent, Runner, RunState } from '@openai/agents';
 import { DBOS } from '@dbos-inc/dbos-sdk';
-import { ModelResponseSchema, type AgentRelease, type ApprovalDecision, type JsonObject, type ModelProvider, type Principal } from '@ae/contracts';
+import { ModelResponseSchema, type ConversationRunBinding, type AgentRelease, type ApprovalDecision, type JsonObject, type ModelProvider, type Principal } from '@ae/contracts';
 import { PolicyError, samePrincipal, authorize } from '@ae/policy';
 import { verifyRelease, releasedCatalog } from '@ae/control-plane';
 import { AgentsModelPort, createAgentsTools } from '@ae/runtime-adapters';
+import { ConversationStore } from './conversations.js';
 import { PersistentStore, type PersistentRunView, type StoredRun } from './store.js';
 import { abortable, validateHostResult, PersistentToolBroker, type DurableTicketHost } from './broker.js';
 export type { PersistentRunView, DurableTicketHost };
 export interface PersistentRuntimeOptions { databaseUrl: string; model: ModelProvider; host: DurableTicketHost; maxTurns?: number; maxElapsedMs?: number; fault?: (point: string) => Promise<void> }
-type Start = { runId?: string; principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: { ticketId: string } };
+type Start = { conversation?: ConversationRunBinding; runId?: string; principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: JsonObject };
 type Phase = { runId: string; phase: string; start?: Start; principal?: Principal; decision?: ApprovalDecision };
 /** Opt-in runtime. One instance/configuration per worker process; DBOS is the sole scheduler. */
 export class PersistentRuntime {
   readonly store: PersistentStore;
   readonly broker: PersistentToolBroker;
+  readonly conversations: ConversationStore;
   private readonly workflow: (phase: Phase) => Promise<void>;
   private readonly aborts = new Map<string, AbortController>();
   constructor(private readonly options: PersistentRuntimeOptions) {
     this.store = new PersistentStore(options.databaseUrl);
-    this.broker = new PersistentToolBroker(this.store, options.host, options.fault);
+    this.broker = new PersistentToolBroker(this.store, options.host, options.fault, async (run, target, client) => {
+      await this.conversations.assertRun(run, client);
+      await this.conversations.assertTarget(run, target.capabilityId, target.targetId, client);
+    }, (run, client) => this.conversations.complete(run, client));
+    this.conversations = new ConversationStore(this.store, this.broker);
     this.workflow = DBOS.registerWorkflow(async (phase: Phase) => this.runPhase(phase), { name: 'ae-persistent-phase-v1' });
   }
   async launch(): Promise<void> {
@@ -75,6 +81,7 @@ export class PersistentRuntime {
     return this.get(runId, principal);
   }
   private async assertReadable(run: StoredRun, principal: Principal): Promise<void> {
+    await this.conversations.assertRun(run);
     const current = await this.broker.current(principal);
     // Private prepared operation targets, including earlier reads, not model/receipt claims.
     const operations = await this.store.pool.query('SELECT prepared FROM ae_operations_v1 WHERE run_id=$1', [run.view.runId]);
@@ -87,13 +94,14 @@ export class PersistentRuntime {
       if (!this.options.host.listMembers) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
       await this.options.host.listMembers(current, target);
     }
+    await this.conversations.assertRun(run);
   }
   private workflowId(runId: string, phase: string): string { return `ae-v1:${runId}:${phase}`; }
   private async runPhase(phase: Phase): Promise<void> {
     const step = <T>(name: string, fn: () => Promise<T>) => DBOS.runStep(fn, { name, retriesAllowed: false });
     if (phase.start) await step('create-run', async () => {
       const s = phase.start!;
-      const run: StoredRun = { view: { runId: phase.runId, releaseId: s.releaseId, status: 'queued', events: [], receipts: [], persistence: 'postgres-dbos', modelMode: 'configured-model-port' }, principal: s.principal, releaseId: s.releaseId, ...(s.release ? { release: structuredClone(s.release) } : {}), input: s.input + (s.context ? `\nPage context (untrusted hint): ${JSON.stringify(s.context)}` : ''), pins: { sdk: '0.21.0', workflow: 'ae-v1', policy: 'tickets-policy-v1', capability: '1', ...(s.release ? { releaseHash: s.release.contentHash } : {}) }, cancelled: false, phase: 'initial' };
+      const run: StoredRun = { ...(s.conversation ? { conversation: structuredClone(s.conversation) } : {}), view: { runId: phase.runId, releaseId: s.releaseId, status: 'queued', events: [], receipts: [], persistence: 'postgres-dbos', modelMode: 'configured-model-port' }, principal: s.principal, releaseId: s.releaseId, ...(s.release ? { release: structuredClone(s.release) } : {}), input: s.input + (s.context ? `\nPage context (untrusted hint): ${JSON.stringify(s.context)}` : ''), pins: { sdk: '0.21.0', workflow: 'ae-v1', policy: 'tickets-policy-v1', capability: '1', ...(s.release ? { releaseHash: s.release.contentHash } : {}) }, cancelled: false, phase: 'initial' };
       await this.store.pool.query('INSERT INTO ae_runs_v1(id,body) VALUES($1,$2) ON CONFLICT(id) DO NOTHING', [phase.runId, JSON.stringify(run)]);
     });
     if (phase.decision) {
@@ -108,13 +116,13 @@ export class PersistentRuntime {
     const maxElapsedMs = Math.min(this.options.maxElapsedMs ?? 240_000, run.release?.configuration.bounds.maxElapsedMs ?? 240_000);
     const deadline = setTimeout(() => abort.abort(), maxElapsedMs);
     let governedFailure: string | undefined;
-    const liveAccess = async (write = false, targetId?: string) => {
+    const liveAccess = async (write = false, targetId?: string, capabilityId?: string) => {
       try {
         const current = await this.broker.current(run.principal, write);
         const latest = await this.store.load(phase.runId);
         if (latest.cancelled) throw new PolicyError('CANCELLED');
         await this.assertReadable(latest, run.principal);
-        if (targetId) await this.options.host.read(current, targetId);
+        if (targetId) { await this.conversations.assertTarget(run, capabilityId ?? '', targetId); await this.options.host.read(current, targetId); }
       } catch (error) { if (error instanceof PolicyError) governedFailure = error.code; throw error; }
     };
     const provider: ModelProvider = { complete: async (request, signal) => {
@@ -124,24 +132,27 @@ export class PersistentRuntime {
         const live = await this.store.load(phase.runId); if (live.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
         const catalog = await this.broker.catalog(run.principal, run);
         const visible = { ...request, tools: request.tools.filter(tool => catalog.some(c => c.capabilityId === tool.name)) };
+        if (run.conversation) await liveAccess(); // immediately before disclosure, after catalog I/O
         const result = ModelResponseSchema.parse(await abortable(this.options.model.complete(visible, signal), signal));
+        if (run.conversation) await liveAccess(); // do not checkpoint a newly unauthorized response
         if (result.requestId !== request.requestId) throw new PolicyError('MODEL_CORRELATION_MISMATCH');
         return result;
       });
+      if (run.conversation) await liveAccess(); // reject responses/replay after mid-call authority changes
       // Transport request IDs are fresh on SDK replay; persisted model content/tool identities are not regenerated.
       return { ...result, requestId: request.requestId };
     } };
     const execute = async (name: string, args: JsonObject, callId: string) => {
       await this.broker.assertCapability(run, name);
       const write = this.broker.isWrite(name);
-      await liveAccess(write, typeof args.ticketId === 'string' ? args.ticketId : undefined);
+      await liveAccess(write, typeof args.ticketId === 'string' ? args.ticketId : undefined, name);
       const result = await step('governed-tool', async () => {
         try { return await this.broker.execute(run, name, args, callId, phase.decision?.approvalId, abort.signal); }
         catch (error) { if (error instanceof PolicyError) return { status: 'denied' as const, code: error.code, message: error.code }; throw error; }
       });
       if (write) await this.options.fault?.('after-tool-checkpoint');
       if (result.status !== 'succeeded') { governedFailure = result.status === 'outcome-unknown' ? 'OUTCOME_UNKNOWN' : result.code; throw new PolicyError(governedFailure); }
-      await liveAccess(write, typeof args.ticketId === 'string' ? args.ticketId : undefined);
+      await liveAccess(write, typeof args.ticketId === 'string' ? args.ticketId : undefined, name);
       return JSON.stringify(result);
     };
     try {
@@ -162,7 +173,8 @@ export class PersistentRuntime {
         if (interruptions.length !== 1 || interruptions[0]!.rawItem.type !== 'function_call' || interruptions[0]!.rawItem.callId !== run.pending?.request.invocationId) throw new PolicyError('CHECKPOINT_APPROVAL_MISMATCH');
         state.approve(interruptions[0]!); input = state;
       }
-      const result = await new Runner({ tracingDisabled: true }).run(agent, input, { maxTurns, signal: abort.signal });
+      const session = await this.conversations.session(run);
+      const result = await new Runner({ tracingDisabled: true }).run(agent, input, { maxTurns, signal: abort.signal, ...(session ? { session } : {}) });
       if (result.interruptions.length) {
         const interruption = result.interruptions[0]!;
         if (result.interruptions.length !== 1 || interruption.rawItem.type !== 'function_call') throw new PolicyError('UNSUPPORTED_APPROVAL');
@@ -171,7 +183,9 @@ export class PersistentRuntime {
         await this.options.fault?.('before-approval-checkpoint');
         await step('persist-approval-checkpoint', async () => {
           await this.broker.assertCapability(run, call.name);
-          const prepared = await this.broker.prepare(run.principal, phase.runId, call.callId, call.name, JSON.parse(call.arguments) as JsonObject);
+          const args = JSON.parse(call.arguments) as JsonObject;
+          if (typeof args.ticketId === 'string') await this.conversations.assertTarget(run, call.name, args.ticketId);
+          const prepared = await this.broker.prepare(run.principal, phase.runId, call.callId, call.name, args);
           const approval = this.broker.approval(run.principal, prepared, run.releaseId);
           await this.store.update(phase.runId, async (r, c) => {
             if (r.cancelled) return;
@@ -182,7 +196,7 @@ export class PersistentRuntime {
             this.store.event(r, 'approval-required', { approvalId: approval.binding.approvalId, expectedHash: approval.expectedHash, preview: approval.preview }); this.store.status(r, 'awaiting-approval');
           });
         });
-      } else await step('complete-phase', () => this.store.update(phase.runId, async r => { if (r.cancelled || r.view.status === 'succeeded') return; r.view.message = String(result.finalOutput ?? ''); this.store.event(r, 'assistant-message', { message: r.view.message }); this.store.status(r, 'succeeded'); delete r.snapshot; }));
+      } else await step('complete-phase', () => this.store.update(phase.runId, async (r, c) => { if (r.cancelled || r.view.status === 'succeeded') return; r.view.message = String(result.finalOutput ?? ''); this.store.event(r, 'assistant-message', { message: r.view.message }); this.store.status(r, 'succeeded'); await this.conversations.complete(r, c); delete r.snapshot; }));
     } catch (error) {
       // Live authorization may terminate replay before its next recorded step. An idempotent
       // business-state transaction (not a DBOS step) avoids changing checkpoint call positions.

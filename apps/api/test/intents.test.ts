@@ -22,3 +22,13 @@ test('startup batch is capped and concurrency never exceeds two',async()=>{
 test('stopping recovery waits in-flight work and does not admit queued rows',async()=>{
   const releaseWork:(()=>void)[]=[];let calls=0,settled=false;const batch=recoverIntentBatch([row('one'),row('two'),row('three')],async()=>{calls++;await new Promise<void>(r=>releaseWork.push(r));});batch.stop();void batch.result.then(()=>{settled=true;});await Promise.resolve();assert.equal(settled,false);assert.equal(calls,2);for(const release of releaseWork)release();const report=await batch.result;assert.equal(report.accepted,2);assert.equal(report.deferred,true);assert.equal(calls,2);
 });
+test('conversation intent key and replay bind the conversation without changing legacy IDs',()=>{
+  const conversation={conversationId:`conversation-${'a'.repeat(64)}`,authorityHash:'b'.repeat(64),turn:1};
+  const key=digest([principal.tenantId,principal.applicationId,principal.subjectId,conversation.conversationId,'key']);
+  const start={runId:`intent-${key}`,principal,releaseId:release.releaseId,release,input:'hello',context:{documentRef:'opaque-host-reference'},conversation};
+  const record={intent_key:key,intent_token:'key',input_hash:digest({input:start.input,context:start.context,conversationId:conversation.conversationId}),run_id:start.runId,start_hash:digest(start),start};
+  assert.deepEqual(validateIntentRow(record),start);
+  const changed={...start,conversation:{...conversation,conversationId:`conversation-${'c'.repeat(64)}`}};
+  assert.throws(()=>validateIntentRow({...record,start:changed,start_hash:digest(changed)}),/INTENT_BINDING_DENIED/);
+  assert.throws(()=>validateIntentRow({...record,input_hash:digest({input:start.input,context:start.context})}),/INTENT_BINDING_DENIED/);
+});

@@ -1,14 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import { ToolResultSchema, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
+import { ToolResultSchema, type ConversationContext, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
 import { AuthorizedTicketHost, ToolBroker, ticketCapabilities, type PreparedTool, type Ticket, type Member } from '@ae/capabilities';
 import { authorize, digest, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { releasedCatalog } from '@ae/control-plane';
-import { PersistentStore, type StoredRun } from './store.js';
+import { PersistentStore, type Queryable, type StoredRun } from './store.js';
 /** A host owns its durable operation ledger and atomic business mutation. AE never supplies its database. */
 export interface DurableTicketHost {
   /** Explicit adapter implementation attestation; absent adapters reject selected behavior. */
   readonly behaviorRegistryHash?: string;
   currentPrincipal(principal: Principal): Promise<Principal>;
+  /** Optional, trusted, domain-neutral conversation policy. Not an identity provider.
+   * parseContext must reject unknown/authority fields using the host's strict reference schema.
+   * authority must change on every relevant data/field-grant or context-policy change, and
+   * deny unauthorized references. An owner/resource read alone does not authorize old text.
+   * authorizeTarget confines every capability/target to the reference's authorized boundary. */
+  conversationHistory?: {
+    parseContext(reference: unknown): ConversationContext;
+    authority(principal: Principal, context: ConversationContext): Promise<string>;
+    authorizeTarget(principal: Principal, context: ConversationContext, target: { capabilityId: string; targetId: string }): Promise<void>;
+  };
   /** Optional current host capability revocation/version view; cannot expand the fixed registry. */
   currentCapabilities?(principal: Principal): Promise<CapabilityVersion[]>;
   read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Promise<Ticket>;
@@ -18,7 +28,7 @@ export interface DurableTicketHost {
   query(principal: Principal, operationId: string): Promise<ToolResult>;
 }
 export class PersistentToolBroker {
-  constructor(readonly store: PersistentStore, readonly host: DurableTicketHost, private fault?: (point: string) => Promise<void>) {}
+  constructor(readonly store: PersistentStore, readonly host: DurableTicketHost, private fault?: (point: string) => Promise<void>, private liveConversation?: (run: StoredRun, target: { capabilityId: string; targetId: string }, client?: Queryable) => Promise<void>, private reconciledConversation?: (run: StoredRun, client: Queryable) => Promise<void>) {}
   async current(principal: Principal, write = false): Promise<Principal> { const identity = structuredClone(principal); const p = await this.host.currentPrincipal(structuredClone(identity)); if (!samePrincipal(p, identity)) throw new PolicyError('PRINCIPAL_CHANGED'); authorize(p, write); return p; }
   async catalog(principal: Principal, run?: StoredRun): Promise<CapabilityVersion[]> {
     const current = await this.current(principal);
@@ -75,6 +85,7 @@ export class PersistentToolBroker {
     const prepared = await this.prepare(p, run.view.runId, callId, name, args);
     await this.store.update(run.view.runId, async (r, c) => {
       await this.assertCapability(r, name);
+      await this.liveConversation?.(r, { capabilityId: name, targetId: prepared.request.targetId }, c);
       if (r.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
       const raced = await c.query('SELECT id FROM ae_operations_v1 WHERE id=$1', [operationId]);
       if (raced.rows.length) throw new PolicyError('OPERATION_ALREADY_RESERVED');
@@ -98,6 +109,9 @@ export class PersistentToolBroker {
         const current = await this.current(p, true); const latest = await this.store.load(run.view.runId);
         await this.assertCapability(latest, name);
         if (latest.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
+        await this.liveConversation?.(latest, { capabilityId: name, targetId: prepared.request.targetId });
+        const dispatchRun = await this.store.load(run.view.runId);
+        if (dispatchRun.cancelled || signal?.aborted) throw new PolicyError('CANCELLED');
         dispatched = true;
         result = validateHostResult(operationId, await abortable(this.host.write(current, prepared.request, signal), signal));
         await this.fault?.('after-host-write');
@@ -132,6 +146,14 @@ export class PersistentToolBroker {
       if (reconcile) {
         this.store.status(r, canonical.status === 'succeeded' ? 'succeeded' : 'manual-review');
         r.view.message = canonical.status === 'succeeded' ? 'The host receipt confirms completion. No write was retried.' : 'The outcome remains unknown; manual host reconciliation is required. No write was retried.';
+        if (canonical.status === 'succeeded' && r.conversation && this.reconciledConversation) {
+          // A content-policy change must not erase a proven host outcome. Roll back only
+          // the optional text projection; current run/history reads will still fail closed.
+          await c.query('SAVEPOINT ae_reconciled_history');
+          try { await this.reconciledConversation(r, c); }
+          catch (error) { await c.query('ROLLBACK TO SAVEPOINT ae_reconciled_history'); if (!(error instanceof PolicyError)) throw error; }
+          await c.query('RELEASE SAVEPOINT ae_reconciled_history');
+        }
       }
       return canonical;
     });
