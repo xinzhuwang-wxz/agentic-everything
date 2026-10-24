@@ -2,8 +2,8 @@ import { lstatSync, realpathSync } from 'node:fs';
 import { isAbsolute, parse, relative, resolve, sep } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
-import { ConfigurationStepSchema, PatchArtifactSchema, Sha256 } from '@ae/contracts';
-import { ConfigurationPreflight, type ConfigurationOptions, assessProject, proposePlan, previewPatch, verifyAdaptation, digest } from '@ae/transformation';
+import { PatchArtifactSchema, Sha256 } from '@ae/contracts';
+import { assessProject, proposePlan, previewPatch, verifyAdaptation, digest } from '@ae/transformation';
 
 const recipeId = 'react-helpdesk';
 const recipePaths = ['src/App.tsx', 'src/ae/AgenticMount.tsx'];
@@ -17,7 +17,7 @@ const verificationInput = z.strictObject({
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
 /** Launch configuration, not model tool arguments. Only explicitly authorized development repos. */
-export interface McpLaunchScope { allowedRepoRoot: string; configuration?: ConfigurationOptions; configurationMode?: 'self_hosted' | 'hosted'; }
+export interface McpLaunchScope { allowedRepoRoot: string; }
 function boundedRoot(input: string): string {
   if (!isAbsolute(input) || input !== resolve(input) || input === parse(input).root) throw new Error('Configure an exact absolute development repository root');
   const actual = realpathSync(input);
@@ -41,11 +41,6 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
   assessProject(root);
   const checkRoot = () => { if (boundedRoot(scope.allowedRepoRoot) !== root) throw new Error('Repository scope changed'); };
   const server = new McpServer({ name: 'agentic-everything', version: '0.1.0' });
-  const configuration = new ConfigurationPreflight(scope.configuration);
-  server.registerTool('ae_preflight', {
-    description: 'Check required configuration without reading or returning secrets. Recheck the same taskId after operator configuration. Read-only steps never require a provider key.',
-    inputSchema: z.strictObject({ taskId: z.uuid(), step: ConfigurationStepSchema }), annotations,
-  }, async ({ taskId, step }) => result(await configuration.check({ taskId, step, mode: scope.configurationMode ?? 'self_hosted' })));
   server.registerTool('ae_describe', {
     description: 'Describe AE source-to-agentic adaptation capabilities and limits. Your existing developer agent remains the coding execution owner.',
     inputSchema: z.strictObject({}), annotations,

@@ -32,14 +32,8 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
   try {
     assert.equal(client.getServerVersion()?.name, 'agentic-everything');
     const tools = (await client.listTools()).tools;
-    assert.deepEqual(tools.map(t => t.name).sort(), ['ae_assess', 'ae_describe', 'ae_plan', 'ae_preflight', 'ae_preview', 'ae_verify']);
+    assert.deepEqual(tools.map(t => t.name).sort(), ['ae_assess', 'ae_describe', 'ae_plan', 'ae_preview', 'ae_verify']);
     assert.ok(tools.every(t => t.annotations?.readOnlyHint === true));
-    const taskId = '00000000-0000-4000-8000-000000000001';
-    const preflight = data(await client.callTool({ name: 'ae_preflight', arguments: { taskId, step: 'model' } }));
-    assert.equal(preflight.status, 'needs_configuration');
-    assert.equal(preflight.checks[0].reason, 'verification_unavailable');
-    assert.equal(preflight.configuration.url, null);
-    assert.equal(data(await client.callTool({ name: 'ae_preflight', arguments: { taskId, step: 'read_only' } })).status, 'ready');
     const before = f.git('status', '--porcelain');
     const description = data(await client.callTool({ name: 'ae_describe', arguments: {} }));
     assert.equal(description.mode, 'read-only');
@@ -56,8 +50,6 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
     assert.equal(f.git('status', '--porcelain'), before);
     // Protocol/schema and authority negatives travel through the actual SDK transport.
     for (const request of [
-      { name: 'ae_preflight', arguments: { taskId, step: 'model', apiKey: 'SYNTHETIC_DO_NOT_ACCEPT' } },
-      { name: 'ae_preflight', arguments: { taskId, step: 'model', configurationUrl: 'https://example.invalid' } },
       { name: 'ae_assess', arguments: { repoRoot: '/etc' } },
       { name: 'ae_assess', arguments: { path: '../outside' } },
       { name: 'ae_plan', arguments: { recipeId: 'unknown-recipe' } },
