@@ -1,0 +1,1 @@
+{"name":"@ae/cli","version":"0.1.0","private":true,"type":"module","bin":{"ae":"./dist/index.js"},"dependencies":{"@ae/transformation":"0.1.0","@ae/contracts":"0.1.0"}}

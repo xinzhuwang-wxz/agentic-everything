@@ -1,0 +1,1 @@
+{"name":"@ae/transformation","version":"0.1.0","private":true,"type":"module","exports":"./dist/index.js","dependencies":{"@ae/contracts":"0.1.0","typescript":"5.9.3"}}

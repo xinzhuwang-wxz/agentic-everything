@@ -1,0 +1,12 @@
+{
+  "id": "react-helpdesk", "version": "1.0.0",
+  "support": "L2", "languages": ["TypeScript"], "frameworks": ["React 19"],
+  "preconditions": ["Git repository", "src/App.tsx default exported App returning main JSX", "src/tickets.ts exports readTicket and changePriority", "No changed tracked files or untracked files in recipe scope"],
+  "readPaths": ["package.json", "src/App.tsx", "src/tickets.ts"],
+  "writePaths": ["src/App.tsx", "src/ae/AgenticMount.tsx"],
+  "patchStrategy": "TypeScript AST-validated JSX insertion and additive integration module",
+  "dependencies": [{"name":"@ae/host-sdk","version":"workspace first-slice","license":"see root third-party notices"}],
+  "verification": ["Exact patch hashes", "TS/TSX syntax", "Original business source unchanged"],
+  "rollback": "Restore only patch-owned files after checking result hashes; retain isolated worktree and unrelated edits",
+  "limitations": ["Only this explicit fixture structure is supported", "Static evidence does not prove identity or authorization", "No automatic dependency installation, host code execution, deployment or migration", "Runtime/browser verification requires separate evidence"]
+}
