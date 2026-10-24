@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { openSync, readSync, closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compareBaseline, improvementRegistryHash, verifyArchive } from '@ae/verification';
-import type { ProjectAssessment, Observation, Provenance, VerificationReport } from '@ae/contracts';
+import type { ProjectAssessment, PreApplyBaseline, Observation, Provenance, VerificationReport } from '@ae/contracts';
 import { helpdeskRecipe } from './recipes/react-helpdesk.js';
+import { assertFixtureBaseline } from './fixture-baseline.js';
 
 export const fixtureProfile = 'react-helpdesk-synthetic-v1';
 export const trustedFixtureHashes: Readonly<Record<string, string>> = Object.freeze({
@@ -47,11 +48,12 @@ export function assertTrustedFixtureDelivery(input: {sourceRoot:string;candidate
 }
 export const fixtureAuthorization = Object.freeze({version:'1',profile:fixtureProfile,actions:['baseline-differential','host-build','runtime-http','browser'],isolation:'exact-fixture-temporary-worktree',network:'loopback-only-no-external',maximumCostUsd:0,maximumElapsedMs:300000,maximumHeapMiB:640});
 export function assertFixtureAuthorization(value:unknown):void {const object=value as Record<string,unknown>;if(!object||Object.keys(object).length!==Object.keys(fixtureAuthorization).length||Object.entries(fixtureAuthorization).some(([k,v])=>JSON.stringify(object[k])!==JSON.stringify(v)))throw Error('Explicit fixed fixture verification authorization required');}
-export interface FixtureDeliveryInput {sourceRoot:string;candidateRoot:string;outputDirectory:string;verificationAuthorization:unknown;authorizationExpiresAt:string;aeRoot?:string;browserExecutable?:string;}
+export interface FixtureDeliveryInput {sourceRoot:string;candidateRoot:string;outputDirectory:string;verificationAuthorization:unknown;authorizationExpiresAt:string;preApplyBaseline?:PreApplyBaseline;aeRoot?:string;browserExecutable?:string;}
 export interface FixtureDeliveryEvidence {report:unknown;baseline:unknown;differential:unknown;originalBuild:unknown;candidateBuild:unknown;runtime:unknown;browser:unknown;}
 export const fixtureBrowserPath='/tmp/ae-browser-qualification/root/usr/lib/chromium/chromium-headless-shell';
 export const fixtureBrowserHash='a41388e75895fdca589b1ad9c3e5edae482dc382c0ee90553c44b1a61cded80f';
-export function assertFixtureBrowser(path:string):void {if(realpathSync(path)!==fixtureBrowserPath||hash(readFileSync(path))!==fixtureBrowserHash)throw Error('Only the explicitly qualified pinned Chromium binary is permitted');}
+export function hashFixtureBrowser(path:string):string {const fd=openSync(path,'r');const sum=createHash('sha256'),buffer=Buffer.alloc(64*1024);try{let count:number;while((count=readSync(fd,buffer,0,buffer.length,null))>0)sum.update(buffer.subarray(0,count));return sum.digest('hex');}finally{closeSync(fd);}}
+export function assertFixtureBrowser(path:string):void {if(realpathSync(path)!==fixtureBrowserPath||hashFixtureBrowser(path)!==fixtureBrowserHash)throw Error('Only the explicitly qualified pinned Chromium binary is permitted');}
 export interface FixtureDeliveryResult {status:'pass'|'fail';reportPath:string;artifacts:Record<string,string>;checks:VerificationReport['checks'];}
 export interface FixtureProcessOutcome { started: boolean; exitCode: number | null; signal: string | null; timedOut: boolean; groupClosed: boolean; forcedCleanup: boolean; }
 export function finalizeFixtureProcessReport(report: {checks: VerificationReport['checks']; cleanup?: {status?: string}; [key: string]: unknown}, outcome: FixtureProcessOutcome) {
@@ -65,8 +67,8 @@ function currentRoot():string {let root=dirname(fileURLToPath(import.meta.url));
 /** Fixed synthetic harness only; never accepts commands, scripts, observations or a caller-provided PASS. */
 export async function runFixtureDelivery(input:FixtureDeliveryInput):Promise<FixtureDeliveryResult> {
   assertFixtureAuthorization(input.verificationAuthorization);
-  const deadlineAt=Math.min(Date.now()+300000,Date.parse(input.authorizationExpiresAt));
-  const remaining=deadlineAt-Date.now();if(!Number.isFinite(remaining)||remaining<=0)throw Error('Fixture verification authorization expired');
+  const deadlineAt=Math.min(input.preApplyBaseline ? Date.parse(input.preApplyBaseline.verificationStartedAt)+300000 : Date.now()+300000,Date.parse(input.authorizationExpiresAt));
+  const remaining=deadlineAt-Date.now();if(!Number.isFinite(remaining)||Date.parse(input.authorizationExpiresAt)<=Date.now())throw Error('Fixture verification authorization expired');
   const trust=assertTrustedFixtureDelivery(input);
   const aeRoot=realpathSync(input.aeRoot??currentRoot()), outputDirectory=resolve(input.outputDirectory);
   if(aeRoot!==realpathSync(currentRoot()))throw Error('AE tool root override denied');
@@ -77,7 +79,10 @@ export async function runFixtureDelivery(input:FixtureDeliveryInput):Promise<Fix
   const work=mkdtempSync(join(tmpdir(),'ae-delivery-'));
   const browserExecutable=input.browserExecutable??process.env.AE_BROWSER_EXECUTABLE??fixtureBrowserPath;
   const blocked=(reason:string,attempted=false,observed?:FixtureProcessOutcome):FixtureDeliveryResult=>{const checks:VerificationReport['checks']=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'].map(name=>({name,status:attempted&&name==='host-business-tests'?'fail':'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:reason,evidence:[]}));const report=finalizeFixtureProcessReport({profile:fixtureProfile,status:'fail',trust,checks,failure:reason},observed??{started:attempted,exitCode:null,signal:null,timedOut:false,groupClosed:!attempted,forcedCleanup:false});const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const path=join(outputDirectory,file);writeFileSync(path,JSON.stringify(name==='report'?report:null)+'\n');return [name,path];}));return {status:'fail',reportPath:artifacts.report!,artifacts,checks:report.checks};};
+  if(remaining<=0)return blocked('The approved 300-second verification budget was exhausted after pre-apply capture; no execution started');
   try{assertFixtureBrowser(browserExecutable);}catch(error){return blocked(String(error));}
+  if(!input.preApplyBaseline)throw Error('Execution requires the archived pre-apply baseline');
+  await assertFixtureBaseline(input.preApplyBaseline.archive,{sourceRoot:input.sourceRoot,sourceVersion:input.preApplyBaseline.baseCommit});
   const executionMs=Math.min(293000,deadlineAt-Date.now()-7000);
   if(executionMs<=0)return blocked('Insufficient authorized time for execution and owned-process cleanup');
   const args={...input,aeRoot,outputDirectory:work,browserExecutable:realpathSync(browserExecutable)};
@@ -153,4 +158,4 @@ export async function checkFixtureDeliveryEvidence(input:FixtureDeliveryEvidence
 
 export const fixtureBrowserChecks = ["original page and Refresh ticket work with collapsed overlay", "real pointer drag does not open; app-scoped position restores on reload", "keyboard move/open/Escape/launcher focus recovery", "same approval survives close and host management; explicit confirmation changes original host once via onRunChange", "360px resize clamps launcher and conversation without horizontal page overflow", "touchscreen drag does not open; subsequent tap opens and closes"];
 
-export const fixtureToolFiles=['packages/transformation/dist/fixture-harness.js','packages/transformation/dist/recipes/react-helpdesk.js','packages/verification/dist/index.js','packages/runtime-core/dist/index.js','packages/capabilities/dist/index.js','dist/apps/api/src/app.js','packages/ui/src/index.ts','packages/host-sdk/src/index.ts'];
+export const fixtureToolFiles=['packages/transformation/dist/fixture-baseline.js','packages/transformation/dist/pre-apply.js','packages/transformation/dist/fixture-harness.js','packages/transformation/dist/recipes/react-helpdesk.js','packages/verification/dist/index.js','packages/runtime-core/dist/index.js','packages/capabilities/dist/index.js','dist/apps/api/src/app.js','packages/ui/src/index.ts','packages/host-sdk/src/index.ts'];

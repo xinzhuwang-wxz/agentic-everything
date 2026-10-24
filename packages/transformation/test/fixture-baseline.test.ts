@@ -78,3 +78,4 @@ test('baseline validation rejects rehashed semantic and provenance forgeries', a
     await assert.rejects(assertFixtureBaseline(rehash(forged)), /Baseline|baseline/);
   }
 });
+test('baseline refuses local Git filters before status can execute them',async t=>{const f=setup(t),marker=join(f.parent,'filter-ran');f.git('config','filter.baseline.clean','touch '+marker);writeFileSync(join(f.sourceRoot,'.git/info/attributes'),'src/tickets.ts filter=baseline\n');await assert.rejects(captureFixtureBaseline({sourceRoot:f.sourceRoot}),/Configured Git filters/);assert.equal(existsSync(marker),false);});

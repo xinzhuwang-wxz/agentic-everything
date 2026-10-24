@@ -43,7 +43,7 @@ export type ApprovedChangeSet = z.infer<typeof ApprovedChangeSetSchema>;
 export const PatchArtifactSchema = z.strictObject({
   schemaVersion: SchemaVersion, planHash: Sha256, baseCommit: z.string().min(1), recipe: RecipeRefSchema,
   changes: z.array(z.strictObject({ path: RelativePath, beforeHash: Sha256.nullable(), afterHash: Sha256.nullable() })),
-  appliedAt: z.iso.datetime(), worktree: z.string().min(1),
+  appliedAt: z.iso.datetime(), worktree: z.string().min(1), preApplyBaselineHash: Sha256.optional(),
 });
 export type PatchArtifact = z.infer<typeof PatchArtifactSchema>;
 export const VerificationReportSchema = z.strictObject({

@@ -56,6 +56,8 @@ Expect evidence for the explicit React 19/TypeScript fixture, a versioned recipe
 
 ## 4. Apply only after approval
 
+If you selected the synthetic verification profile, add `--baseline-out "$DEMO_DIR/baseline-before-apply.json"` to the apply command below. This must be a fresh archive path outside source and candidate. It is written before any patch and reused by delivery; finish the approved checks within the 300-second budget starting at capture. Static-only plans must omit this option.
+
 For this disposable exercise, set these shell variables to the **reviewed plan hash**, the approver's identifier and the real reference to that approval. These intentionally have no prefilled values:
 
 ```bash

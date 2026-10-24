@@ -7,3 +7,4 @@ export * from './control.js';
 export * from './behavior.js';
 
 export * from './delivery.js';
+export * from './baseline.js';

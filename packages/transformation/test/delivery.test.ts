@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, readdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createDelivery, checkDelivery, assessProject, proposePlan, approvePlan, applyApprovedPlan, digest, sha256 } from '../src/index.js';
+import { createDelivery, checkDelivery, assessProject, proposePlan, approvePlan, applyApprovedPlan, applyApprovedPlanWithBaseline, digest, sha256 } from '../src/index.js';
 
 function setup() {
   const parent = mkdtempSync(join(tmpdir(), 'ae-delivery-')); const sourceRoot = join(parent, 'source');
@@ -76,6 +76,7 @@ test('fixed fixture verification requires explicit plan and matching approval sc
 test('contradictory source execution exclusion blocks the fixed harness before packaging', async () => {
   const f = setup(); const plan = proposePlan(f.assessment, { verificationProfile: 'react-helpdesk-synthetic-v1' });
   const approval = approvePlan(plan, { approverId: 'fixture', authorizationRef: 'explicit-fixture-profile' });
-  const applied = applyApprovedPlan({ sourceRoot: f.sourceRoot, destination: join(f.parent, 'profile-candidate'), assessment: f.assessment, plan, approval });
+  const applied = await applyApprovedPlanWithBaseline({ sourceRoot: f.sourceRoot, destination: join(f.parent, 'profile-candidate'), assessment: f.assessment, plan, approval, baselinePath:join(f.parent,'before-profile.json') });
   await assert.rejects(() => createDelivery({ ...f, plan, applied, approval: { ...approval, excludedActions: ['source execution'] } }), /exclusions mismatch/);
 });
+test('browser runner shares the verifier provenance list including baseline ordering modules',async()=>{const {fixtureToolFiles}=await import('../src/fixture-harness.js');const runner=readFileSync(resolve('tests/browser/delivery.mjs'),'utf8');assert.match(runner,/toolFiles:Object.fromEntries\(fixtureToolFiles\.map/);assert.ok(fixtureToolFiles.includes('packages/transformation/dist/fixture-baseline.js'));assert.ok(fixtureToolFiles.includes('packages/transformation/dist/pre-apply.js'));});

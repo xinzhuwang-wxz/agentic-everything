@@ -3,9 +3,10 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { parse } from './ast.js';
+import { requirePreparedBaseline } from './pre-apply.js';
 import { matchesTrustedFixtureAssessment } from './fixture-harness.js';
 import { helpdeskRecipe } from './recipes/react-helpdesk.js';
-import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type VerificationReport } from '@ae/contracts';
+import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type ArchivedBaseline, type VerificationReport } from '@ae/contracts';
 
 const GENERIC_MANIFESTS = ['package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml'];
 const MAX_FILE_BYTES = 256 * 1024;
@@ -44,6 +45,7 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
     const value = read(root, path); if (value === null) continue;
     contents.set(path, value); evidence.push({ path, sha256: sha256(value), startLine: 1, endLine: value.split('\n').length, note: 'Observed bounded source; not executed.' });
   }
+  if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw new Error('Configured Git filters require separate execution review');
   const dirty = git(root, ['status', '--porcelain', '--untracked-files=all']);
   if (dirty) unknowns.push('Working tree contains changes; recipe-scope changes block application. Unrelated changes stay untouched.');
   const detectedStack: string[] = [];
@@ -80,12 +82,16 @@ export function previewPatch(root: string, plan: AdaptationPlan, assessment: Pro
   if (digest(assessment) !== plan.assessmentHash || digest(proposePlan(assessment, plan.verificationAuthorization ? { verificationProfile: plan.verificationAuthorization.profile } : undefined)) !== digest(plan)) throw new Error('Plan does not match the assessed recipe');
   return helpdeskRecipe.preview(path => read(root, path));
 }
-export interface AppliedTransformation { patch: PatchArtifact; originals: Record<string, string | null>; businessHash: string; }
-export function applyApprovedPlan(input: { sourceRoot: string; destination: string; assessment: ProjectAssessment; plan: AdaptationPlan; approval: ApprovedChangeSet }): AppliedTransformation {
+export interface AppliedTransformation { patch: PatchArtifact; originals: Record<string, string | null>; businessHash: string; preApplyBaseline?: ArchivedBaseline | undefined; }
+export function applyApprovedPlan(input: { sourceRoot: string; destination: string; assessment: ProjectAssessment; plan: AdaptationPlan; approval: ApprovedChangeSet; preApplyBaseline?: ArchivedBaseline }): AppliedTransformation {
   const root = repo(input.sourceRoot); const { plan, assessment } = input; const approval = ApprovedChangeSetSchema.parse(input.approval);
+  if (assessment.projectId !== 'project-' + sha256(root).slice(0, 12)) throw new Error('Assessment source root mismatch');
+  if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw new Error('Configured Git filters require separate execution review');
   if (approval.planHash !== digest(plan) || approval.baseCommit !== plan.baseCommit || Date.parse(approval.expiresAt) <= Date.now() || Date.parse(approval.approvedAt) > Date.now()) throw new Error('Approval expired or does not bind this plan/base');
   if (canonical(approval.verificationAuthorization ?? null) !== canonical(plan.verificationAuthorization ?? null)) throw new Error('Verification authorization scope mismatch');
   if (canonical(approval.allowedPaths) !== canonical(plan.allowedPaths) || approval.allowedCommands.length || approval.networkAllowlist.length || approval.maximumCostUsd !== 0) throw new Error('Approval scope mismatch');
+  if (plan.verificationAuthorization) requirePreparedBaseline(input.preApplyBaseline, assessment, plan, approval);
+  else if(input.preApplyBaseline) throw new Error('Static apply cannot accept a supplied baseline');
   if (git(root, ['rev-parse', 'HEAD']) !== plan.baseCommit) throw new Error('Base commit drift');
   for (const evidence of assessment.evidence) { if (sha256(read(root, evidence.path) ?? '') !== evidence.sha256) throw new Error('Source hash drift: ' + evidence.path); }
   // Dirty source in scope cannot be silently lost when checkout materializes HEAD.
@@ -98,11 +104,11 @@ export function applyApprovedPlan(input: { sourceRoot: string; destination: stri
   const changes = previewPatch(root, plan, assessment);
   const trackedEntries = git(root, ['ls-tree', '-rz', '--full-tree', plan.baseCommit]).split('\0');
   if (trackedEntries.some(entry => entry.startsWith('120000 ') || /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.aws|\.npmrc|\.pypirc|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?|id_(?:rsa|ed25519)|[^/]*\.(?:pem|key|p12))(?:\/|$)/i.test(entry.split('\t')[1] ?? ''))) throw new Error('Tracked symlinks or secret files cannot enter the isolated worktree');
-  if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw new Error('Configured Git filters require separate execution review');
+  const archived = plan.verificationAuthorization ? requirePreparedBaseline(input.preApplyBaseline, assessment, plan, approval, true) : undefined;
   git(root, ['worktree', 'add', '--detach', destination, plan.baseCommit]);
   for (const change of changes) { const target = safePath(destination, change.path); mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, change.after, { flag: change.before === null ? 'wx' : 'w' }); }
-  const patch = PatchArtifactSchema.parse({ schemaVersion: '1', planHash: digest(plan), baseCommit: plan.baseCommit, recipe: helpdeskRecipe.ref, changes: changes.map(c => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })), appliedAt: new Date().toISOString(), worktree: destination });
-  return { patch, originals: Object.fromEntries(changes.map(c => [c.path, c.before])), businessHash: sha256(read(root, helpdeskRecipe.businessPath)!) };
+  const patch = PatchArtifactSchema.parse({ schemaVersion: '1', planHash: digest(plan), baseCommit: plan.baseCommit, recipe: helpdeskRecipe.ref, changes: changes.map(c => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })), appliedAt: new Date().toISOString(), worktree: destination, ...(archived ? {preApplyBaselineHash:digest(archived.record)} : {}) });
+  return { patch, originals: Object.fromEntries(changes.map(c => [c.path, c.before])), businessHash: sha256(read(root, helpdeskRecipe.businessPath)!), ...(archived ? {preApplyBaseline:archived} : {}) };
 }
 export function verifyAdaptation(applied: AppliedTransformation): VerificationReport {
   const { patch } = applied; PatchArtifactSchema.parse(patch); const root = repo(patch.worktree);
@@ -144,3 +150,5 @@ export function adaptationCodeHash(root: string, assessment: ProjectAssessment, 
 export { verifyAdaptationWithBehavior } from './behavior.js';
 
 export { createDelivery, checkDelivery } from './delivery.js';
+
+export { applyApprovedPlanWithBaseline } from './pre-apply.js';

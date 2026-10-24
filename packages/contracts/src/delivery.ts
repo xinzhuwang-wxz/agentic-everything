@@ -5,7 +5,7 @@ import { RelativePath, Sha256, RecipeRefSchema, ApprovedChangeSetSchema, Verific
 export const DeliveryManifestSchema = z.strictObject({
   schemaVersion: z.literal('1'), kind: z.literal('ae-delivery'), toolVersion: z.literal('0.1.0'), status: z.enum(['partial', 'failed', 'complete']),
   startedAt: z.iso.datetime(), createdAt: z.iso.datetime(), projectId: z.string().min(1), baseCommit: z.string().min(1), recipe: RecipeRefSchema,
-  chain: z.strictObject({ assessmentHash: Sha256, planHash: Sha256, approvalHash: Sha256, appliedHash: Sha256, verificationHash: Sha256 }),
+  chain: z.strictObject({ assessmentHash: Sha256, planHash: Sha256, approvalHash: Sha256, appliedHash: Sha256, verificationHash: Sha256, preApplyBaselineHash: Sha256.optional() }),
   baselineCodeHash: Sha256, candidateCodeHash: Sha256,
   permissions: ApprovedChangeSetSchema.pick({ allowedPaths: true, allowedCommands: true, networkAllowlist: true, maximumCostUsd: true, excludedActions: true, verificationAuthorization: true }),
   artifacts: z.array(z.strictObject({ path: RelativePath, sha256: Sha256, bytes: z.number().int().nonnegative().max(1048576) })).min(1).max(32),

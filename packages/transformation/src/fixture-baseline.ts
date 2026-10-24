@@ -47,6 +47,7 @@ function inspectOriginal(sourceRoot: string, trusted: Readonly<Record<string, st
   if (git(root, ['rev-parse', '--show-toplevel']).trim() !== root) throw Error('Original fixture must be an exact Git root');
   const sourceVersion = git(root, ['rev-parse', 'HEAD']).trim();
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(sourceVersion)) throw Error('Invalid source commit');
+  if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw Error('Configured Git filters require separate execution review');
   if (git(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Original fixture must be clean');
   // Do not trust status alone: assume-unchanged/skip-worktree flags can conceal drift.
   const entries = git(root, ['ls-tree', '-rz', '--full-tree', 'HEAD']).split('\0').filter(Boolean);
