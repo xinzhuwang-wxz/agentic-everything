@@ -24,7 +24,9 @@ The baseline domain exports `readTicket(tenantId,ticketId)` and `changePriority(
 
 ## Honest remaining gates
 
-The static verification report deliberately leaves host typecheck/business tests, authenticated runtime and browser acceptance NOT RUN. Root integration must perform these against the generated tree and server, including original ticket rendering and runtime mutation/readback. Standalone fixture dependency installation, an arbitrary framework, database migration, real model quality, deployment and browser production identity are not supported by this recipe. No MCP transport is implemented yet; the CLI and direct API are executable.
+For the current approved fixed synthetic profile, `deliver` can run and bundle the observed build, differential, HTTP and browser gates. See [the current delivery contract](delivery.md) and [milestone gaps](acceptance-status.md). The static `verifyAdaptation` behavior described below remains intentionally static.
+
+The static verification report deliberately leaves host typecheck/business tests, authenticated runtime and browser acceptance NOT RUN. Root integration must perform these against the generated tree and server, including original ticket rendering and runtime mutation/readback. Standalone fixture dependency installation, an arbitrary framework, database migration, real model quality, deployment and browser production identity are not supported by this recipe. The read-only MCP stdio toolkit is implemented and qualified separately; it does not grant mutation or execution authority. The CLI and direct API are executable.
 
 CLI commands and the staged evidence/approval workflow are documented in `skills/ae-adapt/SKILL.md`. EAF proof-readiness/task concepts are attributed with the upstream MIT license, while AE method and code are independently authored. No upstream installer/prompt is executed.
 

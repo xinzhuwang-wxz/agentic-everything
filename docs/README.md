@@ -9,6 +9,8 @@
 5. [Integration](integrating.md): development-time Skill, host SDK, local runtime and remaining gates.
 6. [中文入口](README.zh-CN.md): concise Chinese introduction.
 
+See [current acceptance status and remaining gates](acceptance-status.md) before treating a bounded fixture pass as whole-product readiness.
+
 ## Work on AE
 
 - [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md) and [security](../SECURITY.md).

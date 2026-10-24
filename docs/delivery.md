@@ -58,6 +58,8 @@ Use the same approve/apply/deliver commands afterward. No second development app
 
 ## Available qualification and its scope
 
+Profile completion is not overall AE acceptance. [Remaining milestone gates](acceptance-status.md) distinguish this result from pre-apply baseline archival, broader business coverage, cross-stack repeatability and release readiness.
+
 [The current delivery qualification](verification/delivery-qualification.md) records the actual end-to-end CLI result, negative controls, aggregate checks and its bounded scope.
 
 - [Source-bound behavior integration test](../packages/transformation/test/behavior.test.ts): actual original/generated synthetic business module, seeded read/write/stale-version cases.

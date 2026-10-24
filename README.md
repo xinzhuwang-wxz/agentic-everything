@@ -58,7 +58,7 @@ No model key, account or database is needed for these local checks. Dependency d
 | Model | Injectable model interface; independent file-IPC actor path labeled as simulation | [Qualification setup](docs/RUNTIME_HANDOFF.md#reproduction) |
 | Not ready | Authenticated remote MCP, generic automatic recipes, production identity/operations, broad durability and load qualification, real-provider qualification and deployment | [Implementation plan](IMPLEMENTATION_PLAN.md) |
 
-Static patch verification, mocked UI tests, real HTTP tests and browser acceptance are different evidence. A passing unit suite does not turn an unrun gate green. The default in-memory fixture loses run/approval/operation state on restart; the opt-in persistent composition has a separate, bounded process-recovery qualification and requires the host receipt protocol. Do not deploy this fixture or put customer data into it.
+The fixed-fixture delivery milestone is not completion of all three AE milestones; see [remaining acceptance gates](docs/acceptance-status.md). Static patch verification, mocked UI tests, real HTTP tests and browser acceptance are different evidence. A passing unit suite does not turn an unrun gate green. The default in-memory fixture loses run/approval/operation state on restart; the opt-in persistent composition has a separate, bounded process-recovery qualification and requires the host receipt protocol. Do not deploy this fixture or put customer data into it.
 
 ## How the pieces fit
 
