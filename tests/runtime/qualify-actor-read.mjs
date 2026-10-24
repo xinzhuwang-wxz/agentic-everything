@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+import { writeFile } from 'node:fs/promises';
+import { GovernedRuntime } from '@ae/runtime-core';
+import { AuthorizedTicketHost, ToolBroker } from '@ae/capabilities';
+import { FileModelProvider } from '@ae/runtime-adapters';
+if (!process.env.AE_HOST_FIXTURE) throw Error('AE_HOST_FIXTURE required');
+const host = new AuthorizedTicketHost(await import(pathToFileURL(process.env.AE_HOST_FIXTURE).href));
+const principal = { tenantId: 'tenant-b', applicationId: 'helpdesk', subjectId: 'fixture-viewer', roles: ['viewer'], scopes: ['tickets:read'] };
+const directory = process.env.AE_MODEL_IPC ?? '/workspace/shared/ae-model-ipc';
+const runtime = new GovernedRuntime({ model: new FileModelProvider(directory, 180000), broker: new ToolBroker(host) });
+const result = await runtime.start({ principal, releaseId: 'fixture-release-v1', input: 'What is the current priority and version of ticket-2? Only inspect it; do not propose or perform any change.' });
+assert.equal(result.status, 'succeeded', JSON.stringify(result)); assert.equal(host.mutationCount, 0); assert.equal(result.approval, undefined);
+assert.ok(result.receipts.length > 0); assert.ok(result.receipts.every(r => r.status === 'succeeded'));
+await writeFile(`${directory}/qualification-read-result.json`, JSON.stringify({ mode: 'subagent_simulation', usage: 'unmeasured', mutationCount: host.mutationCount, result }, null, 2));
+console.log('READ_QUALIFICATION_PASSED', JSON.stringify({ status: result.status, message: result.message, mutationCount: host.mutationCount }));

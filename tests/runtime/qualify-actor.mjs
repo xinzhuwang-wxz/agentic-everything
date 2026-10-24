@@ -1,0 +1,33 @@
+/** Run only with a separately running model actor. Never part of offline unit suite. */
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+import { writeFile, mkdir } from 'node:fs/promises';
+import { GovernedRuntime } from '@ae/runtime-core';
+import { AuthorizedTicketHost, ToolBroker } from '@ae/capabilities';
+import { FileModelProvider } from '@ae/runtime-adapters';
+const fixturePath = process.env.AE_HOST_FIXTURE;
+if (!fixturePath) throw new Error('Set AE_HOST_FIXTURE to the actual existing-helpdesk tickets.ts fixture.');
+const business = await import(pathToFileURL(fixturePath).href);
+const principal = { tenantId: 'tenant-a', applicationId: 'helpdesk', subjectId: 'fixture-editor', roles: ['editor'], scopes: ['tickets:read', 'tickets:write'] };
+const host = new AuthorizedTicketHost(business);
+const broker = new ToolBroker(host);
+const directory = process.env.AE_MODEL_IPC ?? '/workspace/shared/ae-model-ipc';
+const runtime = new GovernedRuntime({ model: new FileModelProvider(directory, 180000), broker });
+const before = host.read(principal, 'ticket-1');
+console.log('ACTOR_REQUEST_STARTED');
+const run = await runtime.start({ principal, releaseId: 'fixture-release-v1', input: 'Please inspect ticket-1. If it has low priority, propose raising it to high. Do not change anything without my confirmation.', context: { ticketId: 'ticket-1' } });
+assert.equal(run.status, 'awaiting-approval', JSON.stringify(run));
+assert.equal(host.mutationCount, 0);
+console.log('APPROVAL_PAUSED', JSON.stringify(run.approval));
+// Explicit test-harness user decision, not an approval asserted by the model.
+const result = await runtime.decide(run.runId, principal, { approvalId: run.approval.binding.approvalId, expectedHash: run.approval.expectedHash, decision: 'approve' });
+assert.equal(result.status, 'succeeded', JSON.stringify(result));
+assert.equal(host.mutationCount, 1);
+const after = host.read(principal, 'ticket-1');
+assert.equal(after.priority, 'high'); assert.equal(after.version, before.version + 1);
+await assert.rejects(runtime.decide(run.runId, principal, { approvalId: run.approval.binding.approvalId, expectedHash: run.approval.expectedHash, decision: 'approve' }));
+assert.equal(host.mutationCount, 1);
+const report = { schemaVersion: '1', mode: 'subagent_simulation', usage: 'unmeasured', sdk: '@openai/agents 0.21.0', persistence: 'in-memory-fixture', durabilityQualification: 'not-run', approvalSource: 'explicit qualification harness user decision', before, after, mutationCount: host.mutationCount, approval: run.approval, result, audit: broker.audit };
+await mkdir(directory, { recursive: true });
+await writeFile(`${directory}/qualification-result.json`, JSON.stringify(report, null, 2));
+console.log('QUALIFICATION_PASSED', JSON.stringify({ runId: run.runId, message: result.message, mutationCount: host.mutationCount, before, after }));
