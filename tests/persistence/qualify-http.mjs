@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { PostgresControlPlane } from '../../dist/packages/control-plane/src/postgres.js';
+import { digest } from '@ae/policy';
 import { ticketCapabilities } from '@ae/capabilities';
 import { SyntheticDurableHost, validateDatabaseUrl } from './host.mjs';
 
@@ -150,9 +151,18 @@ try{
   await host.pool.query('INSERT INTO qualification_http.disabled VALUES($1,$2)',[admin.subjectId,'change_ticket_priority']);const denied=await post(`/api/runs/${revoked.runId}/approval`,decision(revoked));assert.equal(denied.status,'failed');assert.equal((await host.inspect(admin,crashTicket)).mutationCount,0);
   await host.pool.query('DELETE FROM qualification_http.disabled');await worker.shutdown();
   worker=new Worker('after-intent-persist');await worker.ready();const pending=request('/api/runs',{input:`qualification-ticket:${crashTicket}`},'crash-intent').catch(()=>null);await worker.event('fault');const row=(await host.pool.query("SELECT run_id,start FROM ae_api.intents WHERE start->>'input'=$1 ORDER BY run_id",[`qualification-ticket:${crashTicket}`])).rows.find(row=>row.run_id!==revoked.runId);assert(row);await worker.kill();await pending;
-  worker=new Worker();await worker.ready();const recovered=await until(async()=>{const r=await request(`/api/runs/${row.run_id}`);return r.status===200&&r.body.status==='awaiting-approval'?r.body:undefined;});assert.equal(recovered.releaseId,row.start.releaseId);
+  const damagedToken='damaged-ledger';const damagedKey=digest([admin.tenantId,admin.applicationId,admin.subjectId,damagedToken]);const damagedStart={...row.start,runId:`intent-${damagedKey}`};
+  await host.pool.query('INSERT INTO ae_api.intents(intent_key,intent_token,input_hash,run_id,start_hash,start) VALUES($1,$2,$3,$4,$5,$6)',[damagedKey,damagedToken,'corrupt-input-hash',damagedStart.runId,digest(damagedStart),JSON.stringify(damagedStart)]);
+  worker=new Worker();await worker.ready();const startup=await worker.event('startup-recovery');assert(startup.report.blocked.some(item=>item.runId===damagedStart.runId&&item.code==='INTENT_BINDING_DENIED'));assert.equal((await host.pool.query('SELECT count(*)::integer AS count FROM ae_runs_v1 WHERE id=$1',[damagedStart.runId])).rows[0].count,0,'Corrupt row metadata must never submit a workflow');const recovered=await until(async()=>{const r=await request(`/api/runs/${row.run_id}`);return r.status===200&&r.body.status==='awaiting-approval'?r.body:undefined;});assert.equal(recovered.releaseId,row.start.releaseId);
   const recoveredRepeat=await post('/api/runs',{input:`qualification-ticket:${crashTicket}`},'crash-intent');assert.equal(recoveredRepeat.runId,row.run_id);assert.equal((await host.inspect(admin,crashTicket)).mutationCount,0);
   await host.pool.query("UPDATE ae_api.intents SET start=jsonb_set(start,'{input}',to_jsonb('tampered'::text)) WHERE run_id=$1",[run.runId]);
   assert.equal((await request('/api/runs',body,'one-intent')).status,403);assert.equal((await host.inspect(admin,ticketId)).mutationCount,1);
+  await worker.shutdown();
+  const unknownTicket=`unknown-${prefix}`;await host.pool.query("INSERT INTO qualification_host.tickets(tenant_id,application_id,id,title,priority,version) VALUES($1,$2,$3,'Unknown fixture','low',1)",[admin.tenantId,admin.applicationId,unknownTicket]);
+  worker=new Worker('unknown-write');await worker.ready();const unknownInput={input:`qualification-ticket:${unknownTicket}`};const unknownPaused=await post('/api/runs',unknownInput,'unknown-http');
+  const unknown=await post(`/api/runs/${unknownPaused.runId}/approval`,decision(unknownPaused));assert.equal(unknown.status,'outcome-unknown');
+  const unknownRetry=await post('/api/runs',unknownInput,'unknown-http');assert.equal(unknownRetry.runId,unknown.runId);assert.equal(unknownRetry.status,'outcome-unknown');
+  const decisionRetry=await post(`/api/runs/${unknownPaused.runId}/approval`,decision(unknownPaused));assert.equal(decisionRetry.status,'outcome-unknown');assert.equal((await host.inspect(admin,unknownTicket)).mutationCount,1);
+  assert.equal((await host.pool.query("SELECT count(*)::integer AS count FROM qualification_host.calls WHERE kind='write' AND target_id=$1",[unknownTicket])).rows[0].count,1,'Unknown HTTP retries never redispatch the host write');
   await worker.shutdown();observe('http-release-composition-pass',{runId:run.runId,newRun:next.runId,crashRecovered:recovered.runId,mutationCount:1});
 }catch(error){observe('http-release-composition-failed',{message:error.message});throw error;}finally{for(const worker of activeWorkers)if(!worker.dead)await worker.kill();await host.close();}
