@@ -33,3 +33,8 @@
 - Add positive and negative tests; record actual commands and failures. Never claim an unrun gate passed.
 - Keep upstream attribution/license when porting substantial code; record exact source and revision.
 - Do not commit node_modules, caches, generated builds, secrets or private runtime transcripts.
+
+## Final local and GitHub delivery
+- Complete and verify the cloud project before moving the final project into its own agreed local directory; intermediate source archives are not the delivered local project.
+- Final README, architecture, usage and development docs describe the current coherent design, not the iteration narrative. Keep accurate limitations, licenses and reproducible acceptance; preserve internal history/audit evidence separately in the cloud rather than destroying it.
+- Publish through the user’s existing local GitHub CLI after final acceptance: verify account, intended remote and visibility, scan secrets/licenses, and verify local HEAD equals the pushed remote commit. Do not maintain a divergent release copy or force-push existing history. A repository push is not a website deployment.
