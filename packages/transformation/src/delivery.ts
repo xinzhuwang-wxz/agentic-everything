@@ -15,6 +15,10 @@ const LIMITATIONS = ['Integrity hashes are not signatures and do not establish a
 const FIXTURE_LIMITATIONS = ['General commands and network allowlists remain empty; only the explicit fixed verification profile permits its reviewed local commands and loopback networking.', 'Integrity hashes are not signatures and do not establish approval or execution authenticity.', 'Complete applies only to the exact react-helpdesk-synthetic-v1 fixture and its fixed gates, not arbitrary customers or production readiness.', 'Only patch-owned source and rollback bytes are included. No deployment, dependency installation, external network, or paid calls are authorized.'];
 const EVIDENCE_FILES = { report: 'report.json', baseline: 'baseline.json', differential: 'differential.json', originalBuild: 'original-build.json', candidateBuild: 'candidate-build.json', runtime: 'runtime.json', browser: 'browser.json' } as const;
 const GATES = ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance'];
+function bindFixtureCommit(report: unknown, plan: AdaptationPlan): void {
+  const observed = report as { checks?: {status?:string}[]; provenance?: {sourceVersion?:string} };
+  if (observed.checks?.some(check => check.status === 'pass') && observed.provenance?.sourceVersion !== plan.baseCommit) throw new Error('Fixture evidence source commit mismatch');
+}
 function fixtureChecks(report: unknown): VerificationReport['checks'] {
   const checks = VerificationReportSchema.shape.checks.parse((report as { checks?: unknown }).checks);
   exact(checks.map(c => c.name).sort(), [...GATES].sort(), 'Unexpected fixture verification gates');
@@ -113,6 +117,7 @@ export async function createDelivery(input: { sourceRoot: string; assessment: Pr
       if (safeAbsolute(result.artifacts[key]!) !== join(out, 'evidence', name)) throw new Error('Unexpected harness artifact location');
       const bytes = read(out, 'evidence/' + name); evidenceFiles.set('evidence/' + name, bytes); evidence[key] = JSON.parse(bytes.toString('utf8'));
     }
+    bindFixtureCommit(evidence.report, plan);
     await checkFixtureDeliveryEvidence({report:evidence.report,baseline:evidence.baseline,differential:evidence.differential,originalBuild:evidence.originalBuild,candidateBuild:evidence.candidateBuild,runtime:evidence.runtime,browser:evidence.browser});
     verification.checks = [...verification.checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     verification.observedAt = new Date().toISOString();
@@ -164,7 +169,8 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
     if (plan.verificationAuthorization) {
       const evidence: Record<string, unknown> = {};
       for (const [key, name] of Object.entries(EVIDENCE_FILES)) { const path = 'evidence/' + name; expectedPaths.push(path); evidence[key] = object(path); }
-      await checkFixtureDeliveryEvidence({report:evidence.report,baseline:evidence.baseline,differential:evidence.differential,originalBuild:evidence.originalBuild,candidateBuild:evidence.candidateBuild,runtime:evidence.runtime,browser:evidence.browser});
+      bindFixtureCommit(evidence.report, plan);
+    await checkFixtureDeliveryEvidence({report:evidence.report,baseline:evidence.baseline,differential:evidence.differential,originalBuild:evidence.originalBuild,candidateBuild:evidence.candidateBuild,runtime:evidence.runtime,browser:evidence.browser});
       checks = [...checks.filter(c => !GATES.includes(c.name)), ...fixtureChecks(evidence.report)];
     }
     checks.push(authorizationCheck(approval, manifest.createdAt));
