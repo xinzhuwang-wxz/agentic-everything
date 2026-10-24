@@ -38,3 +38,8 @@
 - Complete and verify the cloud project before moving the final project into its own agreed local directory; intermediate source archives are not the delivered local project.
 - Final README, architecture, usage and development docs describe the current coherent design, not the iteration narrative. Keep accurate limitations, licenses and reproducible acceptance; preserve internal history/audit evidence separately in the cloud rather than destroying it.
 - Publish through the user’s existing local GitHub CLI after final acceptance: verify account, intended remote and visibility, scan secrets/licenses, and verify local HEAD equals the pushed remote commit. Do not maintain a divergent release copy or force-push existing history. A repository push is not a website deployment.
+
+## Reuse implementation acceptance
+- Apply reuse-first to every module, not only platform adapters: select a suitable mature base, actually run and qualify its capabilities, then adapt complementary components and implement only evidenced gaps. Reading source or listing dependencies is not runtime reuse.
+- Each module ticket records adopted upstream/pin/license, actual execution evidence, integration changes and the concrete reason for any custom implementation. Compare viable alternatives with bounded experiments rather than rejecting a whole framework for one unsuitable default.
+- Milestone review reconciles these module findings with the complete architecture and assigns concrete corrections. Preserve already-working integrations; do not blindly install all candidates, rewrite functioning modules for consistency, or stall the business path with an endless survey.
