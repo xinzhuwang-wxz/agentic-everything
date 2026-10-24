@@ -1,6 +1,8 @@
+import { projectTicketBehavior, syntheticTitleCatalog } from './behavior.js';
+export { projectTicketBehavior, syntheticTitleCatalog, syntheticTitleBaseline, assertTicketBehavior } from './behavior.js';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import type { CapabilityVersion, JsonObject, Principal, ToolRequest, ToolResult } from '@ae/contracts';
+import type { BehaviorSelection, CapabilityVersion, JsonObject, Principal, ToolRequest, ToolResult } from '@ae/contracts';
 import { authorize, digest, InMemoryApprovalLedger, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 
 export interface Ticket { id: string; tenantId: string; title: string; priority: 'low' | 'high'; version: number }
@@ -20,6 +22,7 @@ export const ticketCapabilities: CapabilityVersion[] = Object.entries(schemas).m
 
 /** Host adapter: retains ordinary permissions independently of model/broker approval. */
 export class AuthorizedTicketHost {
+  readonly behaviorRegistryHash = syntheticTitleCatalog.registryHash;
   private operations = new Map<string, { hash: string; targetId: string; result: ToolResult }>();
   private writes = 0;
   constructor(private business: TicketBusinessPort, private currentPrincipal: (principal: Principal) => Principal = p => p) {}
@@ -31,11 +34,11 @@ export class AuthorizedTicketHost {
     if (!samePrincipal(identity, p)) throw new PolicyError('PRINCIPAL_CHANGED');
     authorize(p, write); return structuredClone(p);
   }
-  read(principal: Principal, id: string): Ticket {
+  read(principal: Principal, id: string, behavior?: BehaviorSelection): Ticket {
     const p = this.current(principal);
     const ticket = this.business.readTicket(p.tenantId, id);
     if (ticket.tenantId !== p.tenantId) throw new PolicyError('TENANT_DENIED');
-    return structuredClone(ticket);
+    return projectTicketBehavior(ticket, behavior);
   }
   write(principal: Principal, request: ToolRequest): ToolResult {
     const p = this.current(principal);
@@ -79,7 +82,7 @@ export class ToolBroker {
     return { request, write, preview: write ? { ticketId: ticket.id, title: ticket.title, before: ticket.priority, after: (parsed.data as z.infer<typeof writeArgs>).priority, version: ticket.version } : { ticketId: ticket.id } };
   }
   requestApproval(principal: Principal, prepared: PreparedTool, releaseId: string): ApprovalView { return this.approvals.create(principal, prepared.request, releaseId, prepared.preview); }
-  async execute(principal: Principal, prepared: PreparedTool, releaseId: string, approvalId?: string, signal?: AbortSignal): Promise<ToolResult> {
+  async execute(principal: Principal, prepared: PreparedTool, releaseId: string, approvalId?: string, signal?: AbortSignal, behavior?: BehaviorSelection): Promise<ToolResult> {
     const request = prepared.request;
     const key = JSON.stringify([principal.tenantId, principal.applicationId, principal.subjectId, request.operationId]);
     const hash = digest(request);
@@ -107,7 +110,7 @@ export class ToolBroker {
           if (error instanceof PolicyError) result = { status: 'denied', code: error.code, message: error.message };
           else result = { status: 'outcome-unknown', operationId: request.operationId, message: 'Host write outcome unknown. Do not retry; query the operation receipt.' };
         }
-      } else result = { status: 'succeeded', operationId: request.operationId, receiptId: randomUUID(), data: { ...this.host.read(principal, request.targetId) } };
+      } else result = { status: 'succeeded', operationId: request.operationId, receiptId: randomUUID(), data: { ...this.host.read(principal, request.targetId, behavior) } };
       this.ledger.set(key, { hash, result });
       this.audit.push({ timestamp: new Date().toISOString(), type: result.status, runId: request.runId, invocationId: request.invocationId, operationId: request.operationId });
       return structuredClone(result);

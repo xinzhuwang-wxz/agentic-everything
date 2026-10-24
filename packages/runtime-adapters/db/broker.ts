@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { ToolResultSchema, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
+import { ToolResultSchema, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
 import { AuthorizedTicketHost, ToolBroker, ticketCapabilities, type PreparedTool, type Ticket } from '@ae/capabilities';
 import { authorize, digest, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { releasedCatalog } from '@ae/control-plane';
 import { PersistentStore, type StoredRun } from './store.js';
 /** A host owns its durable operation ledger and atomic business mutation. AE never supplies its database. */
 export interface DurableTicketHost {
+  /** Explicit adapter implementation attestation; absent adapters reject selected behavior. */
+  readonly behaviorRegistryHash?: string;
   currentPrincipal(principal: Principal): Promise<Principal>;
   /** Optional current host capability revocation/version view; cannot expand the fixed registry. */
   currentCapabilities?(principal: Principal): Promise<CapabilityVersion[]>;
-  read(principal: Principal, ticketId: string): Promise<Ticket>;
+  read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Promise<Ticket>;
   write(principal: Principal, request: ToolRequest, signal?: AbortSignal): Promise<ToolResult>;
   query(principal: Principal, operationId: string): Promise<ToolResult>;
 }
@@ -39,6 +41,7 @@ export class PersistentToolBroker {
     return broker.requestApproval(principal, prepared, releaseId);
   }
   async execute(run: StoredRun, name: string, args: JsonObject, callId: string, approvalId?: string, signal?: AbortSignal): Promise<ToolResult> {
+    if (run.release?.configuration.behavior && this.host.behaviorRegistryHash !== run.release.configuration.behavior.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
     await this.assertCapability(run, name);
     const write = name !== 'read_ticket';
     const p = await this.current(run.principal);
@@ -49,7 +52,7 @@ export class PersistentToolBroker {
       if (saved.request.capabilityId !== name || digest(saved.request.arguments) !== digest(args)) throw new PolicyError('IDEMPOTENCY_CONFLICT');
       await this.host.read(p, saved.request.targetId); // current authority even for cached successful receipts
       if (existing.result) return existing.result as ToolResult;
-      if (!saved.write) { const result: ToolResult = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, saved.request.targetId) } }; await this.record(run.view.runId, operationId, result); return result; }
+      if (!saved.write) { const result: ToolResult = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, saved.request.targetId, run.release?.configuration.behavior) } }; await this.record(run.view.runId, operationId, result); return result; }
       // Reservation survived a crash: never dispatch again, even if the host has no receipt.
       const result = validateHostResult(operationId, await this.host.query(p, operationId));
       if (result.status === 'succeeded') await this.record(run.view.runId, operationId, result);
@@ -89,7 +92,7 @@ export class PersistentToolBroker {
         result = !dispatched && e instanceof PolicyError ? { status: 'denied', code: e.code, message: e.code }
           : { status: 'outcome-unknown', operationId, message: 'Host write may have completed. Query the same operation; never blindly retry.' };
       }
-    } else result = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, prepared.request.targetId) } };
+    } else result = { status: 'succeeded', operationId, receiptId: randomUUID(), data: { ...await this.host.read(p, prepared.request.targetId, run.release?.configuration.behavior) } };
     result = await this.record(run.view.runId, operationId, result);
     if (write) await this.fault?.('after-receipt');
     return result;

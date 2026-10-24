@@ -1,4 +1,4 @@
-import type { ModelProvider, Principal } from '@ae/contracts';
+import type { BehaviorCatalog, ModelProvider, Principal } from '@ae/contracts';
 import { ticketCapabilities } from '@ae/capabilities';
 import { PostgresControlPlane } from '@ae/control-plane/postgres';
 import { PersistentRuntime, type DurableTicketHost } from '@ae/runtime-adapters/persistent';
@@ -7,6 +7,8 @@ import { recoverIntentBatch, validateIntentRow, STARTUP_RECOVERY_LIMIT, type Int
 import { createApi, type ApiOptions, type ApiRunView } from './app.js';
 export interface PersistentApiOptions {
   databaseUrl: string;
+  /** Register only a reviewed catalog actually implemented by this host adapter. */
+  behaviorCatalog?: BehaviorCatalog;
   host: DurableTicketHost;
   model: ModelProvider;
   resolvePrincipal: ApiOptions['resolvePrincipal'];
@@ -19,7 +21,8 @@ export interface PersistentApiOptions {
 }
 /** Explicit opt-in composition. Default fixture server remains memory-only; no connection is inferred. */
 export async function createPersistentApi(options: PersistentApiOptions) {
-  const controlPlane = new PostgresControlPlane(options.databaseUrl, ticketCapabilities, options.currentConfigurationPrincipal);
+  if (options.behaviorCatalog && options.host.behaviorRegistryHash !== options.behaviorCatalog.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
+  const controlPlane = new PostgresControlPlane(options.databaseUrl, ticketCapabilities, options.currentConfigurationPrincipal, options.behaviorCatalog);
   const runtime = new PersistentRuntime({databaseUrl:options.databaseUrl,host:options.host,model:options.model});
   await controlPlane.initialize();
   await runtime.launch();

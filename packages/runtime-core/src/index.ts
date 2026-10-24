@@ -7,7 +7,7 @@ import { ToolBroker, type PreparedTool } from '@ae/capabilities';
 import { AgentsModelPort } from '@ae/runtime-adapters';
 import { releasedCatalog, verifyRelease } from '@ae/control-plane';
 
-export interface RunView { runId: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'in-memory-fixture'; modelMode: 'configured-model-port' }
+export interface RunView { runId: string; releaseId?: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'in-memory-fixture'; modelMode: 'configured-model-port' }
 interface Session {
   view: RunView; principal: Principal; releaseId: string; release?: AgentRelease; bounds: { maxTurns: number; maxElapsedMs: number }; agent: Agent; runner: Runner;
   state?: RunState<unknown, Agent>; interruption?: RunToolApprovalItem; pending?: PreparedTool;
@@ -33,14 +33,14 @@ export class GovernedRuntime {
       maxElapsedMs: Math.min(this.options.maxElapsedMs ?? 240_000, release?.configuration.bounds.maxElapsedMs ?? 240_000),
     };
     const catalog = () => release ? releasedCatalog(release, session?.principal ?? principal, this.options.broker.catalog(session?.principal ?? principal)) : this.options.broker.catalog(session?.principal ?? principal);
-    const view: RunView = { runId, status: 'queued', events: [], receipts: [], persistence: 'in-memory-fixture', modelMode: 'configured-model-port' };
+    const view: RunView = { runId, releaseId: input.releaseId, status: 'queued', events: [], receipts: [], persistence: 'in-memory-fixture', modelMode: 'configured-model-port' };
     let session: Session;
     const execute = async (name: string, args: JsonObject, callId: string): Promise<string> => {
       this.assertCapability(session, name);
       const prepared = this.options.broker.prepare(session.principal, runId, callId, name, args);
       session.targets.add(prepared.request.targetId);
       this.event(session, 'tool-request', { capabilityId: name, invocationId: callId, targetId: prepared.request.targetId });
-      const result = await this.options.broker.execute(session.principal, prepared, session.releaseId, session.grants.get(callId), session.abort.signal);
+      const result = await this.options.broker.execute(session.principal, prepared, session.releaseId, session.grants.get(callId), session.abort.signal, session.release?.configuration.behavior);
       session.view.receipts.push(result);
       this.event(session, 'tool-result', { ...result });
       if (result.status === 'outcome-unknown') { this.status(session, 'outcome-unknown'); session.pending = prepared; throw new PolicyError('OUTCOME_UNKNOWN'); }

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ApprovalDecisionSchema, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
+import { ApprovalDecisionSchema, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
 import { type RunView } from '@ae/runtime-core';
 import { InMemoryControlPlane, releasedCatalog, type ControlPlanePort } from '@ae/control-plane';
 import { createConfigurationRoutes } from '@ae/control-plane/http';
@@ -19,7 +19,7 @@ export interface RuntimePort {
 export interface ApiOptions {
   runtime: RuntimePort;
   controlPlane?: InMemoryControlPlane | ControlPlanePort;
-  broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host: {read(principal: Principal, ticketId: string): Ticket | Promise<Ticket>} };
+  broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host: {behaviorRegistryHash?: string; read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Ticket | Promise<Ticket>} };
   durability?: 'memory_fixture' | 'postgres_qualified';
   requirePublishedRelease?: boolean;
   /** Optional durable intent ledger supplied only by trusted server composition. */
@@ -85,7 +85,9 @@ export function createApi(options: ApiOptions): Hono {
   app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = await options.controlPlane?.activeRelease(p); const catalog = await options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : options.requirePublishedRelease ? [] : catalog }); });
   app.get('/api/tickets/:ticketId', async c => {
     const p = await principal(c.req.raw);
-    try { return c.json({ ticket: await options.broker.host.read(p, c.req.param('ticketId')) }); }
+    const release = await options.controlPlane?.activeRelease(p);
+    if (release?.configuration.behavior && options.broker.host.behaviorRegistryHash !== release.configuration.behavior.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
+    try { return c.json({ ticket: await options.broker.host.read(p, c.req.param('ticketId'), release?.configuration.behavior), behaviorReleaseId: release?.releaseId ?? null }); }
     catch (error) { if (error instanceof PolicyError) throw error; throw new HttpError('TICKET_NOT_FOUND', 404); }
   });
   app.post('/api/runs', async c => {

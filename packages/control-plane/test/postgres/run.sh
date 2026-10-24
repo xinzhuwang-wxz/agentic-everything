@@ -14,3 +14,4 @@ echo "PostgreSQL version: $VERSION"
 [[ "$VERSION" == 17.11* ]] || exit 2
 # Disposable synthetic, loopback-only database. Start, qualification and stop are one invocation.
 env -i PATH="$PATH" HOME="$ROOT" TZ=UTC node packages/control-plane/test/postgres/qualify.mjs "postgresql://$(id -un)@127.0.0.1:$PORT/ae_control_qualification"
+env -i PATH="$PATH" HOME="$ROOT" TZ=UTC node packages/control-plane/test/postgres/behavior.mjs "postgresql://$(id -un)@127.0.0.1:$PORT/ae_control_qualification"

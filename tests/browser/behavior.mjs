@@ -1,0 +1,68 @@
+// Local synthetic fixture only. No paid models, credentials, external hosts or production data.
+// Requires existing compiled packages, Playwright Core and an explicitly qualified sandboxed Chromium.
+import assert from 'node:assert/strict';
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { chromium } from 'playwright-core';
+import { preview } from 'vite';
+import { serve } from '@hono/node-server';
+const root=resolve('.'),runtimeRoot=resolve(process.env.AE_BROWSER_RUNTIME_ROOT??root);
+const load=p=>import(pathToFileURL(join(runtimeRoot,p)).href);
+const {GovernedRuntime}=await load('packages/runtime-core/dist/index.js');
+const {AuthorizedTicketHost,ToolBroker,ticketCapabilities,syntheticTitleCatalog}=await load('packages/capabilities/dist/index.js');
+const {InMemoryControlPlane}=await load('packages/control-plane/dist/index.js');
+const {createApi}=await load('dist/apps/api/src/app.js');
+const raw={id:'ticket-1',tenantId:'tenant-a',title:'  Printer offline  ',priority:'low',version:1};
+const readTicket=()=>({...raw}),changePriority=()=>{throw Error('Read-only behavior fixture');};
+const work=mkdtempSync(join(tmpdir(),'ae-behavior-browser-')),source=join(work,'original'),destination=join(work,'adapted');
+cpSync(join(root,'fixtures/existing-react-helpdesk'),source,{recursive:true});
+const git=(...args)=>execFileSync('git',['-C',source,...args],{stdio:'pipe'});
+git('init');git('config','user.name','AE fixture');git('config','user.email','fixture@example.invalid');git('add','.');git('commit','-m','Synthetic original host');
+execFileSync(process.execPath,['--input-type=module','-e',`import { assessProject, proposePlan, approvePlan, applyApprovedPlan } from './packages/transformation/dist/index.js';
+const sourceRoot=${JSON.stringify(source)},destination=${JSON.stringify(destination)};
+const assessment=assessProject(sourceRoot),plan=proposePlan(assessment),approval=approvePlan(plan,{approverId:'fixture-test',authorizationRef:'user-approved-local-synthetic-tests'});
+applyApprovedPlan({sourceRoot,destination,assessment,plan,approval});`],{cwd:root,stdio:'inherit'});
+const evidence={work,runtimeRoot,model:'deterministic synthetic test model, not model quality or external-project acceptance',checks:[],errors:[]};
+const turns=new Map();const model={async complete(request){const turn=(turns.get(request.runId)??0)+1;turns.set(request.runId,turn);const toolCalls=turn===1?[{callId:'read',name:'read_ticket',arguments:{ticketId:'ticket-1'}}]:[];return {schemaVersion:'1',requestId:request.requestId,mode:'simulated',message:toolCalls.length?'':'已核对服务端回执。',toolCalls,finishReason:toolCalls.length?'tool-calls':'stop'}}};
+const broker=new ToolBroker(new AuthorizedTicketHost({readTicket,changePriority}));const runtime=new GovernedRuntime({broker,model,maxTurns:8});
+const apiPort=4337,uiPort=5197;
+const principal={tenantId:'tenant-a',applicationId:'helpdesk',subjectId:'fixture-editor',roles:['editor','agentic:admin'],scopes:['tickets:read','tickets:write']};
+const controlPlane=new InMemoryControlPlane(ticketCapabilities,p=>p,syntheticTitleCatalog);
+const initial=controlPlane.save(principal,{name:'Synthetic title fixture',instructions:'Read ticket only. Simulated model.',capabilityIds:['read_ticket'],bounds:{maxTurns:4,maxElapsedMs:10000}});controlPlane.publish(principal,initial.draftId,initial.revision);
+const app=createApi({runtime,broker,controlPlane,resolvePrincipal:()=>({tenantId:'tenant-a',applicationId:'helpdesk',subjectId:'fixture-editor',roles:['editor','agentic:admin'],scopes:['tickets:read','tickets:write']}),releaseId:'fixture-v1',applicationName:'Helpdesk',apiOrigin:`http://127.0.0.1:${apiPort}`,allowedOrigin:`http://127.0.0.1:${uiPort}`});
+let server,vite,browser;
+try{
+ server=serve({fetch:app.fetch,hostname:'127.0.0.1',port:apiPort});
+ const alias=[{find:/^react\/jsx-dev-runtime$/,replacement:join(root,'node_modules/react/jsx-dev-runtime.js')},{find:/^react\/jsx-runtime$/,replacement:join(root,'node_modules/react/jsx-runtime.js')},{find:/^react$/,replacement:join(root,'node_modules/react/index.js')},{find:/^react-dom\/client$/,replacement:join(root,'node_modules/react-dom/client.js')},{find:/^react-dom$/,replacement:join(root,'node_modules/react-dom/index.js')},{find:'@ae/host-sdk',replacement:join(root,'packages/host-sdk/src/index.ts')},{find:'@ae/ui/styles.css',replacement:join(root,'packages/ui/src/styles.css')},{find:'@ae/ui',replacement:join(root,'packages/ui/src/index.ts')}];
+ // Build in a short-lived process before starting Chromium to bound memory use.
+ const aliasSource=alias.map(a=>`{find:${a.find instanceof RegExp?a.find.toString():JSON.stringify(a.find)},replacement:${JSON.stringify(a.replacement)}}`).join(',');
+ execFileSync(process.execPath,['--input-type=module','-e',`import {build} from 'vite';await build({configFile:false,root:${JSON.stringify(destination)},cacheDir:${JSON.stringify(join(work,'vite-cache'))},logLevel:'error',resolve:{alias:[${aliasSource}]},build:{outDir:${JSON.stringify(join(work,'site'))}}});`],{cwd:root,stdio:'inherit'});
+ vite=await preview({configFile:false,root:destination,build:{outDir:join(work,'site')},preview:{host:'127.0.0.1',port:uiPort,strictPort:true,proxy:{'/api':{target:`http://127.0.0.1:${apiPort}`,changeOrigin:true}}}});
+ const ready=await fetch(`http://127.0.0.1:${apiPort}/api/meta`);assert.equal(ready.status,200);
+ if(!process.env.AE_BROWSER_EXECUTABLE)throw Error('AE_BROWSER_EXECUTABLE must identify qualified Chromium');
+ browser=await chromium.launch({executablePath:process.env.AE_BROWSER_EXECUTABLE,headless:true,chromiumSandbox:true});
+ const context=await browser.newContext({viewport:{width:1280,height:900},reducedMotion:'reduce'});const page=await context.newPage();page.on('pageerror',e=>evidence.errors.push(String(e)));
+ await page.goto(`http://127.0.0.1:${uiPort}`);await page.getByTestId('host-priority').waitFor();
+ const fetchTitle=()=>page.evaluate(async()=>{const response=await fetch('/api/tickets/ticket-1');return response.json();});
+ assert.equal((await fetchTitle()).ticket.title,raw.title);
+ await page.getByRole('button',{name:'Agentic settings & activity'}).click();await page.getByRole('tab',{name:'行为改进',exact:true}).click();
+ await page.getByRole('radio',{name:'保留旧行为',exact:true}).waitFor();assert.equal(await page.getByRole('radio',{name:'保留旧行为',exact:true}).isChecked(),true);
+ assert.equal(await page.getByText('候选代码哈希',{exact:true}).count(),1);await page.getByText('查看精确允许差异（1）',{exact:true}).click();
+ await page.screenshot({path:join(work,'behavior-off.png'),fullPage:true});evidence.checks.push('distinct left behavior page displays OFF, reasons, risk, examples, artifact hashes and exact delta');
+ await page.getByRole('radio',{name:'采用修正',exact:true}).check();await page.getByRole('tab',{name:'配置与发布',exact:true}).click();await page.getByRole('tab',{name:'行为改进',exact:true}).click();assert.equal(await page.getByRole('radio',{name:'采用修正',exact:true}).isChecked(),true);
+ const publish=async()=>{await page.getByRole('button',{name:'保存草稿',exact:true}).click();await page.getByRole('button',{name:'校验与查看变更',exact:true}).click();await page.getByRole('button',{name:'发布不可变版本',exact:true}).click();await page.getByRole('status').filter({hasText:'已发布'}).waitFor();};
+ await publish();const selected=controlPlane.activeRelease(principal);assert.equal(selected.configuration.behavior.enabled.length,1);assert.equal((await fetchTitle()).ticket.title,'Printer offline');
+ await page.screenshot({path:join(work,'behavior-on-published.png'),fullPage:true});evidence.checks.push('selection survives tab switch; saved, validated, immutably published; ordinary host API uses corrected rule');
+ await page.getByRole('button',{name:'Agentic settings & activity'}).click();await page.locator('.ae-floating-launcher').click();const dialog=page.getByRole('dialog',{name:'业务助手对话'});
+ await dialog.locator('textarea').fill('Read ticket-1');await dialog.getByRole('button',{name:'发送',exact:true}).click();await dialog.getByText('已核对服务端回执。',{exact:true}).waitFor();
+ const runs=runtime.list(principal);assert.equal(runs.length,1);assert.equal(runs[0].receipts[0].data.title,'Printer offline');assert.equal(runs[0].releaseId,selected.releaseId);
+ await page.getByRole('button',{name:'收起业务助手'}).click();await page.getByRole('button',{name:'Agentic settings & activity'}).click();await page.getByRole('tab',{name:'行为改进',exact:true}).click();await page.getByRole('radio',{name:'保留旧行为',exact:true}).check();await publish();
+ assert.equal((await fetchTitle()).ticket.title,raw.title);assert.equal(runtime.get(runs[0].runId,principal).receipts[0].data.title,'Printer offline');assert.equal(broker.host.mutationCount,0);assert.equal(controlPlane.state(principal).releases.length,3);
+ evidence.checks.push('simulated assistant uses same host rule; OFF changes future page reads but keeps prior run receipt and immutable history; no writes');
+ await page.reload();await page.getByRole('button',{name:'Agentic settings & activity'}).click();await page.getByRole('tab',{name:'行为改进',exact:true}).click();await page.getByRole('radio',{name:'保留旧行为',exact:true}).waitFor();assert.equal(await page.getByRole('radio',{name:'保留旧行为',exact:true}).isChecked(),true);
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:join(work,'behavior-narrow.png'),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);evidence.checks.push('reload restores current OFF selection; narrow layout has no horizontal page overflow');
+ assert.deepEqual(evidence.errors,[]);evidence.completed=new Date().toISOString();
+}catch(error){evidence.failure=String(error);process.exitCode=1;console.error(error)}finally{writeFileSync(join(work,'evidence.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence,null,2));await browser?.close();if(vite)await new Promise(r=>vite.httpServer.close(r));if(server)await new Promise(r=>server.close(r));}

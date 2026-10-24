@@ -1,6 +1,7 @@
+import { checkedBehaviorCatalog, validateBehaviorSelection } from './behavior.js';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { AgentConfigurationSchema, AgentDraftSchema, CapabilityVersionSchema, type AgentDraft, type AgentRelease, type CapabilityVersion, type Principal } from '@ae/contracts';
+import { AgentConfigurationSchema, AgentDraftSchema, CapabilityVersionSchema, type BehaviorCatalog, type AgentDraft, type AgentRelease, type CapabilityVersion, type Principal } from '@ae/contracts';
 import { digest, PolicyError } from '@ae/policy';
 import { verifyRelease, type ConfigurationState, type ControlPlanePort } from './index.js';
 interface QueryResult { rows: Record<string, unknown>[]; rowCount: number | null }
@@ -11,7 +12,9 @@ const { Pool: PgPool } = createRequire(import.meta.url)('pg') as { Pool: new (op
 export class PostgresControlPlane implements ControlPlanePort {
   private readonly pool: Pool;
   private readonly registry: CapabilityVersion[];
-  constructor(connectionString: string, capabilities: CapabilityVersion[], private currentPrincipal: (p: Principal) => Principal = p => p) {
+  private readonly behaviorCatalog: BehaviorCatalog | undefined;
+  constructor(connectionString: string, capabilities: CapabilityVersion[], private currentPrincipal: (p: Principal) => Principal = p => p, behaviorCatalog?: BehaviorCatalog) {
+    this.behaviorCatalog = checkedBehaviorCatalog(behaviorCatalog);
     this.pool = new PgPool({connectionString, max: 4});
     this.registry = capabilities.map(c => CapabilityVersionSchema.parse(c));
     if (new Set(this.registry.map(c => c.capabilityId)).size !== this.registry.length) throw new PolicyError('DUPLICATE_CAPABILITY');
@@ -33,6 +36,7 @@ export class PostgresControlPlane implements ControlPlanePort {
   private configuration(input: unknown) {
     const parsed=AgentConfigurationSchema.safeParse(input); if(!parsed.success)throw new PolicyError('INVALID_CONFIGURATION');
     if(parsed.data.capabilityIds.some(id=>!this.registry.some(c=>c.capabilityId===id)))throw new PolicyError('UNREGISTERED_CAPABILITY');
+    validateBehaviorSelection(parsed.data.behavior, this.behaviorCatalog);
     return parsed.data;
   }
   private release(value: unknown, p: Principal): AgentRelease {
@@ -62,7 +66,7 @@ export class PostgresControlPlane implements ControlPlanePort {
       const drafts=await connection.query('SELECT document FROM ae_control.drafts WHERE tenant_id=$1 AND application_id=$2 ORDER BY draft_id',this.scope(principal));
       const releases=await connection.query('SELECT document FROM ae_control.releases WHERE tenant_id=$1 AND application_id=$2 ORDER BY document->>\'publishedAt\',release_id',this.scope(principal));
       const active=await this.active(connection,principal);
-      return {durability:'postgres_qualified',canConfigure:true,capabilities:structuredClone(this.registry),drafts:drafts.rows.map(row=>AgentDraftSchema.parse(row.document)),releases:releases.rows.map(row=>this.release(row.document,principal)),...(active?{activeReleaseId:active.releaseId}:{})};
+      return {durability:'postgres_qualified',canConfigure:true,...(this.behaviorCatalog?{behaviorCatalog:structuredClone(this.behaviorCatalog)}:{}),capabilities:structuredClone(this.registry),drafts:drafts.rows.map(row=>AgentDraftSchema.parse(row.document)),releases:releases.rows.map(row=>this.release(row.document,principal)),...(active?{activeReleaseId:active.releaseId}:{})};
     });
   }
   async save(input: Principal, value: unknown, draftId?: string, expectedRevision?: number): Promise<AgentDraft> {
@@ -77,7 +81,7 @@ export class PostgresControlPlane implements ControlPlanePort {
   }
   async validate(input: Principal,id:string,revision:number):Promise<{valid:true;changes:string[]}>{
     return this.transaction(input,async(connection,p)=>{const draft=await this.readDraft(connection,p,id);if(draft.revision!==revision)throw new PolicyError('DRAFT_REVISION_CONFLICT');this.configuration(draft.configuration);const active=await this.active(connection,p);const changes:string[]=[];
-      if(!active)changes.push('Initial release');else{for(const field of ['name','instructions','bounds'] as const)if(digest(active.configuration[field])!==digest(draft.configuration[field]))changes.push(`${field} changed`);for(const cap of draft.configuration.capabilityIds)if(!active.configuration.capabilityIds.includes(cap))changes.push(`Enable ${cap}`);for(const cap of active.configuration.capabilityIds)if(!draft.configuration.capabilityIds.includes(cap))changes.push(`Disable ${cap}`);}return {valid:true,changes};});
+      if(!active)changes.push('Initial release');else{for(const field of ['name','instructions','bounds','behavior'] as const)if(digest(active.configuration[field]??null)!==digest(draft.configuration[field]??null))changes.push(`${field} changed`);for(const cap of draft.configuration.capabilityIds)if(!active.configuration.capabilityIds.includes(cap))changes.push(`Enable ${cap}`);for(const cap of active.configuration.capabilityIds)if(!draft.configuration.capabilityIds.includes(cap))changes.push(`Disable ${cap}`);}return {valid:true,changes};});
   }
   async publish(input:Principal,id:string,revision:number):Promise<AgentRelease>{
     return this.transaction(input,async(connection,p)=>{
