@@ -1,3 +1,4 @@
+export * from './agents-tools.js';
 export * from './agents-model.js';
 export * from './file-model.js';
 /** This is an explicit unavailable deployment gate, not a replacement durable engine. */

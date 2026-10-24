@@ -77,7 +77,7 @@ node --test --test-concurrency=1 dist/packages/mcp-server/test/protocol.test.js
 
 The old protocol fixture's 1.0.0 constant was the testing flaw. Adding a new version check only in prose would not have fixed it.
 
-### R2: one reviewed capability definition feeding both SDK adapters — next code ticket
+### R2: one reviewed capability definition feeding both SDK adapters — implemented after audit
 
 Minimal owner paths: `packages/capabilities/src/index.ts` (or a small `definitions.ts` imported there), `packages/runtime-adapters/src/agents-tools.ts` + export, the two runtime constructors, and focused tests. `capabilities` exports exact reviewed schema/description/risk/approval metadata; the adapter consumes that metadata and an invocation callback, calls the existing official `tool`, and rejects unknown/duplicate selected IDs. Both memory and durable runtimes use the factory. The existing broker still parses arguments independently and rechecks authority. Legacy hosts still select two tools, member-capable hosts explicitly select four. Keep release filtering, errorFunction, invocation IDs and the DBOS `runStep` names/order unchanged.
 
@@ -92,7 +92,7 @@ node --test --test-concurrency=1 dist/packages/runtime-adapters/test/agents-tool
   dist/packages/runtime-adapters/db/broker.test.js
 ```
 
-The new test file is a required deliverable of R2, not claimed to exist at this audit checkpoint. Current observed mismatch: model receives `{"type":"string"}` for `read_ticket.ticketId`; capability catalog has `{"type":"string","minLength":1,"maxLength":100}`. Broker denial prevents unsafe dispatch, but drift wastes model turns and breaks a single contract truth.
+The new test file was subsequently implemented and executed; see the follow-on checkpoint below. The original observed mismatch was: model receives `{"type":"string"}` for `read_ticket.ticketId`; capability catalog has `{"type":"string","minLength":1,"maxLength":100}`. Broker denial prevents unsafe dispatch, but drift wastes model turns and breaks a single contract truth.
 
 ### R3: qualify the actual combined product, not the union of component reports
 
@@ -195,3 +195,25 @@ node --test --test-concurrency=1 dist/packages/mcp-server/test/protocol.test.js
 Temporary logs `/tmp/ae-runtime-reuse-build.log`, `/tmp/ae-runtime-reuse-focused.log`, `/tmp/ae-runtime-reuse-integration.log`, `/tmp/ae-runtime-reuse-drift.json`, `/tmp/ae-mcp-drift-build.log` and `/tmp/ae-mcp-drift-fixed.log` are inspection material, not permanent deliverable links. Repeatable source tests and the exact observations above are the committed evidence.
 
 Prior qualifications inspected: `docs/RUNTIME_HANDOFF.md`, `docs/DURABILITY_QUALIFICATION.md`, `docs/PERSISTENT_RUNTIME_QUALIFICATION.md`, `docs/FLOATING_UI_VERIFICATION.md`, `docs/UI_SURFACES_HANDOFF.md`, `docs/verification/delivery-qualification.md`, `docs/verification/behavior-improvements.md`, `packages/runtime-adapters/db/README.md`, `docs/acceptance-status.md` and the corresponding runnable test sources. Remaining limitations in those reports remain in force.
+
+
+## Follow-on implementation checkpoint: canonical SDK tool adapter
+
+After the baseline audit, R2 was implemented as one narrow source correction. `capabilities/src/definitions.ts` now owns the four reviewed Zod schemas, descriptions, risk, approval flags and source revisions. The catalog and the independent broker parser consume them; `runtime-adapters/src/agents-tools.ts` converts them with the existing official Agents `tool`. Both memory and persistent runtimes use this same adapter. Unknown or duplicate selected IDs fail closed, invocation identity is required, and execution errors are not converted into misleading successful tool results. Existing two-tool hosts retain two tools; member support remains explicit. No dependency, lockfile, migration, UI, scheduler or model-loop change was made.
+
+The strict build and lint passed. A fresh 68-test focused regression exited zero (5.626 seconds), including seven new factory tests, member tools, release filtering, read revocation, policy/broker behavior, HTTP host catalog and real MCP stdio. The new tests compare every SDK tool's schema constraints/description/approval against the canonical catalog. Only the known JSON Schema dialect marker is excluded from equality: Zod emits 2020-12 while the SDK emits draft-07. No input constraints are removed. They also run a real SDK model turn and restore an actual pre-factory SDK approval snapshot with the same call ID, producing exactly one fixture callback after approval.
+
+```sh
+NODE_OPTIONS=--max-old-space-size=640 npm run build
+NODE_OPTIONS=--max-old-space-size=640 node --test --test-concurrency=1 \
+ dist/packages/runtime-adapters/test/agents-tools.test.js dist/tests/runtime/sdk.test.js \
+ dist/tests/runtime/release.test.js dist/tests/runtime/read-authorization.test.js \
+ dist/packages/runtime-core/test/members.test.js dist/packages/runtime-adapters/db/broker.test.js \
+ dist/packages/capabilities/test/members.test.js dist/tests/runtime/policy.test.js \
+ dist/tests/runtime/behavior.test.js dist/apps/api/test/host-catalog.test.js \
+ dist/packages/mcp-server/test/protocol.test.js
+```
+
+A byte comparison against the previous committed persistent runtime confirmed the complete `runPhase` prefix through tool construction and suffix from Agent construction onward are unchanged. The eight durable step calls retain their order: create-run, trusted-decision, load-private-checkpoint, model-response, governed-tool, phase-running, persist-approval-checkpoint, complete-phase. The persistent tool list also retains its prior order. Only imports/tool construction changed there; live authorization, broker callbacks, snapshots, DBOS steps and receipt recovery were not moved. This source invariant and the SDK snapshot test do **not** replace a fresh PostgreSQL process-recovery/combined-product run, which was not run in this correction.
+
+Temporary build/test logs are `/tmp/ae-canonical-tools-build.log` and `/tmp/ae-canonical-tools-focused.log`; the committed tests are the reproducible evidence. R3–R6 and the original explicitly unimplemented modules remain open.

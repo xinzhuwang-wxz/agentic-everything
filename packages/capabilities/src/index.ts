@@ -1,6 +1,8 @@
 import { projectTicketBehavior, syntheticTitleCatalog } from './behavior.js';
 export { projectTicketBehavior, syntheticTitleCatalog, syntheticTitleBaseline, assertTicketBehavior } from './behavior.js';
 import { z } from 'zod';
+import { ticketToolDefinitions, type TicketToolName } from './definitions.js';
+export { ticketToolDefinitions, type TicketToolName } from './definitions.js';
 import { randomUUID } from 'node:crypto';
 import type { BehaviorSelection, CapabilityVersion, JsonObject, Principal, ToolRequest, ToolResult } from '@ae/contracts';
 import { authorize, digest, InMemoryApprovalLedger, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
@@ -13,29 +15,20 @@ export interface TicketBusinessPort {
   listMembers?(tenantId: string, ticketId: string): Member[];
   changeAssignee?(tenantId: string, ticketId: string, assigneeId: string, expectedVersion: number): Ticket;
 }
-const readArgs = z.strictObject({ ticketId: z.string().min(1).max(100) });
-const writeArgs = z.strictObject({ ticketId: z.string().min(1).max(100), priority: z.enum(['low', 'high']), expectedVersion: z.number().int().positive() });
-const assigneeArgs = z.strictObject({ ticketId: z.string().min(1).max(100), assigneeId: z.string().min(1).max(100), expectedVersion: z.number().int().positive() });
-const schemas = { read_ticket: readArgs, change_ticket_priority: writeArgs, read_ticket_members: readArgs, change_ticket_assignee: assigneeArgs };
-const definitions = {
-  read_ticket: { read: true, source: 'fixture-host-v1', description: 'Read one accessible ticket using the authenticated host identity.' },
-  change_ticket_priority: { read: false, source: 'fixture-host-v1', description: 'Propose a ticket priority change at its exact current version; a trusted user approval is required before execution.' },
-  read_ticket_members: { read: true, source: 'fixture-ticket-members-v1', description: 'Read host members in the authenticated tenant, scoped to one accessible ticket.' },
-  change_ticket_assignee: { read: false, source: 'fixture-ticket-members-v1', description: 'Assign an accessible ticket to an active member of its tenant at its exact current version; trusted user approval is required.' },
-};
-export const ticketCapabilities: CapabilityVersion[] = Object.entries(schemas).map(([name, schema]) => {
-  const definition = definitions[name as keyof typeof definitions];
+const writeArgs = ticketToolDefinitions.change_ticket_priority.parameters;
+const assigneeArgs = ticketToolDefinitions.change_ticket_assignee.parameters;
+export const ticketCapabilities: CapabilityVersion[] = Object.entries(ticketToolDefinitions).map(([name, definition]) => {
   return {
     schemaVersion: '1', capabilityId: name, version: '1', description: definition.description,
-    inputSchema: z.toJSONSchema(schema) as JsonObject, outputSchema: {}, risk: definition.read ? 'read' : 'write',
-    requiredScopes: [definition.read ? 'tickets:read' : 'tickets:write'], sourceRevision: definition.source, bindingHash: digest({ name, version: '1', source: definition.source }),
-    approvalRequired: !definition.read, idempotency: 'operation-key', supportsOutcomeQuery: true, timeoutMs: 10_000,
+    inputSchema: z.toJSONSchema(definition.parameters) as JsonObject, outputSchema: {}, risk: definition.risk,
+    requiredScopes: [definition.risk === 'read' ? 'tickets:read' : 'tickets:write'], sourceRevision: definition.source, bindingHash: digest({ name, version: '1', source: definition.source }),
+    approvalRequired: definition.approvalRequired, idempotency: 'operation-key', supportsOutcomeQuery: true, timeoutMs: 10_000,
   };
 });
 const usesMembers = (name: string): boolean => name === 'read_ticket_members' || name === 'change_ticket_assignee';
 function parseArguments(name: string, args: JsonObject) {
-  if (!Object.hasOwn(schemas, name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
-  const parsed = schemas[name as keyof typeof schemas].safeParse(args);
+  if (!Object.hasOwn(ticketToolDefinitions, name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
+  const parsed = ticketToolDefinitions[name as TicketToolName].parameters.safeParse(args);
   if (!parsed.success) throw new PolicyError('INVALID_ARGUMENTS');
   return parsed.data;
 }
@@ -133,7 +126,7 @@ export class ToolBroker {
   prepare(principal: Principal, runId: string, callId: string, name: string, args: JsonObject): PreparedTool {
     if (!this.host.supports(name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
     const parsed = parseArguments(name, args);
-    const write = !definitions[name as keyof typeof definitions].read; authorize(principal, write);
+    const write = ticketToolDefinitions[name as TicketToolName].risk !== 'read'; authorize(principal, write);
     this.host.current(principal, write);
     const ticket = this.host.read(principal, parsed.ticketId);
     if (write && (!('expectedVersion' in parsed) || ticket.version !== parsed.expectedVersion)) throw new PolicyError('RESOURCE_VERSION_CONFLICT');
