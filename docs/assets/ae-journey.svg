@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" role="img" aria-labelledby="title desc">
+<title id="title">AE: adapt the product, preserve the host</title><desc id="desc">Your existing developer agent uses AE's Skill and CLI to review and adapt your product. The first slice adds an assistant with governed actions while the host retains identity, business rules and data. MCP is planned.</desc>
+<rect width="1200" height="280" rx="20" fill="#111827"/>
+<g font-family="system-ui, sans-serif">
+<text x="36" y="45" fill="#a5b4fc" font-size="14" letter-spacing="2">AGENTIC EVERYTHING</text>
+<text x="36" y="78" fill="#ffffff" font-size="24" font-weight="700">Adapt the product. Preserve the host.</text>
+<rect x="36" y="108" width="310" height="104" rx="12" fill="#1f2937" stroke="#475569"/>
+<text x="56" y="142" fill="#ffffff" font-size="20" font-weight="600">Your developer agent</text>
+<text x="56" y="174" fill="#cbd5e1" font-size="16">Your repository · your objective</text>
+<path d="M356 160h43m-9-8 9 8-9 8" fill="none" stroke="#a5b4fc" stroke-width="2"/>
+<rect x="410" y="108" width="340" height="104" rx="12" fill="#27244b" stroke="#818cf8"/>
+<text x="430" y="142" fill="#ffffff" font-size="20" font-weight="600">AE Skill + CLI</text>
+<text x="430" y="174" fill="#ddd6fe" font-size="16">Assess → review → adapt → verify</text>
+<path d="M760 160h43m-9-8 9 8-9 8" fill="none" stroke="#a5b4fc" stroke-width="2"/>
+<rect x="814" y="108" width="350" height="104" rx="12" fill="#12352f" stroke="#5eead4"/>
+<text x="834" y="142" fill="#ffffff" font-size="20" font-weight="600">Your product, agent-enabled</text>
+<text x="834" y="174" fill="#99f6e4" font-size="16">Assistant + governed host actions</text>
+<text x="36" y="250" fill="#94a3b8" font-size="14">Current: bounded React fixture · simulated model · local runtime/UI     |     Planned: MCP transport · broader recipes · durability</text>
+</g></svg>
