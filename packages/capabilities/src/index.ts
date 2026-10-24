@@ -90,13 +90,20 @@ export class AuthorizedTicketHost {
     const current = this.read(p, args.ticketId);
     this.current(p, true);
     if (current.version !== args.expectedVersion) throw new PolicyError('RESOURCE_VERSION_CONFLICT');
-    let ticket: Ticket;
     if ('assigneeId' in args) {
       this.assignee(p, args.ticketId, args.assigneeId);
       this.current(p, true);
+    }
+    let ticket: Ticket;
+    try {
       // The ordinary host mutation must enforce membership and version atomically too.
-      ticket = this.business.changeAssignee!(p.tenantId, args.ticketId, args.assigneeId, args.expectedVersion);
-    } else ticket = this.business.changePriority(p.tenantId, args.ticketId, args.priority, args.expectedVersion);
+      ticket = 'assigneeId' in args
+        ? this.business.changeAssignee!(p.tenantId, args.ticketId, args.assigneeId, args.expectedVersion)
+        : this.business.changePriority(p.tenantId, args.ticketId, args.priority, args.expectedVersion);
+    } catch (error) {
+      // An exception after crossing this boundary cannot prove that no business effect committed.
+      throw new Error('Host mutation returned no authoritative receipt', { cause: error });
+    }
     this.writes++;
     const result: ToolResult = { status: 'succeeded', operationId: request.operationId, receiptId: randomUUID(), data: { ...ticket } };
     this.operations.set(key, { hash, targetId: args.ticketId, result });

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { JsonObject } from '@ae/contracts';
 import { AuthorizedTicketHost, syntheticTitleCatalog, ticketCapabilities, ToolBroker } from '../src/index.js';
-import { digest } from '@ae/policy';
+import { digest, PolicyError } from '@ae/policy';
 import { approveAssignee, editor, memberFixture, prepareAssignee, viewer } from './member-fixture.js';
 
 const ids = (broker: ToolBroker, principal = editor) => broker.catalog(principal).map(capability => capability.capabilityId).sort();
@@ -158,4 +158,23 @@ test('unqueryable assignment stays unknown and behavior projection keeps assigne
   const projected = f.host.read(editor, 'ticket-1', { registryHash: syntheticTitleCatalog.registryHash, baselineHash: syntheticTitleCatalog.baselineHash, candidateCodeHash: syntheticTitleCatalog.candidateCodeHash, enabled: [{ id: 'synthetic-ticket-title-trim', version: '1' }] });
   assert.equal(projected.title, 'Printer offline'); assert.equal(projected.assigneeId, 'member-a');
   assert.equal(projected.version, 2); assert.equal(f.ticket.title, '  Printer offline  '); assert.equal(f.host.mutationCount, 1);
+});
+
+
+test('a policy-shaped exception after the business mutation remains unknown and is never redispatched', async () => {
+  const f = memberFixture();
+  const mutate = f.business.changeAssignee!;
+  let dispatches = 0;
+  f.business.changeAssignee = (...args) => {
+    dispatches++;
+    mutate(...args);
+    throw new PolicyError('SYNTHETIC_AFTER_COMMIT');
+  };
+  const { prepared, approvalId } = approveAssignee(f.broker);
+  const unknown = await f.broker.execute(editor, prepared, 'release-1', approvalId);
+  assert.equal(unknown.status, 'outcome-unknown');
+  assert.equal(f.ticket.assigneeId, 'member-a'); assert.equal(f.ticket.version, 2);
+  assert.deepEqual(await f.broker.execute(editor, prepared, 'release-1', approvalId), unknown);
+  assert.equal(f.broker.reconcile(editor, prepared).status, 'outcome-unknown', 'without a receipt the result requires manual review');
+  assert.equal(dispatches, 1);
 });
