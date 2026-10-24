@@ -26,11 +26,6 @@ if(process.argv[3]==='--build'){
  write(which+'-build',result);if(result.exitCode||result.typecheckExitCode)process.exitCode=1;
 }else{
 const {captureBaseline,compareBaseline,improvementRegistryHash}=await load('packages/verification/dist/index.js');
-const {GovernedRuntime}=await load('packages/runtime-core/dist/index.js');
-const {AuthorizedTicketHost,ToolBroker,ticketCapabilities}=await load('packages/capabilities/dist/index.js');
-const {InMemoryControlPlane}=await load('packages/control-plane/dist/index.js');
-const {createApi}=await load('dist/apps/api/src/app.js');
-const {chromium}=await import('playwright-core');const {preview}=await import('vite');const {serve}=await import('@hono/node-server');
 const sourceVersion=execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,'rev-parse','HEAD'],{encoding:'utf8',timeout:10000}).trim();assert.match(sourceVersion,/^[a-f0-9]{40,64}$/);
 const provenance={sourceVersion,codeHash:trust.sourceTreeHash,environment:'Node '+process.version+'; isolated exact synthetic helpdesk; no external model',environmentHash:sha(JSON.stringify({node:process.version,lockfile:sha(readFileSync(join(root,'package-lock.json')))})),dataHash:sha('committed-ticket-seed-v1'),schemaVersion:'1',adapterVersion:'trusted-helpdesk-delivery-v1'};
 const report={profile:'react-helpdesk-synthetic-v1',status:'fail',trust,provenance:{...provenance,runnerHash:sha(readFileSync(new URL(import.meta.url))),lockfileHash:sha(readFileSync(join(root,'package-lock.json'))),browserHash:sha(readFileSync(browserExecutable)),toolFiles:Object.fromEntries(['packages/transformation/dist/fixture-harness.js','packages/transformation/dist/recipes/react-helpdesk.js','packages/verification/dist/index.js','packages/runtime-core/dist/index.js','packages/capabilities/dist/index.js','dist/apps/api/src/app.js','packages/ui/src/index.ts','packages/host-sdk/src/index.ts'].map(path=>[path,sha(readFileSync(join(root,path)))])),browserExecutable,sourceRoot:resolve(source),candidateRoot:resolve(destination),limits:{maximumElapsedMs:300000,maximumHeapMiB:640,network:'loopback-only-no-external'},versions:Object.fromEntries(['typescript','vite','playwright-core'].map(p=>[p,JSON.parse(readFileSync(join(root,'node_modules',p,'package.json'),'utf8')).version]))},checks:[],unknowns:['Synthetic fixture qualification only; not arbitrary project or production acceptance.','Deterministic simulated model, not paid-provider quality.','Offline artifacts are integrity evidence, not signed proof of execution authenticity.','V8 heap is bounded per Node process; this is not an aggregate OS memory sandbox.']};
@@ -48,6 +43,13 @@ try{
  executionStage='host-typecheck';
  for(const which of ['original','candidate'])execFileSync(process.execPath,['--max-old-space-size=640',new URL(import.meta.url).pathname,JSON.stringify(input),'--build',which],{cwd:root,env:process.env,stdio:'pipe',timeout:90000,maxBuffer:1024*1024});
  gate('host-typecheck','Original and candidate TypeScript noEmit and Vite builds passed',['original-build.json','candidate-build.json']);
+ // Load runtime/browser dependencies only after both short-lived build workers exit.
+const {GovernedRuntime}=await load('packages/runtime-core/dist/index.js');
+const {AuthorizedTicketHost,ToolBroker,ticketCapabilities}=await load('packages/capabilities/dist/index.js');
+const {InMemoryControlPlane}=await load('packages/control-plane/dist/index.js');
+const {createApi}=await load('dist/apps/api/src/app.js');
+const {chromium}=await import('playwright-core');const {preview}=await import('vite');const {serve}=await import('@hono/node-server');
+
  executionStage='authenticated-runtime';
  server=serve({fetch:request=>app?app.fetch(request):new Response('Starting',{status:503}),hostname:'127.0.0.1',port:0});
  if(!server.listening)await new Promise(r=>server.once('listening',r));const apiPort=server.address().port;
@@ -83,10 +85,15 @@ try{
 
  evidence.candidateAfter={version:await page.getByTestId('host-version').innerText(),priority:await page.getByTestId('host-priority').innerText()};assert.deepEqual(evidence.errors,[]);assert.deepEqual(evidence.externalRequests,[]);evidence.completed=new Date().toISOString();write('browser',evidence);gate('browser-acceptance','Real sandboxed Chromium original page and generated floating journey observed',['browser.json']);
  assert.deepEqual(assertTrustedFixtureDelivery(input),trust);report.status='pass';report.completed=new Date().toISOString();
- await checkFixtureDeliveryEvidence({report,baseline,differential,originalBuild:JSON.parse(readFileSync(join(outputDirectory,'original-build.json'))),candidateBuild:JSON.parse(readFileSync(join(outputDirectory,'candidate-build.json'))),runtime:runtimeEvidence,browser:evidence});
+ // Parent verifies evidence only after this process exits and cleanup is confirmed.
 }catch(error){const existing=report.checks.find(c=>c.name===executionStage);if(existing)existing.status='fail';else report.checks.push({name:executionStage,status:'fail',expected:'Observed fixed synthetic fixture acceptance',actual:String(error),evidence:[]});report.status='fail';report.failure=String(error);process.exitCode=1;console.error(error);}finally{
  if(runtimeEvidence)write('runtime',runtimeEvidence);if(browserEvidence)write('browser',browserEvidence);
  for(const name of ['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'])if(!report.checks.some(c=>c.name===name))report.checks.push({name,status:'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:report.failure??'Not reached',evidence:[]});
- write('report',report);await browser?.close();for(const service of [vite,originalVite])if(service)await new Promise(r=>service.httpServer.close(r));if(server)await new Promise(r=>server.close(r));
+ const cleanupErrors=[];
+ for(const close of [()=>browser?.close(),...([vite,originalVite].filter(Boolean).map(service=>()=>new Promise((resolve,reject)=>service.httpServer.close(error=>error?reject(error):resolve())))),()=>server?new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve())):undefined]){try{await close();}catch(error){cleanupErrors.push(String(error));}}
+ report.cleanup={status:cleanupErrors.length?'failed':'complete',errors:cleanupErrors,completedAt:new Date().toISOString()};
+ if(cleanupErrors.length){report.status='fail';process.exitCode=1;}
+ // No PASS report exists while cleanup is still pending. Parent adds exit/signal/timeout evidence.
+ write('report',report);
 }
 }

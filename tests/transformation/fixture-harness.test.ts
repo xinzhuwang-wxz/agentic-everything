@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { assertFixtureAuthorization, assertTrustedFixtureDelivery, checkFixtureDeliveryEvidence, fixtureAuthorization, runFixtureDelivery } from '../../packages/transformation/src/fixture-harness.js';
+import { finalizeFixtureProcessReport, assertFixtureAuthorization, assertTrustedFixtureDelivery, checkFixtureDeliveryEvidence, fixtureAuthorization, runFixtureDelivery } from '../../packages/transformation/src/fixture-harness.js';
 import { helpdeskRecipe } from '../../packages/transformation/src/recipes/react-helpdesk.js';
 function fixture() {
   const work=mkdtempSync(join(tmpdir(),'ae-trust-test-')),sourceRoot=join(work,'source'),candidateRoot=join(work,'candidate');
@@ -31,9 +31,23 @@ test('symlink and modified business domain cannot enter trusted execution',()=>{
 test('unavailable unqualified browser gives explicit not-run evidence, never a fabricated pass',async()=>{
   const f=fixture();try{
     const result=await runFixtureDelivery({...f,outputDirectory:join(f.work,'evidence'),verificationAuthorization:fixtureAuthorization,authorizationExpiresAt:new Date(Date.now()+60000).toISOString(),browserExecutable:join(f.work,'unavailable-browser')});
-    assert.equal(result.status,'fail');assert.equal(result.checks.length,5);assert.ok(result.checks.every(c=>c.status==='not-run'));
+    assert.equal(result.status,'fail');assert.equal(result.checks.length,6);assert.ok(result.checks.every(c=>c.status==='not-run'));
     const artifacts=Object.fromEntries(Object.entries(result.artifacts).map(([key,path])=>[key,JSON.parse(readFileSync(path,'utf8'))]));
     await checkFixtureDeliveryEvidence(artifacts as unknown as Parameters<typeof checkFixtureDeliveryEvidence>[0]);
     artifacts.report.status='pass';await assert.rejects(checkFixtureDeliveryEvidence(artifacts as unknown as Parameters<typeof checkFixtureDeliveryEvidence>[0]));
   }finally{rmSync(f.work,{recursive:true,force:true});}
+});
+
+test('process termination and cleanup override otherwise passing fixture observations',()=>{
+  const report={cleanup:{status:'complete'},checks:[{name:'browser-acceptance',status:'pass' as const,expected:'observed',actual:'observed',evidence:[]}]};
+  const clean={started:true,exitCode:0,signal:null,timedOut:false,groupClosed:true,forcedCleanup:false};
+  assert.equal(finalizeFixtureProcessReport(report,clean).status,'pass');
+  for(const outcome of [{...clean,exitCode:1},{...clean,exitCode:null,signal:'SIGKILL'},{...clean,timedOut:true},{...clean,groupClosed:false},{...clean,forcedCleanup:true}]){
+    const result=finalizeFixtureProcessReport(report,outcome);
+    assert.equal(result.status,'fail');assert.equal(result.checks.at(-1)?.status,'fail');
+  }
+  assert.equal(finalizeFixtureProcessReport({...report,cleanup:{status:'failed'}},clean).status,'fail');
+  assert.equal(finalizeFixtureProcessReport({checks:report.checks},clean).status,'fail');
+  const forged={...report,checks:[...report.checks,{name:'fixture-process-completion',status:'pass' as const,expected:'fake',actual:'fake',evidence:[]}]};
+  assert.equal(finalizeFixtureProcessReport(forged,{...clean,exitCode:1}).checks.at(-1)?.status,'fail');
 });

@@ -53,12 +53,20 @@ export const fixtureBrowserPath='/tmp/ae-browser-qualification/root/usr/lib/chro
 export const fixtureBrowserHash='a41388e75895fdca589b1ad9c3e5edae482dc382c0ee90553c44b1a61cded80f';
 export function assertFixtureBrowser(path:string):void {if(realpathSync(path)!==fixtureBrowserPath||hash(readFileSync(path))!==fixtureBrowserHash)throw Error('Only the explicitly qualified pinned Chromium binary is permitted');}
 export interface FixtureDeliveryResult {status:'pass'|'fail';reportPath:string;artifacts:Record<string,string>;checks:VerificationReport['checks'];}
+export interface FixtureProcessOutcome { started: boolean; exitCode: number | null; signal: string | null; timedOut: boolean; groupClosed: boolean; forcedCleanup: boolean; }
+export function finalizeFixtureProcessReport(report: {checks: VerificationReport['checks']; cleanup?: {status?: string}; [key: string]: unknown}, outcome: FixtureProcessOutcome) {
+  const successful = outcome.started && outcome.exitCode === 0 && outcome.signal === null && !outcome.timedOut && outcome.groupClosed && !outcome.forcedCleanup && report.cleanup?.status === 'complete';
+  const terminal: VerificationReport['checks'][number] = {name:'fixture-process-completion',status:!outcome.started?'not-run':successful?'pass':'fail',expected:'Zero exit without timeout or signal after all owned services and browser close',actual:!outcome.started?'Harness was not started':successful?'Harness exited zero after confirmed cleanup':`Harness did not finish cleanly: exit=${outcome.exitCode}; signal=${outcome.signal}; timeout=${outcome.timedOut}; groupClosed=${outcome.groupClosed}; forcedCleanup=${outcome.forcedCleanup}; cleanup=${report.cleanup?.status ?? 'unconfirmed'}`,evidence:[]};
+  const checks = [...report.checks.filter(check=>check.name!=='fixture-process-completion'), terminal];
+  return {...report, process:outcome, checks, status:checks.every(check=>check.status==='pass')?'pass':'fail'};
+}
 const names = {report:'report.json',baseline:'baseline.json',differential:'differential.json',originalBuild:'original-build.json',candidateBuild:'candidate-build.json',runtime:'runtime.json',browser:'browser.json'};
 function currentRoot():string {let root=dirname(fileURLToPath(import.meta.url));for(let i=0;i<7;i++,root=dirname(root))if(existsSync(join(root,'tests/browser/delivery.mjs'))&&existsSync(join(root,'package.json')))return root;throw Error('Trusted AE checkout unavailable');}
 /** Fixed synthetic harness only; never accepts commands, scripts, observations or a caller-provided PASS. */
 export async function runFixtureDelivery(input:FixtureDeliveryInput):Promise<FixtureDeliveryResult> {
   assertFixtureAuthorization(input.verificationAuthorization);
-  const remaining=Date.parse(input.authorizationExpiresAt)-Date.now();if(!Number.isFinite(remaining)||remaining<=0)throw Error('Fixture verification authorization expired');
+  const deadlineAt=Math.min(Date.now()+300000,Date.parse(input.authorizationExpiresAt));
+  const remaining=deadlineAt-Date.now();if(!Number.isFinite(remaining)||remaining<=0)throw Error('Fixture verification authorization expired');
   const trust=assertTrustedFixtureDelivery(input);
   const aeRoot=realpathSync(input.aeRoot??currentRoot()), outputDirectory=resolve(input.outputDirectory);
   if(aeRoot!==realpathSync(currentRoot()))throw Error('AE tool root override denied');
@@ -68,32 +76,48 @@ export async function runFixtureDelivery(input:FixtureDeliveryInput):Promise<Fix
   if(realpathSync(outputDirectory)!==outputDirectory)throw Error('Evidence directory symlink denied');
   const work=mkdtempSync(join(tmpdir(),'ae-delivery-'));
   const browserExecutable=input.browserExecutable??process.env.AE_BROWSER_EXECUTABLE??fixtureBrowserPath;
-  const blocked=(reason:string,attempted=false):FixtureDeliveryResult=>{const checks:VerificationReport['checks']=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'].map(name=>({name,status:attempted&&name==='host-business-tests'?'fail':'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:reason,evidence:[]}));const report={profile:fixtureProfile,status:'fail',trust,checks,failure:reason};const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const path=join(outputDirectory,file);writeFileSync(path,JSON.stringify(name==='report'?report:null)+'\n');return [name,path];}));return {status:'fail',reportPath:artifacts.report!,artifacts,checks};};
+  const blocked=(reason:string,attempted=false,observed?:FixtureProcessOutcome):FixtureDeliveryResult=>{const checks:VerificationReport['checks']=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'].map(name=>({name,status:attempted&&name==='host-business-tests'?'fail':'not-run',expected:'Observed fixed synthetic fixture acceptance',actual:reason,evidence:[]}));const report=finalizeFixtureProcessReport({profile:fixtureProfile,status:'fail',trust,checks,failure:reason},observed??{started:attempted,exitCode:null,signal:null,timedOut:false,groupClosed:!attempted,forcedCleanup:false});const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const path=join(outputDirectory,file);writeFileSync(path,JSON.stringify(name==='report'?report:null)+'\n');return [name,path];}));return {status:'fail',reportPath:artifacts.report!,artifacts,checks:report.checks};};
   try{assertFixtureBrowser(browserExecutable);}catch(error){return blocked(String(error));}
+  const executionMs=Math.min(293000,deadlineAt-Date.now()-7000);
+  if(executionMs<=0)return blocked('Insufficient authorized time for execution and owned-process cleanup');
   const args={...input,aeRoot,outputDirectory:work,browserExecutable:realpathSync(browserExecutable)};
   const environment={PATH:'/usr/bin:/bin',HOME:work,TMPDIR:work,LANG:'C.UTF-8',NODE_OPTIONS:'--max-old-space-size=640'};
   const log:string[]=[];
   let spawnFailure:string|undefined;
-  const code=await new Promise<number|null>(done=>{
+  const outcome: FixtureProcessOutcome = {started:false,exitCode:null,signal:null,timedOut:false,groupClosed:false,forcedCleanup:false};
+  let pid: number | undefined;
+  let escalation: Promise<void> | undefined;
+  await new Promise<void>(done=>{
     const child=spawn(process.execPath,['--max-old-space-size=640',join(aeRoot,'tests/browser/delivery.mjs'),JSON.stringify(args)],{cwd:aeRoot,env:environment,detached:true,stdio:['ignore','pipe','pipe']});
-    const timer=setTimeout(()=>{try{process.kill(-child.pid!,'SIGTERM');}catch{};setTimeout(()=>{try{process.kill(-child.pid!,'SIGKILL');}catch{}},1500).unref();},Math.min(295000,remaining));
+    pid=child.pid;
+    child.once('spawn',()=>{outcome.started=true;});
+    const timer=setTimeout(()=>{outcome.timedOut=true;try{process.kill(-child.pid!,'SIGTERM');}catch{};escalation=new Promise(resolve=>setTimeout(()=>{try{process.kill(-child.pid!,'SIGKILL');}catch{}resolve();},1500));},executionMs);
     const capture=(chunk:Buffer)=>{if(log.join('').length<1024*1024)log.push(chunk.toString());};child.stdout.on('data',capture);child.stderr.on('data',capture);
-    child.once('error',error=>{clearTimeout(timer);spawnFailure=String(error);done(null);});child.once('close',code=>{clearTimeout(timer);done(code);});
+    child.once('error',error=>{clearTimeout(timer);spawnFailure=String(error);done();});child.once('close',(code,signal)=>{clearTimeout(timer);outcome.exitCode=code;outcome.signal=signal;done();});
   });
+  if(escalation)await escalation;
+  const groupAlive=()=>{if(!pid)return false;try{process.kill(-pid,0);return true;}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')return false;throw error;}};
+  if(groupAlive()){outcome.forcedCleanup=true;try{process.kill(-pid!,'SIGKILL');}catch{}for(let i=0;i<100&&Date.now()<deadlineAt&&groupAlive();i++)await new Promise(resolve=>setTimeout(resolve,50));}
+  outcome.groupClosed=!groupAlive();
   writeFileSync(join(work,'execution.log'),log.join(''));
-  if(spawnFailure)return blocked('Harness could not start: '+spawnFailure);
-  if(!existsSync(join(work,'report.json')))return blocked('Fixture harness stopped without a report; diagnostic work directory: '+work,true);
+  if(spawnFailure)return blocked('Harness could not start: '+spawnFailure,false,outcome);
+  if(!existsSync(join(work,'report.json')))return blocked('Fixture harness stopped without a report; diagnostic work directory: '+work,true,outcome);
   const artifacts=Object.fromEntries(Object.entries(names).map(([name,file])=>{const src=join(work,file),path=join(outputDirectory,file);if(existsSync(src)){if(lstatSync(src).size>1024*1024)throw Error('Oversized fixture artifact');writeFileSync(path,readFileSync(src));}else writeFileSync(path,'null\n');return [name,path];}));
-  const report=JSON.parse(readFileSync(artifacts.report!,'utf8')) as {status:string;checks:VerificationReport['checks']};
-  return {status:code===0&&report.status==='pass'?'pass':'fail',reportPath:artifacts.report!,artifacts,checks:report.checks};
+  const report=finalizeFixtureProcessReport(JSON.parse(readFileSync(artifacts.report!,'utf8')),outcome);
+  writeFileSync(artifacts.report!,JSON.stringify(report,null,2)+'\n');
+  return {status:report.status==='pass'?'pass':'fail',reportPath:artifacts.report!,artifacts,checks:report.checks};
 }
 /** Offline integrity/semantic validation, NOT a signature or proof of execution authenticity. */
 export async function checkFixtureDeliveryEvidence(input:FixtureDeliveryEvidence):Promise<void> {
   const record=(v:unknown):Record<string,any>=>{if(!v||typeof v!=='object'||Array.isArray(v))throw Error('Invalid fixture evidence');return v as Record<string,any>;};
   const report=record(input.report);
   if(report.profile!==fixtureProfile||!['pass','fail'].includes(report.status))throw Error('Invalid fixture profile result');
-  const required=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance'];
+  const required=['host-typecheck','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance','fixture-process-completion'];
   if(!Array.isArray(report.checks)||report.checks.length!==required.length||new Set(report.checks.map((c:{name:string})=>c.name)).size!==required.length||required.some(name=>!report.checks.some((c:{name:string;status:string})=>c.name===name&&['pass','fail','not-run'].includes(c.status))))throw Error('Invalid gate set');
+  const process=record(report.process);
+  if(typeof process.started!=='boolean'||typeof process.timedOut!=='boolean'||typeof process.groupClosed!=='boolean'||typeof process.forcedCleanup!=='boolean'||!(process.exitCode===null||Number.isInteger(process.exitCode))||!(process.signal===null||typeof process.signal==='string'))throw Error('Invalid process terminal evidence');
+  const terminal=finalizeFixtureProcessReport(report as {checks:VerificationReport['checks']},process as unknown as FixtureProcessOutcome).checks.at(-1);
+  if(JSON.stringify(report.checks.find((check:{name:string})=>check.name==='fixture-process-completion'))!==JSON.stringify(terminal))throw Error('Process completion claim mismatch');
   const passed=(name:string)=>report.checks.find((c:{name:string})=>c.name===name).status==='pass';
   if((report.status==='pass')!==required.every(passed))throw Error('Overall status does not follow gates');
   if(treeHash(report.trust.sourceFiles)!==treeHash({...trustedFixtureHashes})||treeHash(report.trust.sourceFiles)!==report.trust.sourceTreeHash||treeHash(report.trust.candidateFiles)!==report.trust.candidateTreeHash)throw Error('Fixture trust hash mismatch');
