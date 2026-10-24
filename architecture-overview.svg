@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1280" viewBox="0 0 1600 1280" role="img" aria-labelledby="title desc">
 <title id="title">Agentic Everything 宏观架构</title>
-<desc id="desc">现有开发智能体通过 AE Skill MCP CLI 理解客户源码，生成定制计划，经批准改造和验证。客户保持原技术栈，嵌入 Agentic tab 和助手，连接独立 TypeScript 控制面与运行面。宿主保留身份权限及业务真源，AE 保存运行审批账本。</desc>
+<desc id="desc">现有开发智能体通过 AE Skill MCP CLI 理解各类客户项目、业务与适合的 Agentic 化程度，生成定制计划，经批准改造和验证。客户保持原技术栈，嵌入 Agentic tab 和助手，连接独立 TypeScript 控制面与运行面。宿主保留身份权限及业务真源，AE 保存运行审批账本。</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#516273"/></marker></defs>
 <style>text{font-family:'Noto Sans CJK SC','Microsoft YaHei',sans-serif;fill:#152433}.title{font-size:36px;font-weight:700}.subtitle{font-size:20px;fill:#526171}.section{font-size:25px;font-weight:700}.label{font-size:24px;font-weight:600}.body{font-size:20px;fill:#354658}.note{font-size:18px;fill:#526171}.line{fill:none;stroke:#516273;stroke-width:2.5;marker-end:url(#arrow)}.group{fill:#f5f7fa;stroke:#c9d3df;stroke-width:1.5}.box{fill:#fff;stroke:#bdcbd9;stroke-width:1.5}</style>
 <rect width="1600" height="1280" fill="#fff"/>
 <text x="50" y="60" class="title">Agentic Everything 宏观架构</text>
-<text x="50" y="96" class="subtitle">供批准的目标设计 · AE 核心重写为 TypeScript · 客户宿主保持原语言与业务权限</text>
+<text x="50" y="96" class="subtitle">已批准的产品架构 · AE TypeScript 核心 · 客户宿主保持原语言与业务权限</text>
 <rect x="40" y="125" width="1520" height="265" rx="12" class="group"/>
 <text x="65" y="166" class="section">改造域  由客户现有开发智能体执行</text>
 <rect x="65" y="195" width="330" height="145" rx="12" class="box"/>
-<text x="87" y="233" class="label">客户已有软件</text>
+<text x="87" y="233" class="label">各类客户软件</text>
 <text x="87" y="267" class="body">源码、业务目标与原有测试</text>
 <text x="87" y="296" class="body">不要求迁移宿主技术栈</text>
 <rect x="445" y="195" width="330" height="145" rx="12" class="box"/>
 <text x="467" y="233" class="label">AE Skill / MCP / CLI</text>
-<text x="467" y="267" class="body">证据化理解与业务流追踪</text>
+<text x="467" y="267" class="body">理解项目、业务与改造程度</text>
 <text x="467" y="296" class="body">版本化 recipes 与诊断</text>
 <rect x="825" y="195" width="330" height="145" rx="12" class="box"/>
 <text x="847" y="233" class="label">专属改造计划与批准</text>
-<text x="847" y="267" class="body">能力、文件、风险、验收</text>
+<text x="847" y="267" class="body">改造程度、能力、文件、验收</text>
 <text x="847" y="296" class="body">范围绑定 plan hash 与 commit</text>
 <rect x="1205" y="195" width="330" height="145" rx="12" class="box"/>
 <text x="1227" y="233" class="label">修改、验证与可逆交付</text>
@@ -37,9 +37,9 @@
 <rect x="990" y="455" width="570" height="610" rx="12" class="group"/>
 <text x="1015" y="496" class="section">AE TypeScript 核心</text>
 <rect x="65" y="525" width="370" height="120" rx="12" class="box"/>
-<text x="87" y="563" class="label">原业务页面 / App / 小程序</text>
-<text x="87" y="597" class="body">保留现有导航、UI 和业务流</text>
-<text x="87" y="626" class="body">按平台 recipe 增加入口</text>
+<text x="87" y="563" class="label">原业务入口</text>
+<text x="87" y="597" class="body">页面 / App / 小程序 / API / CLI</text>
+<text x="87" y="626" class="body">保留原业务流，按项目增加能力</text>
 <rect x="65" y="695" width="370" height="110" rx="12" class="box"/>
 <text x="87" y="733" class="label">既有身份与权限</text>
 <text x="87" y="767" class="body">登录、租户、角色、资源 ACL</text>
@@ -52,7 +52,7 @@
 <text x="557" y="597" class="body">能力与助手配置、测试和发布</text>
 <text x="557" y="626" class="body">同一控制面，不复制配置</text>
 <rect x="535" y="695" width="380" height="110" rx="12" class="box"/>
-<text x="557" y="733" class="label">嵌入式助手</text>
+<text x="557" y="733" class="label">助手 / API / CLI 入口</text>
 <text x="557" y="767" class="body">上下文、预览、确认、进度</text>
 <rect x="535" y="870" width="380" height="125" rx="12" class="box"/>
 <text x="557" y="908" class="label">Host Adapter / 平台桥</text>
