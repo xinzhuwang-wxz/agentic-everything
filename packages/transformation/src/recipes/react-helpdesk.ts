@@ -49,4 +49,16 @@ function mainOpening(text: string): number {
   if (position === undefined) throw new Error('No supported default App/main mount');
   return position;
 }
-const MOUNT = `import React from 'react';\nimport { AgenticMount } from '@ae/host-sdk';\nimport '@ae/ui/styles.css';\n\n// The server authenticates the host session. Never place a credential in this module.\nexport function HelpdeskAgenticMount({ onChanged }: { onChanged: () => void | Promise<void> }) {\n  return <AgenticMount apiBase="/api" ticketId="ticket-1" onRunChange={run => { if (run.status === 'succeeded') void onChanged(); }} />;\n}\n`;
+const MOUNT = `import React, { useState } from 'react';
+import { AgenticMount } from '@ae/host-sdk';
+import '@ae/ui/styles.css';
+
+// Synthetic fixture integration. Production hosts supply their own session boundary,
+// navigation placement, reserved actions and modal suspension. This is not an admin grant.
+export function HelpdeskAgenticMount({ onChanged }: { onChanged: () => void | Promise<void> }) {
+  const [managementVisible, setManagementVisible] = useState(false);
+  return <><nav aria-label="Helpdesk administration"><button type="button" aria-expanded={managementVisible} aria-controls="helpdesk-agentic-settings" onClick={() => setManagementVisible(value => !value)}>Agentic settings & activity</button></nav>
+    <div id="helpdesk-agentic-settings"><AgenticMount apiBase="/api" ticketId="ticket-1" floating={{ applicationId: 'helpdesk-fixture', reservedAreas: [{ left: 0, top: 0, right: 360, bottom: 180 }] }} managementVisible={managementVisible} onRunChange={run => { if (run.status === 'succeeded') void onChanged(); }} /></div>
+  </>;
+}
+`;

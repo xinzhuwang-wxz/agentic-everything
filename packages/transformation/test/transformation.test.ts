@@ -113,6 +113,11 @@ test('baseline and transformed host both build as real browser applications', as
   assert.equal(existsSync(join(f.parent, 'before-build/index.html')), true);
   assert.equal(existsSync(join(f.parent, 'after-build/index.html')), true);
   assert.match(readFileSync(join(f.destination, 'src/ae/AgenticMount.tsx'), 'utf8'), /run.status === 'succeeded'/);
+  const mount = readFileSync(join(f.destination, 'src/ae/AgenticMount.tsx'), 'utf8');
+  assert.match(mount, /floating={{ applicationId: 'helpdesk-fixture'/);
+  assert.match(mount, /Helpdesk administration/);
+  assert.match(mount, /managementVisible={managementVisible}/);
+  assert.doesNotMatch(mount, /roles:|agentic:admin/);
   assert.match(readFileSync(join(f.destination, 'src/App.tsx'), 'utf8'), /onChanged={refreshTicket}/);
   assert.equal(readFileSync(join(f.destination, 'src/api.ts'), 'utf8'), readFileSync(join(f.source, 'src/api.ts'), 'utf8'));
   revertAdaptation(applied);
