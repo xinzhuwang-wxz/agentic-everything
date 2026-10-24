@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ApprovalDecisionSchema, type Principal, type AgentRelease, type ApprovalDecision } from '@ae/contracts';
+import { ApprovalDecisionSchema, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
 import { type RunView } from '@ae/runtime-core';
-import { InMemoryControlPlane, releasedCatalog } from '@ae/control-plane';
+import { InMemoryControlPlane, releasedCatalog, type ControlPlanePort } from '@ae/control-plane';
 import { createConfigurationRoutes } from '@ae/control-plane/http';
-import { ToolBroker } from '@ae/capabilities';
+import type { Ticket } from '@ae/capabilities';
 import { digest, PolicyError } from '@ae/policy';
 
 const StartSchema = z.strictObject({ input: z.string().trim().min(1).max(16384), context: z.strictObject({ ticketId: z.string().min(1).max(100) }).optional() });
@@ -18,8 +18,12 @@ export interface RuntimePort {
 }
 export interface ApiOptions {
   runtime: RuntimePort;
-  controlPlane?: InMemoryControlPlane;
-  broker: ToolBroker;
+  controlPlane?: InMemoryControlPlane | ControlPlanePort;
+  broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host: {read(principal: Principal, ticketId: string): Ticket | Promise<Ticket>} };
+  durability?: 'memory_fixture' | 'postgres_qualified';
+  requirePublishedRelease?: boolean;
+  /** Optional durable intent ledger supplied only by trusted server composition. */
+  startIntent?: (input: {principal: Principal; intent: string; input: string; context?: {ticketId: string}}) => Promise<ApiRunView>;
   /** Host session/auth middleware supplies this function. Headers/body are never a principal. */
   resolvePrincipal: (request: Request) => Principal | undefined | Promise<Principal | undefined>;
   releaseId: string;
@@ -77,11 +81,11 @@ export function createApi(options: ApiOptions): Hono {
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new HttpError('INVALID_JSON', 400); }
   };
   if (options.controlPlane) app.route('/api/configuration', createConfigurationRoutes(options.controlPlane, options.resolvePrincipal));
-  app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: options.controlPlane?.activeRelease(p)?.releaseId ?? options.releaseId, durability: 'memory_fixture' }); });
-  app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = options.controlPlane?.activeRelease(p); const catalog = options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : catalog }); });
+  app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: (await options.controlPlane?.activeRelease(p))?.releaseId ?? options.releaseId, durability: options.durability ?? 'memory_fixture' }); });
+  app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = await options.controlPlane?.activeRelease(p); const catalog = await options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : options.requirePublishedRelease ? [] : catalog }); });
   app.get('/api/tickets/:ticketId', async c => {
     const p = await principal(c.req.raw);
-    try { return c.json({ ticket: options.broker.host.read(p, c.req.param('ticketId')) }); }
+    try { return c.json({ ticket: await options.broker.host.read(p, c.req.param('ticketId')) }); }
     catch (error) { if (error instanceof PolicyError) throw error; throw new HttpError('TICKET_NOT_FOUND', 404); }
   });
   app.post('/api/runs', async c => {
@@ -89,14 +93,18 @@ export function createApi(options: ApiOptions): Hono {
     if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);
     const intent = c.req.header('idempotency-key');
     if (!intent || !/^[a-zA-Z0-9_.:-]{1,128}$/.test(intent)) throw new HttpError('IDEMPOTENCY_KEY_REQUIRED', 400);
+    if (options.startIntent) return c.json(await options.startIntent({principal:p,intent,input:parsed.data.input,...(parsed.data.context?{context:parsed.data.context}:{})}),201);
     const key = JSON.stringify([p.tenantId, p.applicationId, p.subjectId, intent]);
     const hash = digest(parsed.data); // Server publication changes do not change this client intent.
     const existing = intents.get(key);
     if (existing) { if (hash !== existing.hash) throw new HttpError('IDEMPOTENCY_CONFLICT', 409); return c.json(await options.runtime.get(await existing.result, p)); }
     if (intents.size >= (options.maxIntents ?? 1000)) throw new HttpError('FIXTURE_CAPACITY_REACHED', 429);
     // Reserve before execution, including concurrent starts. Retain rejected/unknown outcomes; never blindly dispatch again.
-    const release = options.controlPlane?.activeRelease(p);
-    const result = Promise.resolve().then(() => options.runtime.start({ principal: p, releaseId: release?.releaseId ?? options.releaseId, ...(release ? { release: structuredClone(release) } : {}), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) })).then(view => view.runId);
+    const result = Promise.resolve().then(async () => {
+      const release = await options.controlPlane?.activeRelease(p);
+      if (!release && options.requirePublishedRelease) throw new PolicyError('RELEASE_REQUIRED');
+      return options.runtime.start({ principal: p, releaseId: release?.releaseId ?? options.releaseId, ...(release ? { release: structuredClone(release) } : {}), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) });
+    }).then(view => view.runId);
     intents.set(key, { hash, result });
     return c.json(await options.runtime.get(await result, p), 201);
   });

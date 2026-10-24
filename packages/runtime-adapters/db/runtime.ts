@@ -10,7 +10,7 @@ import { PersistentStore, type PersistentRunView, type StoredRun } from './store
 import { abortable, validateHostResult, PersistentToolBroker, type DurableTicketHost } from './broker.js';
 export type { PersistentRunView, DurableTicketHost };
 export interface PersistentRuntimeOptions { databaseUrl: string; model: ModelProvider; host: DurableTicketHost; maxTurns?: number; maxElapsedMs?: number; fault?: (point: string) => Promise<void> }
-type Start = { principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: { ticketId: string } };
+type Start = { runId?: string; principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: { ticketId: string } };
 type Phase = { runId: string; phase: string; start?: Start; principal?: Principal; decision?: ApprovalDecision };
 /** Opt-in runtime. One instance/configuration per worker process; DBOS is the sole scheduler. */
 export class PersistentRuntime {
@@ -39,7 +39,8 @@ export class PersistentRuntime {
     }
     if (!input.input.trim() || input.input.length > 16384) throw new PolicyError('INVALID_INPUT');
     await this.broker.current(input.principal);
-    const runId = randomUUID();
+    if (input.runId !== undefined && !/^intent-[a-f0-9]{64}$/.test(input.runId)) throw new PolicyError('INVALID_SERVER_RUN_ID');
+    const runId = input.runId ?? randomUUID();
     await (await DBOS.startWorkflow(this.workflow, { workflowID: this.workflowId(runId, 'initial') })({ runId, phase: 'initial', start: structuredClone(input) })).getResult();
     return this.get(runId, input.principal);
   }
