@@ -46,7 +46,7 @@ test('package rejects bytes, unlisted files, symlink roots, forged PASS and comp
   const forged = JSON.stringify(verification); writeFileSync(verificationPath, forged);
   manifest.status = 'partial'; manifest.checks = verification.checks; manifest.chain.verificationHash = digest(verification);
   const ref = manifest.artifacts.find((a: { path: string }) => a.path === 'verification.json'); ref.sha256 = sha256(forged); ref.bytes = Buffer.byteLength(forged);
-  writeFileSync(manifestPath, JSON.stringify(manifest)); assert.match((await checkDelivery(f.outputDirectory)).errors.join(' '), /Unsupported verification claim/);
+  writeFileSync(manifestPath, JSON.stringify(manifest)); assert.match((await checkDelivery(f.outputDirectory)).errors.join(' '), /Unsupported verification claim|fixture evidence references/);
   const g = setup(); await createDelivery(g); symlinkSync(g.outputDirectory, join(g.parent, 'alias')); assert.equal((await checkDelivery(join(g.parent, 'alias'))).valid, false);
   writeFileSync(join(g.outputDirectory, 'unexpected.txt'), 'not authorized'); assert.equal((await checkDelivery(g.outputDirectory)).valid, false);
   const h = setup(); await createDelivery(h); writeFileSync(join(h.outputDirectory, 'source/src/App.tsx'), '// drift'); assert.equal((await checkDelivery(h.outputDirectory)).valid, false);

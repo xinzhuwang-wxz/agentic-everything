@@ -17,7 +17,7 @@ node packages/cli/dist/index.js delivery-check --bundle /workspace/new-delivery
 
 Use a fresh output directory outside both original and adapted repositories. Creation refuses overwrite, source drift, mismatched authorization and unsafe paths. Keep the artifact inputs private: an approval reference can identify the developer host's actual conversation and must not be published indiscriminately.
 
-The manifest binds the base commit, assessment, exact plan, approval scope, versioned recipe, applied changes and current source fingerprints. The bundle carries hashed artifact bytes and bounded patch/rollback material. It does not copy a whole repository or unrelated customer files. `delivery-check` validates the bundle's integrity and internal binding; it is not proof that the current host still matches it after further edits. Rerun delivery against the source and candidate for that observation.
+The manifest binds the base commit, assessment, exact plan, approval scope, versioned recipe, applied changes and current source fingerprints. The bundle carries hashed artifact bytes and bounded patch/rollback material. It does not copy a whole repository or unrelated customer files. `delivery-check` validates the bundle's integrity and internal binding using the matching AE checkout and pinned toolchain. Profiled evidence records runner, lockfile and selected AE module hashes; changed tooling fails closed rather than silently re-certifying an old bundle. This checker is not a standalone signature verifier; it is not proof that the current host still matches it after further edits. Rerun delivery against the source and candidate for that observation.
 
 A hash detects changes relative to the manifest. It is not a signature, a trusted timestamp or proof of the approver's identity. A privileged writer who replaces both content and hashes is outside this local trust model. The developer host must establish approval independently.
 
@@ -54,9 +54,11 @@ node packages/cli/dist/index.js plan --assessment /workspace/assessment.json \
 
 The profile is part of the displayed plan hash and the subsequent approval. It covers the fixed baseline/differential, host-build, runtime/HTTP and real-browser checks, synthetic data only, a 300-second execution cap, a 640 MiB compilation heap cap, no paid calls and no external network. Loopback HTTP is explicitly permitted. Exact fixture bytes and recipe outputs must match before execution; a similarly shaped customer project does not qualify.
 
-Use the same approve/apply/deliver commands afterward. No second development approval is needed for these already approved checks. Old plans without the profile remain static; never retrofit permission into an old approval. The harness uses already installed dependencies and an explicitly qualified sandboxed Chromium, never downloads tools. Missing prerequisites or unrun gates remain partial; observed failures remain failed. Evidence distinguishes deterministic simulated model behavior from real model quality.
+Use the same approve/apply/deliver commands afterward. No second development approval is needed for these already approved checks. Old plans without the profile remain static; never retrofit permission into an old approval. The harness uses already installed dependencies and an explicitly qualified sandboxed Chromium, never downloads tools. The current profile pins the Linux qualification binary by path and SHA-256; another operating system, browser installation or binary is not silently treated as qualified and yields not-run until a separately reviewed profile supports it. Missing prerequisites or unrun gates remain partial; observed failures remain failed. Evidence distinguishes deterministic simulated model behavior from real model quality.
 
 ## Available qualification and its scope
+
+[The current delivery qualification](verification/delivery-qualification.md) records the actual end-to-end CLI result, negative controls, aggregate checks and its bounded scope.
 
 - [Source-bound behavior integration test](../packages/transformation/test/behavior.test.ts): actual original/generated synthetic business module, seeded read/write/stale-version cases.
 - [Behavior archive and negative controls](handoff/behavior-verification.md): retained observations and deliberately failing controls, not external customer examples.
