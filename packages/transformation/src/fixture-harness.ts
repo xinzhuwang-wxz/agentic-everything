@@ -22,7 +22,7 @@ export const trustedFixtureHashes: Readonly<Record<string, string>> = Object.fre
 const hash = (value: string | Buffer): string => createHash('sha256').update(value).digest('hex');
 const treeHash = (files: Record<string,string>): string => hash(JSON.stringify(Object.entries(files).sort(([a],[b])=>a.localeCompare(b))));
 export function matchesTrustedFixtureAssessment(assessment: ProjectAssessment): boolean {
-  return helpdeskRecipe.inputs.every(path => assessment.evidence.find(e=>e.path===path)?.sha256===trustedFixtureHashes[path]);
+  return assessment.evidence.length === helpdeskRecipe.inputs.length && helpdeskRecipe.inputs.every(path => assessment.evidence.find(e=>e.path===path)?.sha256===trustedFixtureHashes[path]);
 }
 function inspect(root: string): Record<string,string> {
   if (realpathSync(root)!==resolve(root)) throw Error('Fixture root must not traverse symlinks');

@@ -43,4 +43,8 @@ test('CLI only accepts the explicit versioned verification profile at new plan c
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).plan.verificationAuthorization.profile, 'react-helpdesk-synthetic-v1');
   assert.equal(invoke('plan', '--assessment', f.file('assessment'), '--verification-profile', 'arbitrary-shell').status, 1);
+  const assessment = JSON.parse(readFileSync(f.file('assessment'), 'utf8'));
+  assessment.evidence.push({path:'pom.xml',sha256:'0'.repeat(64),note:'Phantom evidence'});
+  writeFileSync(f.file('assessment'), JSON.stringify(assessment));
+  assert.equal(invoke('plan', '--assessment', f.file('assessment'), '--verification-profile', 'react-helpdesk-synthetic-v1').status, 1);
 });
