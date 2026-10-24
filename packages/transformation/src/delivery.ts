@@ -25,9 +25,13 @@ function fixtureChecks(report: unknown): VerificationReport['checks'] {
   return checks;
 }
 function bindEvidenceRefs(checks: VerificationReport['checks'], files: Map<string, Buffer>): void {
-  for (const check of checks) for (const ref of check.evidence) {
-    const bytes = files.get(ref.path);
-    if (!bytes || bytesHash(bytes) !== ref.sha256) throw new Error('Verification evidence reference mismatch: ' + ref.path);
+  const required: Record<string, string[]> = { 'host-typecheck': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-business-tests': ['evidence/baseline.json'], 'black-box-business-differential': ['evidence/differential.json'], 'authenticated-runtime': ['evidence/runtime.json'], 'browser-acceptance': ['evidence/browser.json'] };
+  for (const check of checks) {
+    if (check.status === 'pass' && required[check.name]) exact(check.evidence.map(ref => ref.path).sort(), [...required[check.name]!].sort(), 'Missing or unexpected fixture evidence references');
+    for (const ref of check.evidence) {
+      const bytes = files.get(ref.path);
+      if (!bytes || bytesHash(bytes) !== ref.sha256) throw new Error('Verification evidence reference mismatch: ' + ref.path);
+    }
   }
 }
 function authorizationCheck(approval: ApprovedChangeSet, completedAt: string): VerificationReport['checks'][number] {
