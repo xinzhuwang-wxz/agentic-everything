@@ -24,7 +24,7 @@ The two-case baseline has reproducible observation and manifest hashes. The cand
 - `packages/control-plane/test/postgres/run.sh`: existing PG qualification plus `behavior.mjs`, proving OFF/ON/OFF publication across separate Node processes, restart, immutable old selections, current pointer and denied unauthorized/hash-mismatched edits. Uses disposable loopback PostgreSQL 17.11 only.
 - `tests/browser/behavior.mjs`: transforms the synthetic React host, builds privately, runs API/UI/sandboxed Chromium in one process namespace; chooses/publishes ON and OFF through the real UI; verifies ordinary host output and simulated assistant receipts, history, reload and narrow layout. The model is deterministic and explicitly simulated. No paid provider or external service is used.
 
-The behavior-specific PG test qualifies control-plane persistence, not a new crash/restart qualification of a behavior-enabled DBOS run. Existing generic persistent-run qualification and its limitations remain separate. No production deployment or credential changes occurred.
+The behavior-specific PG test qualifies control-plane persistence. A later [joined qualification](joined-release-qualification.md) now separately exercises behavior-enabled member/assignee DBOS runs through persistent HTTP, published release rollback and process restart with the generated UI. Its exact fixed-fixture scope does not broaden this original control-store test or the delivery profile. No production deployment or credential changes occurred.
 
 ## Recorded local result (2026-10-24)
 

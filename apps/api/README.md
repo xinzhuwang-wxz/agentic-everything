@@ -75,8 +75,8 @@ permissions. GET /api/meta and /api/capabilities reflect the active selection.
 RuntimePort is structural and accepts asynchronous get/decide/cancel/start. Its
 response type admits postgres-dbos persistence for separately qualified adapters,
 but this server does not select that backend or claim durable operation. A runtime
-used with controlPlane must implement immutable release snapshots; the persistent
-adapter must not be combined with it until that support is qualified.
+used with controlPlane must implement immutable release snapshots. The explicit
+persistent composition below qualifies that opt-in combination separately.
 
 ## Explicit persistent composition
 
@@ -86,9 +86,11 @@ Both control-plane reads and host catalog/business reads may be asynchronous. Th
 
 The `ae_api.intents` table is a business idempotency ledger, not a scheduler. Tenant, application, subject and client intent key determine one server-owned run ID. An atomic first claim stores the normalized request hash, original release and integrity-checked start snapshot. Conflicting payloads receive 409; concurrent/restarted repeats use the same DBOS workflow ID and reauthorize returned state. A one-time startup reconciliation resubmits entries whose run has not yet been created, closing the committed-intent/before-workflow-submission crash window without a second queue or polling loop. DBOS remains the only execution owner. Existing account authentication, database access controls, retention and operational deployment remain unqualified.
 
-Qualification: after building, run `bash tests/persistence/run-http-postgres.sh /path/to/official/postgresql/17/bin [port]`. The isolated synthetic PostgreSQL 17.11 test uses real HTTP sockets, publishes configuration, sends concurrent first intents, SIGKILLs/restarts the server, repeats the original intent without extra writes, restores and executes a bound approval, verifies new-release filtering and current revocation, rejects forged release/run IDs, checks subject/tenant/admin isolation, and kills the server between intent persistence and workflow submission to verify startup recovery. It creates and stops its own loopback-only cluster; it does not use production accounts or paid providers.
+Qualification: after building, set `AE_BROWSER_EXECUTABLE` to the explicitly qualified Chromium binary and run `bash tests/persistence/run-http-postgres.sh /path/to/official/postgresql/17/bin [port]`. The isolated synthetic PostgreSQL 17.11 test uses real HTTP sockets, publishes configuration, sends concurrent first intents, SIGKILLs/restarts the server, repeats the original intent without extra writes, restores and executes a bound approval, verifies new-release filtering and current revocation, rejects forged release/run IDs, checks subject/tenant/admin isolation, and kills the server between intent persistence and workflow submission to verify startup recovery. It creates and stops its own loopback-only cluster; it does not use production accounts or paid providers.
 
 
 Startup reconciliation is capped at 32 ledger entries with two concurrent submissions. It reads the complete row and uses the same validator as request replay: principal plus persisted client intent token must reproduce the key, run ID, normalized input hash and start snapshot hash. Rows from the earlier token-less experimental schema fail closed rather than being guessed or silently migrated. The returned `startupRecovery` promise reports accepted, blocked and deferred entries; blocked/deferred recovery is logged as incomplete, not claimed successful. `close()` stops admitting queued startup entries and awaits already-started recovery before closing DBOS and PostgreSQL. Additional entries can be retried by their authenticated original request; no new polling scheduler is introduced.
 
 The HTTP qualification also injects a lost host acknowledgement after a committed write: both repeated original intent and repeated approval retain `outcome-unknown`, with exactly one host dispatch/mutation. This does not qualify arbitrary external exactly-once behavior or add an automatic reconciliation API.
+
+The same runner now includes a joined member/assignee, immutable-release, current-revocation and behavior OFF/ON/rollback sequence against the lifecycle-generated synthetic React host in sandboxed Chromium. It covers pending confirmation refresh, real offline/reconnect, cancellation and stale confirmation, then old-ON approval across new-OFF publication and SIGKILL/restart. It records the owned PostgreSQL shutdown and command exit separately. See [exact evidence and remaining limits](../../docs/verification/joined-release-qualification.md); this is not production identity/provider or in-flight-write-disconnect qualification.

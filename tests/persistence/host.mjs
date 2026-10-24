@@ -3,7 +3,7 @@
 import pg from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { PolicyError } from '@ae/policy';
-import { ticketCapabilities } from '@ae/capabilities';
+import { ticketCapabilities, syntheticTitleCatalog, projectTicketBehavior } from '@ae/capabilities';
 
 const canonical = value => value === null || typeof value !== 'object' ? JSON.stringify(value)
   : Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
@@ -24,6 +24,7 @@ export function validateDatabaseUrl(databaseUrl) {
 export class SyntheticDurableHost {
   constructor(databaseUrl) {
     validateDatabaseUrl(databaseUrl);
+    this.behaviorRegistryHash = syntheticTitleCatalog.registryHash;
     this.pool = new pg.Pool({ connectionString: databaseUrl, max: 4 });
   }
   async setup() {
@@ -107,7 +108,7 @@ export class SyntheticDurableHost {
     await this.pool.query('INSERT INTO qualification_host.calls (kind,tenant_id,application_id,subject_id,operation_id,target_id) VALUES ($1,$2,$3,$4,$5,$6)',
       [kind, ...identity(principal), operationId ?? null, targetId ?? null]);
   }
-  async read(principal, id) {
+  async read(principal, id, behavior) {
     const current = await this.currentPrincipal(principal);
     this.authorize(current, false);
     const denied = await this.pool.query('SELECT 1 FROM qualification_host.read_denials WHERE tenant_id=$1 AND application_id=$2 AND subject_id=$3 AND target_id=$4', [...identity(current), id]);
@@ -115,7 +116,7 @@ export class SyntheticDurableHost {
     await this.record('read', current, undefined, id);
     const { rows } = await this.pool.query('SELECT * FROM qualification_host.tickets WHERE tenant_id=$1 AND application_id=$2 AND id=$3', [current.tenantId, current.applicationId, id]);
     if (!rows[0]) throw new PolicyError('HOST_TICKET_NOT_FOUND');
-    return asTicket(rows[0]);
+    return projectTicketBehavior(asTicket(rows[0]), behavior);
   }
   async listMembers(principal, ticketId) {
     const current = await this.currentPrincipal(principal);

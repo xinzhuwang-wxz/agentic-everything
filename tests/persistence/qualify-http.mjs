@@ -13,6 +13,7 @@ import { PostgresControlPlane } from '../../dist/packages/control-plane/src/post
 import { digest } from '@ae/policy';
 import { ticketCapabilities } from '@ae/capabilities';
 import { SyntheticDurableHost, validateDatabaseUrl } from './host.mjs';
+import { qualifyJoined } from './qualify-joined.mjs';
 
 const [databaseUrl, suppliedDirectory] = process.argv.slice(2);
 validateDatabaseUrl(databaseUrl);
@@ -31,7 +32,7 @@ const observe = (event, detail = {}) => {
 let workerNumber = 0;
 
 class Worker extends EventEmitter {
-  constructor(killPoint = '') {
+  constructor(killPoint = '', allowedOrigin) {
     super();
     this.pending = new Map();
     this.events = [];
@@ -40,8 +41,8 @@ class Worker extends EventEmitter {
     this.dead = false;
     this.label = `${++workerNumber}-${killPoint || 'normal'}`;
     this.log = join(directory, `${this.label}.log`);
-    this.child = spawn(process.execPath, [workerPath, databaseUrl, String(port), JSON.stringify(bootPrincipal), killPoint], {
-      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC', NODE_OPTIONS: '--max-old-space-size=768' },
+    this.child = spawn(process.execPath, [workerPath, databaseUrl, String(port), JSON.stringify(bootPrincipal), killPoint, ...(allowedOrigin ? [allowedOrigin] : [])], {
+      env: { PATH: '/usr/bin:/bin', HOME: directory, TZ: 'UTC', NODE_OPTIONS: '--max-old-space-size=640' },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     activeWorkers.add(this);
@@ -164,5 +165,7 @@ try{
   const unknownRetry=await post('/api/runs',unknownInput,'unknown-http');assert.equal(unknownRetry.runId,unknown.runId);assert.equal(unknownRetry.status,'outcome-unknown');
   const decisionRetry=await post(`/api/runs/${unknownPaused.runId}/approval`,decision(unknownPaused));assert.equal(decisionRetry.status,'outcome-unknown');assert.equal((await host.inspect(admin,unknownTicket)).mutationCount,1);
   assert.equal((await host.pool.query("SELECT count(*)::integer AS count FROM qualification_host.calls WHERE kind='write' AND target_id=$1",[unknownTicket])).rows[0].count,1,'Unknown HTTP retries never redispatch the host write');
-  await worker.shutdown();observe('http-release-composition-pass',{runId:run.runId,newRun:next.runId,crashRecovered:recovered.runId,mutationCount:1});
+  await worker.shutdown();
+  await qualifyJoined({ databaseUrl, directory, host, Worker, admin, origin, observe });
+  observe('http-release-composition-pass',{runId:run.runId,newRun:next.runId,crashRecovered:recovered.runId,mutationCount:1});
 }catch(error){observe('http-release-composition-failed',{message:error.message});throw error;}finally{for(const worker of activeWorkers)if(!worker.dead)await worker.kill();await host.close();}
