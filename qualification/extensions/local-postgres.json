@@ -1,0 +1,45 @@
+{
+  "status": "pass",
+  "scope": "owned local fixture only; simulated model; mobile real platform unverified",
+  "versions": {
+    "node": "v24.19.0",
+    "dbos": "5.3.0",
+    "a2aSdk": "1.3.0",
+    "a2aProtocol": "1.0",
+    "postgres": "17.11"
+  },
+  "cases": [
+    {
+      "name": "DBOS timezone backfill + SIGKILL recovery + duplicate deduplication",
+      "status": "pass",
+      "runId": "intent-08375829d1fb28cde04c32e6aba46612023484b5e7b47a6fa70ffb8e79a5b621",
+      "modelCalls": 2,
+      "governedOperations": 1,
+      "hostAuthorizationAndReadChecks": 47,
+      "mutations": 0
+    },
+    {
+      "name": "Pause/resume state survives process replacement",
+      "status": "pass"
+    },
+    {
+      "name": "Installed DBOS timezone scheduler: spring gap zero / fall fold two UTC occurrences",
+      "status": "pass",
+      "gap": 0,
+      "fold": 2,
+      "outOfWindowRuntimeStarts": 0
+    },
+    {
+      "name": "Official A2A v1 SDK loopback HTTP to real PersistentRuntime: send/get/cancel/auth",
+      "status": "pass"
+    },
+    {
+      "name": "Mobile contract fixture reaches governed runtime without an approval bypass",
+      "status": "pass"
+    },
+    {
+      "name": "Live host identity revocation blocks recovered triggers and protocol reads",
+      "status": "pass"
+    }
+  ]
+}
