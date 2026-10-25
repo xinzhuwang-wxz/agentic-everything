@@ -10,7 +10,9 @@ Keep your product's language, business logic and permissions. Add an embedded as
 
 ![AE journey: your developer agent uses AE to adapt an existing product, with reviewed changes and the host retaining authority.](docs/assets/ae-journey.svg)
 
-> **Source-distributed developer release.** Three bounded recipes adapt a React/TypeScript helpdesk and Python/SQLite and Java/Spring Core inventory hosts through the same lifecycle. The shared core includes a governed runtime, floating assistant and administration tab, opt-in PostgreSQL/DBOS recovery, and fixed-source install/upgrade tools. All recorded model runs are simulated; fixture qualification is not production readiness. [Core acceptance and release scope](docs/acceptance-status.md).
+> **Source-distributed developer release.** Six bounded recipes cover three synthetic qualification hosts and the exact reviewed reveal.js, linkding and Kanboard upstream projects through the same lifecycle. The shared core includes a governed runtime, floating assistant and administration tab, opt-in PostgreSQL/DBOS recovery, and fixed-source install/upgrade tools. All recorded model runs are simulated; fixture qualification is not production readiness. [Core acceptance and release scope](docs/acceptance-status.md).
+
+See the [three real upstream integrations and their exact qualification boundaries](docs/verification/external-cases.md).
 
 ## From an existing app to an agentic product
 
@@ -70,7 +72,7 @@ The bounded core release is accepted at the source and environments recorded in 
 - **Govern the actions:** `packages/runtime-core`, `capabilities` and `policy` enforce the execution path. Model output and page context never grant authority.
 - **Meet users in their product:** `packages/host-sdk` and `ui` mount the experience; `apps/console` offers a separate entry to the same backend.
 
-AE is an independent product with a TypeScript core. **Your host keeps its own technology stack.** The Python and Spring Core recipes demonstrate separate host boundaries; Go, PHP, .NET and other integrations still need their own reviewed implementation and qualification. No fixture grants blanket stack support.
+AE is an independent product with a TypeScript core. **Your host keeps its own technology stack.** The Python, Spring Core and PHP/Kanboard integrations demonstrate separate host boundaries; other Go, PHP, .NET and framework layouts still need their own reviewed implementation and qualification. No fixture grants blanket stack support.
 
 ## Build with us
 

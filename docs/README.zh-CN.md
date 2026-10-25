@@ -8,7 +8,7 @@ AE 是 MIT 开源改造工具，不是另一个通用 coding agent，也不是�
 
 ## 当前可用范围
 
-- React/TypeScript 工单、Python/SQLite 库存与 Java/Spring Core 库存三个限定 recipe，均通过同一评估、计划、批准、改前基线、隔离修改、对拍和交付流程。Python 仍是 Python，库存预留也不是复制工单字段修改。
+- 六个限定 recipe：React/TypeScript 工单、Python/SQLite 库存、Java/Spring Core 库存三个合成验收宿主，以及真实开源项目 reveal.js、linkding、Kanboard 的固定上游版本。均使用评估、计划、批准、改前基线、隔离修改、对拍和交付流程；保留宿主语言与业务权限。真实项目的[支持范围与验收](verification/external-cases.md)独立记录，不用合成 fixture 代替。
 - 一套 TypeScript 内核、官方 Agents JS 循环、宿主权限与精确操作确认、回执核对；显式选择 PostgreSQL/DBOS 时，使用已单独验证的持久恢复路径。
 - 可移动的日常悬浮助手与宿主后台 Agentic tab，共用能力、配置和运行真源。业务确认留在对话内；无界面项目不必强加聊天页面。
 - 可运行的只读 MCP 开发工具；Java/Spring Core 的限定源码 recipe、宿主 adapter 与经过身份校验的 remote MCP 声明子集，不宣称任意 Java 项目、Spring Boot/MVC 或生产身份接入。

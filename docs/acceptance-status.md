@@ -1,36 +1,47 @@
-# Core acceptance and release scope
+# Acceptance and release scope
 
-**The bounded AE core release is accepted.** Validated code commit:
-`942493175df0e183bc1e1d990db1a359671da50a`, tree
-`c2d4d12209c6128a3aff62197ab027fda3f3ec44`. Acceptance recorded on
-2026-10-25 UTC. Documentation-only release changes do not change these validated
-runtime, test, recipe, schema or dependency inputs.
+**The bounded AE release and three pinned upstream integrations are accepted.**
+Validated executable source: `d9bb07d99193b87210441389b1e6544bd1cff160`,
+tree `e880bf1a7e48b4ea8a7331cc5771dbad88701dbe`, qualified on 2026-10-25 UTC.
+Documentation-only release commits do not change these executable inputs.
 
-Acceptance covers the finite requirements in the approved implementation plan,
-not arbitrary-host adaptation, external-project adaptations or production deployment.
+Acceptance covers the finite core requirements and the exact reviewed reveal.js,
+linkding and Kanboard profiles, not arbitrary-host adaptation or production deployment.
 
-## Final assembled verification
+## Assembled verification
 
-| Gate | Actual evidence | Status |
+| Gate | Actual evidence | Scope |
 | --- | --- | --- |
-| Exact assembled source | Clean macOS qualification of the commit/tree above; standard clean, strict TypeScript compile and export linking at the reviewed 640 MiB compiler budget | Pass |
-| Aggregate regression | Same macOS candidate: 325 tests passed, zero failed or skipped | Pass |
-| Fixed-source distribution | Same macOS candidate: all eight installation, side-by-side upgrade, integrity/refusal, rollback-readiness and owned-uninstall cases; doctor ready, integrity true, metadata consistent | Pass |
-| Operations integration | `ec84e21` real PostgreSQL 17.11 receipt: 11 schema/adoption/concurrency/legacy/backup-restore/current-authority/admission/HTTP/restart cases and clean server shutdown | Pass; relevant sources unchanged |
-| Retention integration | Same source: four bounded paging, exact scope, stale evidence/current-rights and concurrent status-lock cases; clean shutdown | Pass; relevant sources unchanged |
-| Deterministic workflows | Same source: 15 real PostgreSQL/DBOS cases across 16 workers, including crash recovery, bound approval, branch/read retry, revocation and unknown-no-redispatch; clean shutdown | Pass; relevant sources unchanged |
-| Supply chain and tracked-source review | Current lock hash and all current-release evidence hashes verified; exact locked dependency notices and SBOM, recorded zero npm advisories, no findings from narrow tracked-source secret heuristic | Pass within the stated review scope |
+| Standard build | Clean strict TypeScript compile and package export linking, 640 MiB heap; exit 0 | Current Linux executable source above |
+| Aggregate regression | 348 tests passed, zero failed or skipped; 111.76 seconds | Same compiled source; `node scripts/test.mjs` |
+| Source hygiene | `npm run lint`, Git diff whitespace check and narrow changed-source credential-pattern review passed | No dependency/lockfile changes; heuristic review is not exhaustive secret detection |
+| reveal.js | Actual approved baseline/apply/deliver/check lifecycle, original/candidate navigation, 14 broker/authority/recovery assertions and independent 10-flow browser acceptance | Exact upstream/profile; original QUnit comparison retains four unchanged MathJax CDN failures |
+| linkding | Complete six-gate lifecycle/check; original 356 tests, candidate 356 tests plus separate 20 native tests; runtime, interrupted-response, native revocation and browser acceptance | Recipe 1.0.4; final desktop/mobile screenshots manually inspected |
+| Kanboard | Complete six-gate lifecycle/check; original and candidate each 53 tests / 475 assertions; 20 runtime/browser checks | Recipe 1.0.4; current-role/target checks, recovery and truthful assignee labels; final screenshots manually inspected |
 
-The macOS qualification receipt SHA-256 is
+See [pinned upstream integrations](verification/external-cases.md) for profiles,
+toolchains, exact source pins and boundaries. Case repositories retain their
+accepted delivery manifests, checks and original/candidate screenshots. Static
+verification alone leaves execution gates not-run; only the authorized executed
+profile can produce a complete delivery.
+
+## Retained component qualification
+
+The fixed-source installer was qualified on macOS at code
+`942493175df0e183bc1e1d990db1a359671da50a`: strict build, 325/325 tests,
+all eight install/upgrade/integrity/refusal/rollback/uninstall cases and ready
+installation doctor. Receipt SHA-256:
 `d507185c6d1fee072dda3f11a6016fbe1e74ca5d1f9a50e2e1239f0c66286532`.
-This is source qualification, not service activation or deployment.
+Installer inputs remain unchanged. This receipt does **not** claim the newer
+external-case profiles were executed on macOS; their qualification above is Linux.
 
-The source comparison from `ec84e21` to the validated commit changes the installer
-build launcher and portable Python selection, plus documentation/supply-chain
-artifacts. PostgreSQL/DBOS runtime, API, control-plane, extension, workflow and
-operations integration harness inputs did not change. The exact-source macOS
-aggregate and distribution checks cover the changed assembled inputs; unchanged
-component receipts retain only their originally observed scope.
+The unchanged PostgreSQL/DBOS runtime and operations inputs retain the real
+`ec84e21` PostgreSQL 17.11 receipts: 11 operations/admission/current-authority
+cases, four bounded retention cases and 15 deterministic workflow cases across
+16 workers, including crash recovery and unknown-outcome no-redispatch. Each
+retains its originally observed scope, not a new database run of every case.
+The locked dependency notice/SBOM and recorded advisory review remain applicable
+to the unchanged lockfile. Source qualification is not service activation.
 
 Release artifacts require the standard strict build from a clean source checkout.
 Transpile-only output is not strict-build evidence.

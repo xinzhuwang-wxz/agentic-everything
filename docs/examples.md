@@ -2,7 +2,7 @@
 
 [← README](../README.md) · [Run the walkthrough](getting-started.md)
 
-These are owned synthetic qualification hosts, not the three planned external open-source showcases. Each starts with an explicit business boundary and carries only its actual evidence.
+The [three real upstream integrations](verification/external-cases.md) adapt reveal.js, linkding and Kanboard while preserving their original business surfaces. The examples below are separate owned synthetic qualification hosts. Each carries only its actual evidence.
 
 ## React/TypeScript helpdesk: full transformation and browser journey
 

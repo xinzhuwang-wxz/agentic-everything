@@ -71,7 +71,7 @@ Profile completion is not overall AE acceptance. [Current acceptance and qualifi
 - [Persistent runtime](PERSISTENT_RUNTIME_QUALIFICATION.md) and [runtime handoff](RUNTIME_HANDOFF.md): opt-in local PostgreSQL/DBOS and runtime evidence, separate from default memory mode.
 - [Floating browser journey](FLOATING_UI_VERIFICATION.md) and [behavior management journey](verification/behavior-improvements.md): bounded UI evidence; follow the exact versions and limitations in each report.
 
-These sources are evidence references, not imported approval or PASS assertions. The three planned external open-source adaptations have not been performed and are not represented by synthetic fixtures.
+These sources are evidence references, not imported approval or PASS assertions. The three real upstream adaptations have their own [pinned-source qualification](verification/external-cases.md); their evidence is separate from the synthetic fixtures.
 
 ## Rollback and unsupported projects
 

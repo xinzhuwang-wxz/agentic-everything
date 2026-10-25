@@ -2,7 +2,7 @@
 
 ## Scope and result
 
-The fixed `react-helpdesk-synthetic-v1` profile completed a real CLI assessment → plan → approval record → isolated apply → delivery → bundle check on 2026-10-24. This is acceptance of the exact included synthetic fixture and the enumerated gates, not of arbitrary customer projects, paid-model quality, production identity, production durability or the three planned external adaptations.
+The fixed `react-helpdesk-synthetic-v1` profile completed a real CLI assessment → plan → approval record → isolated apply → delivery → bundle check on 2026-10-24. This is acceptance of the exact included synthetic fixture and the enumerated gates, not of arbitrary customer projects, paid-model quality, production identity, production durability or other upstream adaptations, which require their own profile evidence.
 
 The developer-host approval for a new profile-bound plan covers its fixed verification actions. Old unprofiled plans still produce static-only partial delivery. No arbitrary shell, adapter import, external PASS report, dependency download or new credential is accepted by the delivery command.
 
