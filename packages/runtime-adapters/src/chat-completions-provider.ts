@@ -1,4 +1,4 @@
-import { OpenAIProvider, NoopTrace, withTrace, type AgentInputItem, type ModelRequest as SdkRequest } from '@openai/agents';
+import { OpenAIProvider, NoopTrace, withTrace, type AgentInputItem, type JsonSchemaDefinition, type ModelRequest as SdkRequest } from '@openai/agents';
 import { z } from 'zod';
 import { canonicalJson } from '@ae/contracts/hash';
 import { JsonObjectSchema, ModelRequestSchema, ModelResponseSchema, type ModelProvider, type ModelRequest, type ModelResponse } from '@ae/contracts';
@@ -31,7 +31,7 @@ export class ChatCompletionsModelProvider implements ModelProvider {
     if (!Number.isInteger(options.maxOutputTokens ?? 1024) || (options.maxOutputTokens ?? 1024) < 1 || (options.maxOutputTokens ?? 1024) > 16_384) throw new Error('Invalid provider output budget');
     if (options.structuredOutput) {
       if (!(options.structuredOutput.schema.def.catchall instanceof z.ZodNever) || !/^[a-zA-Z0-9_-]{1,64}$/.test(options.structuredOutput.name)) throw new Error('Structured output requires an explicit strict object schema');
-      this.outputType = { type: 'json_schema', name: options.structuredOutput.name, strict: true, schema: z.toJSONSchema(options.structuredOutput.schema) };
+      this.outputType = { type: 'json_schema', name: options.structuredOutput.name, strict: true, schema: strictProviderSchema(z.toJSONSchema(options.structuredOutput.schema)) };
     } else this.outputType = 'text';
     // Explicit endpoint/key prevent ambient SDK credentials or default endpoints from being selected.
     // The SDK's bounded HTTP retry behavior remains inside this request's cancellation deadline.
@@ -42,15 +42,16 @@ export class ChatCompletionsModelProvider implements ModelProvider {
     if (JSON.stringify(request).length > 262_144) throw new Error('Provider input exceeds bounded limit');
     const input = restoreHistory(request);
     for (const tool of request.tools) {
-      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(tool.name) || tool.inputSchema.type !== 'object' || tool.inputSchema.additionalProperties !== false) throw new Error('Provider tools require strict object schemas');
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(tool.name)) throw new Error('Provider tools require strict object schemas');
     }
+    const tools: SdkRequest['tools'] = request.tools.map(tool => ({ type: 'function', name: tool.name, description: tool.description, parameters: strictProviderSchema(tool.inputSchema), strict: true }));
     const deadline = AbortSignal.timeout(this.options.timeoutMs ?? 30_000);
     const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
     combined.throwIfAborted();
     const model = await this.provider.getModel(this.options.model);
     // The SDK model requires a trace context even outside Runner; a local disabled trace
     // prevents an ambient caller from accidentally exporting provider payloads.
-    const response = await withTrace(new NoopTrace(), () => model.getResponse({ input, modelSettings: { parallelToolCalls: false, maxTokens: this.options.maxOutputTokens ?? 1024 }, tools: request.tools.map(tool => ({ type: 'function', name: tool.name, description: tool.description, parameters: tool.inputSchema, strict: true })), outputType: this.outputType, handoffs: [], tracing: false, signal: combined }));
+    const response = await withTrace(new NoopTrace(), () => model.getResponse({ input, modelSettings: { parallelToolCalls: false, maxTokens: this.options.maxOutputTokens ?? 1024 }, tools, outputType: this.outputType, handoffs: [], tracing: false, signal: combined }));
     combined.throwIfAborted();
     if (JSON.stringify(response.providerData).length > 262_144) throw new Error('Provider response exceeds bounded limit');
     const raw = wireResponse.parse(response.providerData);
@@ -73,6 +74,24 @@ export class ChatCompletionsModelProvider implements ModelProvider {
     return ModelResponseSchema.parse({ schemaVersion: '1', requestId: request.requestId, mode: this.options.mode, message, toolCalls, finishReason: calls.length ? 'tool-calls' : 'stop' });
   }
   async close(): Promise<void> { await this.provider.close(); }
+}
+
+/** Validate, do not cast or silently widen, the official SDK's strict object schema contract.
+ * Preserve schema keywords verbatim; optional/defaulted fields must not be rewritten as nullable
+ * required fields at this port. Runtime business argument validation still belongs to the broker.
+ */
+function strictProviderSchema(value: unknown): JsonSchemaDefinition['schema'] {
+  const json = JsonObjectSchema.parse(value);
+  const shape = z.object({
+    type: z.literal('object'), properties: z.record(z.string(), JsonObjectSchema),
+    required: z.array(z.string()), additionalProperties: z.literal(false),
+    description: z.string().optional(),
+  }).safeParse(json);
+  if (!shape.success) throw new Error('Provider requires complete strict object schemas');
+  const { type, properties, required, additionalProperties, description } = shape.data;
+  const names = Object.keys(properties);
+  if (new Set(required).size !== required.length || required.length !== names.length || required.some(name => !Object.hasOwn(properties, name))) throw new Error('Provider strict schema requires every property exactly once');
+  return { ...json, type, properties, required, additionalProperties, ...(description === undefined ? {} : { description }) };
 }
 
 /** Recover the exact SDK items serialized by AgentsModelPort, never interpret user text as a call.

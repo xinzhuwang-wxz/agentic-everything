@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer, type ServerResponse } from 'node:http';
 import { once } from 'node:events';
 import { z } from 'zod';
-import type { ModelRequest, Principal } from '@ae/contracts';
+import { ModelRequestSchema, type ModelRequest, type Principal } from '@ae/contracts';
 import { AuthorizedTicketHost, ToolBroker, type Ticket } from '@ae/capabilities';
 import { GovernedRuntime } from '@ae/runtime-core';
 import { ChatCompletionsModelProvider } from '../src/chat-completions-provider.js';
@@ -223,5 +223,27 @@ test('provider failure after an approved write preserves the succeeded receipt w
     assert.equal(result.status, 'failed'); assert.equal(result.receipts.at(-1)!.status, 'succeeded'); assert.equal(state.host.mutationCount, 1); assert.equal(fixture.requests.length, 5);
     assert.deepEqual(fixture.requests[2], fixture.requests[4]);
     await assert.rejects(approve(state.runtime, run)); assert.equal(state.host.mutationCount, 1);
+  } finally {await fixture.close();}
+});
+
+test('provider schemas validate properties and exact required fields before any HTTP', async () => {
+  const fixture = await loopback();
+  try {
+    const provider = fixture.provider();
+    const valid = {type: 'object', properties: {ticketId: {type: 'string'}}, required: ['ticketId'], additionalProperties: false};
+    const malformed = [
+      {...valid, properties: []}, {...valid, properties: {ticketId: 'string'}}, {...valid, properties: {ticketId: null}},
+      {...valid, required: 'ticketId'}, {...valid, required: [1]}, {...valid, required: []},
+      {...valid, required: ['ghost']}, {...valid, required: ['ticketId', 'ticketId']},
+      {...valid, description: 1}, {...valid, additionalProperties: true},
+      {type: 'object', additionalProperties: false},
+      {type: 'object', properties: {}, additionalProperties: false},
+    ];
+    for (const schema of malformed) {
+      const request: unknown = {schemaVersion: '1', requestId: 'schema-request', runId: 'schema-run', messages: [], tools: [{name: 'read_ticket', description: '', inputSchema: schema}]};
+      await assert.rejects(provider.complete(ModelRequestSchema.parse(request)), /strict.*schema|schema.*requires/);
+    }
+    assert.throws(() => fixture.provider({structuredOutput: {name: 'optional_field', schema: z.strictObject({summary: z.string().optional()})}}), /strict.*schema|schema.*requires/);
+    assert.equal(fixture.requests.length, 0);
   } finally {await fixture.close();}
 });
