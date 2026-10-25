@@ -138,7 +138,7 @@ test('reviewed direct build stops on clean failure without linking or writing a 
     const git=(args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,...args],{encoding:'utf8'}).trim();git(['init','-q']);git(['add','.']);git(['-c','user.name=AE Fixture','-c','user.email=fixture@example.invalid','commit','-qm','reviewed build fail-stop fixture']);
     const commit=git(['rev-parse','HEAD']),tree=git(['rev-parse','HEAD^{tree}']);
     assert.throws(()=>installFixedSource({source,destination,cache,commit,tree}),/clean-build\.mjs/);
-    assert.deepEqual(JSON.parse(readFileSync(join(destination,'clean-observed.json'),'utf8')),{heap:'--max-old-space-size=576',offline:'true'});
+    assert.deepEqual(JSON.parse(readFileSync(join(destination,'clean-observed.json'),'utf8')),{heap:'--max-old-space-size=640',offline:'true'});
     assert.equal(existsSync(join(destination,'link-must-not-run')),false);
     assert.equal(existsSync(join(destination,'.ae-installation.json')),false);
     assert.equal(existsSync(join(destination,'package-lock.json')),true);

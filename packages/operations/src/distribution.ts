@@ -108,7 +108,7 @@ export function installFixedSource(input:{source:string;commit:string;tree:strin
   if(!record(pkg?.scripts)||pkg.scripts.build!==reviewedBuild||Object.hasOwn(pkg.scripts,'prebuild')||Object.hasOwn(pkg.scripts,'postbuild'))throw new Error('UNSUPPORTED_INSTALL_BUILD_SEQUENCE');
   if(Number(process.versions.node.split('.')[0])!==24)throw new Error('NODE_24_REQUIRED');
   const npm=execFileSync('npm',['--version'],{encoding:'utf8'}).trim();if(!/^11\./.test(npm))throw new Error('NPM_11_REQUIRED');
-  const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=576'};
+  const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=640'};
   execFileSync('npm',['ci','--ignore-scripts','--offline','--no-audit','--no-fund'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
   // Preserve clean -> strict compiler -> package linking without retaining npm/sh beside the compiler.
   const buildStarted=performance.now();
