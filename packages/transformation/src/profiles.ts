@@ -87,3 +87,8 @@ export function reviewedProfile(profile: VerificationProfile) {
   };
   throw Error('Unknown reviewed verification profile');
 }
+
+/** The delivery chain must retain the same profile-specific exclusions as approval. */
+export function assertVerificationExclusions(exclusions: string[], profile?: VerificationProfile): void {
+  if (JSON.stringify(exclusions) !== JSON.stringify(verificationExcludedActions(profile))) throw Error('Approval exclusions mismatch');
+}

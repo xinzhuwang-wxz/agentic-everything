@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { VerificationAuthorizationSchema, maximumDeliveryArtifacts, type ProjectAssessment } from '@ae/contracts';
-import { verificationAuthorization, verificationExcludedActions, matchesProfileAssessment, reviewedProfile } from '../src/profiles.js';
+import { verificationAuthorization, verificationExcludedActions, assertVerificationExclusions, matchesProfileAssessment, reviewedProfile } from '../src/profiles.js';
 
 const pins = {
   'reveal-upstream-v1': '75dff6f515d2d08df0c32cf2b7328b89425c6f25',
@@ -41,4 +41,13 @@ test('unknown and cross-source profiles cannot fall back to a synthetic collecto
 test('external delivery remains bounded without widening original bundle limits', () => {
   for (const scope of ['static-only', 'react-helpdesk-synthetic-v1', 'python-inventory-synthetic-v1', 'java-spring-inventory-synthetic-v1', 'unknown']) assert.equal(maximumDeliveryArtifacts(scope), 32);
   for (const scope of Object.keys(pins)) assert.equal(maximumDeliveryArtifacts(scope), 64);
+});
+
+test('delivery exclusions accept exact pinned approvals and reject legacy or widened scopes', () => {
+  for (const profile of Object.keys(pins) as (keyof typeof pins)[]) {
+    assert.doesNotThrow(() => assertVerificationExclusions(verificationExcludedActions(profile), profile));
+    for (const wrong of [verificationExcludedActions(), verificationExcludedActions('react-helpdesk-synthetic-v1'), [], [...verificationExcludedActions(profile), 'extra']]) assert.throws(() => assertVerificationExclusions(wrong, profile), /Approval exclusions mismatch/);
+  }
+  assert.doesNotThrow(() => assertVerificationExclusions(verificationExcludedActions()));
+  assert.doesNotThrow(() => assertVerificationExclusions(verificationExcludedActions('react-helpdesk-synthetic-v1'), 'react-helpdesk-synthetic-v1'));
 });

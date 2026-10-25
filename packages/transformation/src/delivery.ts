@@ -7,7 +7,7 @@ import { AdaptationPlanSchema, ArchivedBaselineSchema, ApprovedChangeSetSchema, 
 import { adaptationCodeHash, canonical, digest, expectedBaselineCodeHash, previewPatch, proposePlan, sha256, verifyAdaptation, type AppliedTransformation } from './index.js';
 import { recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { validateArchivedBaseline } from './pre-apply.js';
-import { reviewedProfile, type VerificationProfile } from './profiles.js';
+import { reviewedProfile, assertVerificationExclusions, type VerificationProfile } from './profiles.js';
 
 const LIMIT = 1024 * 1024;
 const AppliedSchema = z.strictObject({ patch: PatchArtifactSchema, originals: z.record(z.string(), z.string().max(256 * 1024).nullable()), businessHash: Sha256, preApplyBaseline: ArchivedBaselineSchema.optional() });
@@ -65,7 +65,7 @@ function scope(assessment: ProjectAssessment, plan: AdaptationPlan, approval: Ap
   exact(proposePlan(assessment, plan.verificationAuthorization ? { verificationProfile: plan.verificationAuthorization.profile } : undefined), plan, 'Plan does not match assessed recipe');
   if (approval.planHash !== digest(plan) || approval.baseCommit !== plan.baseCommit || Date.parse(approval.expiresAt) <= now || Date.parse(approval.approvedAt) > now || Date.parse(approval.approvedAt) > Date.parse(applied.patch.appliedAt) || Date.parse(applied.patch.appliedAt) > now) throw new Error('Approval expired or chain timestamps/base do not bind');
   exact(approval.verificationAuthorization ?? null, plan.verificationAuthorization ?? null, 'Verification authorization scope mismatch');
-  exact(approval.excludedActions, ['deployment', 'publishing', 'dependency installation', ...(plan.verificationAuthorization ? ['customer source execution outside the exact synthetic fixture profile'] : ['source execution']), 'paid model calls'], 'Approval exclusions mismatch');
+  assertVerificationExclusions(approval.excludedActions, plan.verificationAuthorization?.profile);
   exact(approval.allowedPaths, plan.allowedPaths, 'Approval path scope mismatch');
   if (approval.allowedCommands.length || approval.networkAllowlist.length || approval.maximumCostUsd !== 0) throw new Error('Approval scope mismatch');
   const patch = applied.patch;
