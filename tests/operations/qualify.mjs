@@ -5,12 +5,15 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { inspectAeSchema, migrateAeSchema, ConversationRetention, admitNewIntent, AdmissionLimitError } from '../../dist/packages/operations/src/index.js';
+import { doctorInstallation, inspectAeSchema, migrateAeSchema, ConversationRetention, admitNewIntent, AdmissionLimitError } from '../../dist/packages/operations/src/index.js';
 import { SyntheticDurableHost, validateDatabaseUrl } from '../persistence/host.mjs';
 import { Worker } from './worker-client.mjs';
 const [url,directory,pgBin,legacyRoot]=process.argv.slice(2);validateDatabaseUrl(url);
 assert.ok(legacyRoot,'Pass an isolated built pre-migration source checkout');
 const root=resolve('.'),tests=[],workers=[];
+// A real fixed-source installation need not retain Git metadata. Validate its
+// complete managed receipt before using it as the previous binary.
+const legacyInspection=(()=>{try{return {commit:execFileSync('git',['-C',legacyRoot,'rev-parse','HEAD'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim(),provenance:'git-checkout'};}catch{const inspected=doctorInstallation(legacyRoot);assert.equal(inspected.integrity,true,'Previous installed binary must retain verified integrity');return {commit:inspected.commit,provenance:'verified-installation-receipt'};}})();
 let pool=new pg.Pool({connectionString:url}),host=new SyntheticDurableHost(url);
 const record=name=>{tests.push({name,status:'pass'});console.log(`PASS ${name}`);};
 const rows=async(sql,values)=> (await pool.query(sql,values)).rows;
@@ -92,5 +95,5 @@ try{
   assert.equal((await rows("SELECT count(*)::int AS count FROM ae_api.intents WHERE start->'principal'->>'subjectId'='http-rate'"))[0].count,2);
   await http.shutdown();http=await httpWorker('http-rate-restart');assert.equal((await request('http-rate-three')).status,429);assert.equal((await request('http-rate-one')).status,201);
   await http.request('session',null);assert.equal((await request('no-auth')).status,401);assert.equal((await rows("SELECT count(*)::int AS count FROM qualification_host.model_calls WHERE stage='rate'"))[0].count,modelBefore);await http.shutdown();record('real-http-rate-429-retry-after-no-runspawn-idempotency-conflict-noauth-and-process-restart');
-  writeFileSync(join(directory,'operations-report.json'),JSON.stringify({status:'pass',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),legacyCommit:execFileSync('git',['-C',legacyRoot,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),postgres:(await rows('SHOW server_version'))[0].server_version,backup:{sha256:backupHash,format:'pg_dump custom',restored:true},tests,limits:['Synthetic loopback data and deterministic model only','Projection retention is not full personal-data erasure','No production identity, deployment, credentials or live-provider qualification']},null,2)+'\n');
+  writeFileSync(join(directory,'operations-report.json'),JSON.stringify({status:'pass',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),legacyCommit:legacyInspection.commit,legacyProvenance:legacyInspection.provenance,postgres:(await rows('SHOW server_version'))[0].server_version,backup:{sha256:backupHash,format:'pg_dump custom',restored:true},tests,limits:['Synthetic loopback data and deterministic model only','Projection retention is not full personal-data erasure','No production identity, deployment, credentials or live-provider qualification']},null,2)+'\n');
 }finally{for(const w of workers)await w.kill();await host.close();await pool.end();}
