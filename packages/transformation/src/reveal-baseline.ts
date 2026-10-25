@@ -9,7 +9,7 @@ import type {BaselineArchive,Observation,ProjectAssessment,Provenance} from '@ae
 import {hash,treeHash} from './inventory-baseline.js';
 import {fixtureBrowserPath,fixtureBrowserHash,assertFixtureBrowser} from './fixture-harness.js';
 import {revealRecipe,revealHashes,revealPin} from './recipes/reveal.js';
-export const revealProfile='reveal-local-v1' as const;
+export const revealProfile='reveal-upstream-v1' as const;
 const git=(root:string,args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',root,...args],{encoding:'utf8',timeout:15000,maxBuffer:4*1024*1024}).trim();
 export function matchesRevealAssessment(a:ProjectAssessment){return a.baseCommit===revealPin&&a.evidence.length===revealRecipe.inputs.length&&Object.entries(revealHashes).every(([p,h])=>a.evidence.find(e=>e.path===p)?.sha256===h)}
 export function inspectReveal(root:string,candidate=false):Record<string,string>{
@@ -24,7 +24,7 @@ export function inspectReveal(root:string,candidate=false):Record<string,string>
  return files;
 }
 export function assertTrustedRevealDelivery(input:{sourceRoot:string;candidateRoot:string}){const sourceFiles=inspectReveal(input.sourceRoot),candidateFiles=inspectReveal(input.candidateRoot,true);return{sourceFiles,candidateFiles,sourceTreeHash:treeHash(sourceFiles),candidateTreeHash:treeHash(candidateFiles)}}
-export function revealProvenance(sourceVersion:string,codeHash=treeHash(revealHashes)):Provenance{return{sourceVersion,codeHash,environment:'Pinned reveal.js 6.0.2 original browser distribution; loopback; sandboxed Chromium; no model',environmentHash:hash(JSON.stringify({browser:fixtureBrowserHash,node:process.versions.node})),dataHash:hash('original-index-two-slides'),schemaVersion:'1',adapterVersion:'trusted-reveal-local-delivery-v1'}}
+export function revealProvenance(sourceVersion:string,codeHash=treeHash(revealHashes)):Provenance{return{sourceVersion,codeHash,environment:'Pinned reveal.js 6.0.2 original browser distribution; loopback; sandboxed Chromium; no model',environmentHash:hash(JSON.stringify({browser:fixtureBrowserHash,node:process.versions.node})),dataHash:hash('original-index-two-slides'),schemaVersion:'1',adapterVersion:'trusted-reveal-delivery-v1'}}
 export const revealCases=[{id:'keyboard-navigation',input:{actions:['initial','ArrowRight','ArrowLeft','Escape','Escape']},seed:{deck:'index'},covers:['original-render','keyboard-next','keyboard-previous','overview-open','overview-close']}];
 export const revealCoverage={scope:'Pinned upstream two-slide index deck rendering, keyboard navigation and overview before adaptation. Durable edits are a new separately governed capability, not falsely compared with absent upstream writes.',unknowns:['Not the full upstream QUnit suite, arbitrary decks, multi-user authentication, production durability, real model inference, or durable AE runs. Full host tests are separately observed.']};
 export async function revealObservation(page:Page):Promise<Observation>{
