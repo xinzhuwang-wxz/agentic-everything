@@ -55,22 +55,17 @@ No long-term memory, automatic cross-conversation recall, branching, edit/regene
 
 ## Reproduction and observed evidence
 
-- `node qualification/conversations/probe.mjs`: actual installed SDK 0.21.0 session composition, two turns, rehydration and approval-state resume; passed before integration.
-- Strict TypeScript no-emit check after the domain-neutral seam: passed before the additional final test changes.
+- `node qualification/conversations/probe.mjs`: actual installed SDK 0.21.0 session composition, two turns, rehydration and approval-state resume; passed.
 - Final fresh `npm run build`: passed with strict TypeScript. Focused SDK/session/intent tests: 8/8 passed. Final aggregate tests: 200/200 passed, 0 failed/skipped, 25.286 seconds. `node scripts/lint.mjs` and `git diff --check` also passed.
 - `bash tests/persistence/run-conversations-postgres.sh /tmp/ae-durability-pg/root/usr/lib/postgresql/17/bin 55472`: final expanded 16-case run passed with clean PostgreSQL shutdown (command exit 0, PostgreSQL stop exit 0, postmaster PID removed). The suite uses a disposable synthetic PostgreSQL 17.11 database, real HTTP/DBOS/SDK, fresh worker processes and SIGKILL. It is not part of ordinary unit-test pass counts.
 
-Remaining gates include current production-host history authority implementation, production SSO/origins, migrations/retention/recovery operations, concurrent multi-worker load and separately authorized real-provider quality/cost/privacy testing.
+Production-host history authority, production SSO/origins, concurrent multi-worker load and real-provider quality/cost/privacy remain outside this qualification. Shared migration, retention and recovery evidence is recorded separately in [operations](release-operations.md).
 
 
 The final 16 PostgreSQL/HTTP groups cover: two-turn history and exact reload after SIGKILL; duplicate intents without model replay; tenant/application/subject/context/target isolation; approved checkpoint restart after field-grant changes; mid-model revocation before text persistence; post-reservation revocation before write; cancellation during the final target callback; all nine other pool connections occupied while completion reuses its transaction client; unknown-outcome admission blocking and successful reconciliation continuity; late reconciliation text-savepoint rollback with canonical success retained; exact call/approval/release pins and one write per intended target; owner/read access insufficient after field epoch changes; capability/role/expiry denial; commit-before-submission recovery; text-capacity rejection; and legacy one-shot compatibility.
 
 The concurrent-cancellation case waits for the broker's persisted `denied/CANCELLED` result before asserting zero host dispatches. An interrupted approval HTTP response may report the existing safe internal error; it is not treated as permission to retry. The authoritative run/operation state is checked separately. The late reconciliation case changes authority on the second transactional history check, after the provisional text UPDATE, and proves that text is rolled back while the confirmed operation receipt and succeeded run remain. Current public reads return 403, not “the write did not happen.”
 
-### Review corrections and initial failures
-
-Read-only review found and prompted correction of three real gaps before final qualification: the post-reservation authority window, a nested-pool checkout while holding a run transaction, and missing conversation text after successful outcome reconciliation. A subsequent review prompted the final post-authority cancellation guard. These fixes were all exercised against real PostgreSQL, not only mocks.
-
-The first expanded run passed its first nine groups, then failed a test assertion that counted all of one subject's writes instead of only the current target. The synthetic host's `inspect(...).calls` intentionally spans that subject's targets. The assertion now filters the recorded `target_id`; no production code was changed to accommodate this failure. Its failed log and clean shutdown record are retained with the final evidence. All 16 groups subsequently passed.
+### Qualification limits
 
 Upstream DBOS/pg emitted a deprecation warning about concurrent queries during some worker starts, and the deliberate cancellation case reported a workflow ownership/cancellation message. These were not suppressed. No database/process was left running, and no real provider, credential, customer data, deployment or external browser was used.

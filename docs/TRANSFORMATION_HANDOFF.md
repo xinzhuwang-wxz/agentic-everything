@@ -1,4 +1,4 @@
-# AE transformation first slice
+# AE transformation contract
 
 ## Implemented and checked
 
@@ -6,7 +6,7 @@ The non-agentized `fixtures/existing-react-helpdesk` is a plain React 19/TypeScr
 
 `npm run check` passed locally: source hygiene, strict typecheck, all 15 tests (6 foundation + 9 transformation). Tests observe actual source files, dirty-user-file preservation, isolate/apply/restore, stale approvals, output drift, unsupported framework, symlinks, malicious README, configured Git filters and tracked secret checkout exclusion. Git shell arguments are never derived from a model command. No repository scripts, dependency lifecycles, network fetches or paid model calls execute.
 
-## API composition for the root integration
+## API composition
 
 1. Copy the baseline fixture into a fresh temporary directory and initialize a local Git commit. `assessProject` requires an exact repository root, not a nested folder inside AE.
 2. `assessment = assessProject(root)`; `plan = proposePlan(assessment)`; show `previewPatch(root, plan, assessment)` and `digest(plan)`.
@@ -22,11 +22,11 @@ The patch inserts `<HelpdeskAgenticMount />` inside App's existing main and crea
 
 The baseline domain exports `readTicket(tenantId,ticketId)` and `changePriority(tenantId,ticketId,priority,expectedVersion)`. Ticket: `{id,tenantId,title,priority:'low'|'high',version}`. Records: ticket-1/tenant-a, ticket-2/tenant-b. Wrap these through the runtime worker's independent host authorization/idempotency port. The tiny fixture is not a production identity provider.
 
-## Honest remaining gates
+## Static verification boundary
 
-For the current approved fixed synthetic profile, `deliver` can run and bundle the observed build, differential, HTTP and browser gates. See [the current delivery contract](delivery.md) and [milestone gaps](acceptance-status.md). The static `verifyAdaptation` behavior described below remains intentionally static.
+For the current approved fixed synthetic profile, `deliver` can run and bundle the observed build, differential, HTTP and browser gates. See [the current delivery contract](delivery.md) and [core acceptance](acceptance-status.md). The static `verifyAdaptation` behavior described below remains intentionally static.
 
-The static verification report deliberately leaves host typecheck/business tests, authenticated runtime and browser acceptance NOT RUN. Root integration must perform these against the generated tree and server, including original ticket rendering and runtime mutation/readback. Standalone fixture dependency installation, an arbitrary framework, database migration, real model quality, deployment and browser production identity are not supported by this recipe. The read-only MCP stdio toolkit is implemented and qualified separately; it does not grant mutation or execution authority. The CLI and direct API are executable.
+The static verification report deliberately leaves host typecheck/business tests, authenticated runtime and browser acceptance NOT RUN. A profiled delivery or independently authorized harness must perform these against the generated tree and server, including original ticket rendering and runtime mutation/readback. Standalone fixture dependency installation, an arbitrary framework, database migration, real model quality, deployment and browser production identity are not supported by this recipe. The read-only MCP stdio toolkit is implemented and qualified separately; it does not grant mutation or execution authority. The CLI and direct API are executable.
 
 CLI commands and the staged evidence/approval workflow are documented in `skills/ae-adapt/SKILL.md`. EAF proof-readiness/task concepts are attributed with the upstream MIT license, while AE method and code are independently authored. No upstream installer/prompt is executed.
 
@@ -34,7 +34,7 @@ CLI commands and the staged evidence/approval workflow are documented in `skills
 
 The baseline now has `index.html`, `src/main.tsx`, `src/api.ts`, and Vite development/build entrypoints. Before adaptation it renders its ordinary HTTP ticket read from `/api/tickets/:id`, with loading/error/manual refresh. Domain mutations remain server-owned; the browser no longer creates a second in-memory ticket store. The generated mount passes a successful-run callback into the existing `refreshTicket` hook, re-reading the authoritative host endpoint rather than copying the model's result into business state. The unchanged host API/browser entry files are hash-bound assessment evidence. A trusted fixture test builds both original and transformed hosts with Vite; static customer verification still never runs project commands.
 
-To run the generated tree with existing AE workspace dependencies, provide its reviewed workspace package resolution (for example a test-only node_modules link to the built workspace), start the existing loopback API and simulated actor, and run Vite with the generated root. Its proxy targets 127.0.0.1:4310 with changeOrigin enabled. The original fixture runs against the same server read endpoint before adaptation. Browser acceptance/readback is a separate root integration gate.
+To run the generated tree with existing AE workspace dependencies, provide its reviewed workspace package resolution (for example a test-only node_modules link to the built workspace), start the existing loopback API and simulated actor, and run Vite with the generated root. Its proxy targets 127.0.0.1:4310 with changeOrigin enabled. The original fixture runs against the same server read endpoint before adaptation. Browser acceptance/readback is a separate profiled delivery check.
 
 ## Generic product boundary
 

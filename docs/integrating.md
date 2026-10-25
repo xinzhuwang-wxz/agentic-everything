@@ -78,4 +78,4 @@ node node_modules/vite/bin/vite.js build apps/console --config apps/console/vite
 
 Qualify the actual host authentication, current tenant/resource authority, capability scope, model endpoint, receipt/idempotency protocol, recovery, network policy and browser/platform integration. Review backup, retention, rate/budget and secret-rotation procedures against that environment. The existing synthetic receipts are useful regression evidence, not a production certificate or authorization to deploy.
 
-The [support matrix](support-matrix.md) records what is implemented and tested; [acceptance status](acceptance-status.md) records the remaining original core gates. No arbitrary-host claim, live-model quality claim or deployment is implied by a successful fixture.
+The [support matrix](support-matrix.md) records what is implemented and tested; [acceptance status](acceptance-status.md) records the accepted core and its exact scope. No arbitrary-host claim, live-model quality claim or deployment is implied by a successful fixture.

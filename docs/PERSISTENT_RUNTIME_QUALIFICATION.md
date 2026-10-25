@@ -27,19 +27,19 @@ Full matrix passed at 19:25:15 UTC with 24 cases and 45 fresh OS worker processe
 
 The host fixture owns separate PostgreSQL tables in `qualification_host`, including principals, tickets, calls, and receipts. Its business update and operation receipt commit in one transaction. State is never reset between process deaths. Assertions inspect this ledger independently of AE status; a process-local counter cannot conceal duplicated effects.
 
-## Failures discovered and corrected
+## Durable boundary guarantees
 
-1. Initially, invalid approval input started the stable DBOS approval workflow before validation. DBOS correctly retained that error, preventing a subsequent valid decision under the same identity. Read-only preflight now rejects invalid inputs before workflow submission; authoritative approval validation/consumption remains in locked database transactions.
-2. DBOS and the Agents SDK serialize/wrap thrown errors. Relying only on `instanceof PolicyError` at the outer runtime boundary obscured revoked-rights codes and could misclassify a timed-out unknown write. Governed tool results now carry the trusted classification across the durable step, and the runtime retains that classification before the SDK wraps the error. Arbitrary exception text is not exposed.
+1. Read-only preflight rejects invalid inputs before submitting a stable DBOS approval workflow. Authoritative approval validation and consumption remain in locked database transactions.
+2. Trusted governed-tool classifications cross durable steps and remain available before SDK error wrapping. Arbitrary exception text is not exposed.
 3. Any exception after entering the external write is conservatively unknown, including policy-shaped exceptions. Abort/timeout stops waiting, not the external operation. Exact operation IDs are validated on host receipt responses.
 
 Logs retain the `pg` concurrent-query deprecation warning and DBOS duplicate-workflow queue-name warnings (`_dbos_internal_queue` versus undefined). Assertions passed, but this is not warning-free stress qualification. Track upstream compatibility; do not suppress these observations.
 
-## Independent-review corrections
+## Replay and reconciliation boundaries
 
-Review found a missing boundary beyond the first restart matrix: DBOS can return an already checkpointed tool result without re-entering the broker. Current rights and resource access are now checked outside cached tool/model results before data exposure or new model calls. An exact post-DBOS-tool-checkpoint crash/revocation test verifies no new final model turn or duplicate write. Early live denial updates AE business state idempotently without reusing a DBOS step position.
+DBOS can return an already checkpointed tool result without re-entering the broker. Current rights and resource access are checked outside cached tool/model results before data exposure or new model calls. An exact post-DBOS-tool-checkpoint crash/revocation test verifies no new final model turn or duplicate write. Early live denial updates AE business state idempotently without reusing a DBOS step position.
 
-Review also found that concurrent reconciliation could let a delayed unknown response overwrite an earlier confirmed success. The operation receipt transition is now monotonic, and canonical receipt plus reconciliation run status update in one locked transaction. A deterministic delayed-unknown versus successful query race verifies both callers observe the same confirmed receipt/status. Stored unknown write results, not only empty reservations, are included when classifying cancellation and replay failure.
+Operation receipt transitions are monotonic: canonical receipt and reconciliation status update in one locked transaction. A deterministic delayed-unknown versus successful query race verifies both callers observe the same confirmed receipt/status. Stored unknown write results, not only empty reservations, participate in cancellation and replay-failure classification.
 
 ## Member/assignee session acceptance
 
@@ -57,9 +57,9 @@ See `packages/runtime-adapters/db/README.md` for the asynchronous runtime API, h
 
 AE and DBOS do not guarantee exactly-once arbitrary external mutations. Safe recovery depends on the host's stable operation-key receipt protocol. Unknown results do not authorize another write.
 
-## Remaining gates
+## Qualification limits
 
-Production authentication/SSO, real model/API behavior and costs, the final selected release/behavior/recovery combination, arbitrary business adapters, multi-worker concurrency/load, schema migration/rollback upgrades, database crash/failover/backup restoration, retention, and production deployment remain unqualified. PostgreSQL storage is disposable local test storage. No real customer data, user computer, production service, paid provider or public exposure was used.
+Production authentication/SSO, live-model behavior and costs, arbitrary business adapters, multi-worker load, production database failover and production deployment remain unqualified. The selected release/behavior combination and migration/backup/retention operations have separate [joined-release](verification/joined-release-qualification.md) and [operations](verification/release-operations.md) evidence; this report alone does not qualify them. PostgreSQL storage in this suite is disposable synthetic test storage.
 
 
-Regression gate: strict full build, source hygiene and 188 aggregate tests passed on the integrated implementation. No dependency or lockfile changes were needed.
+This component receipt records a strict build, source hygiene and 188 aggregate tests at its source. Current assembled-source regression is recorded in [core acceptance](acceptance-status.md).

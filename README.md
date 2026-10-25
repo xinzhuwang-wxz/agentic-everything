@@ -62,7 +62,7 @@ No model key, account or database is needed for these local checks. Dependency d
 
 Each report names its tested inputs and limits. Static checks, unit tests, real HTTP/database runs and browser acceptance are distinct evidence; none silently certifies another host or deployment. The default in-memory fixture loses run/approval/operation state on restart. The opt-in persistent composition has separate recovery evidence and requires a qualified host receipt protocol. Do not expose the synthetic fixture or put customer data into it.
 
-The bounded core release is accepted at the recorded source and environments. The three external adaptations are separate deliverables still in progress; they will receive real before/after repository links and screenshots only after verification, never placeholder URLs.
+The bounded core release is accepted at the source and environments recorded in the [acceptance record](docs/acceptance-status.md).
 
 ## How the pieces fit
 
@@ -70,7 +70,7 @@ The bounded core release is accepted at the recorded source and environments. Th
 - **Govern the actions:** `packages/runtime-core`, `capabilities` and `policy` enforce the execution path. Model output and page context never grant authority.
 - **Meet users in their product:** `packages/host-sdk` and `ui` mount the experience; `apps/console` offers a separate entry to the same backend.
 
-AE is an independent product with a native TypeScript core. **Your host keeps its own technology stack.** The Python and Spring Core recipes demonstrate separate host boundaries; Go, PHP, .NET and other integrations still need their own reviewed implementation and qualification. No fixture grants blanket stack support.
+AE is an independent product with a TypeScript core. **Your host keeps its own technology stack.** The Python and Spring Core recipes demonstrate separate host boundaries; Go, PHP, .NET and other integrations still need their own reviewed implementation and qualification. No fixture grants blanket stack support.
 
 ## Build with us
 

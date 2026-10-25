@@ -47,7 +47,7 @@ NODE_OPTIONS=--max-old-space-size=384 node --test /tmp/ae-provider-qualification
 # tests 12; pass 12; fail 0; no skipped tests
 ```
 
-The temporary bundle helper uses the already-installed Vite/Rolldown toolchain and explicit source aliases to this worktree, avoiding stale generated AE package artifacts. The final integration owner is responsible for the stock assembled strict build and aggregate after merging this additive slice. Those gates were deliberately not run concurrently with the other active compiler/database owner; this report does not mark them passed.
+The focused bundle uses Vite/Rolldown and explicit source aliases. It is transpile-only execution; [core acceptance](../acceptance-status.md) separately records the assembled strict build and aggregate regression.
 
 Normal repository reproduction after the standard trusted dependency install and strict build:
 
@@ -58,17 +58,17 @@ node --test dist/packages/runtime-adapters/test/chat-completions-provider.test.j
 
 The test responder only emits deterministic synthetic responses. The existing source remains responsible for checking capability authority, exact approval bindings and actual host receipts. Passing this wire contract does not claim that a real model will select the right action or summarize its receipt correctly.
 
-### Strict schema integration correction
+### Strict schema boundary
 
-The first assembled strict check found two real type errors at the boundary between generic JSON and the SDK's `JsonSchemaDefinition`/serialized function-tool parameters. The correction uses a validated conversion, not an unchecked type assertion: the object type, object-valued property definitions, complete nonduplicated required-key set, `additionalProperties: false` and optional description are checked before any HTTP call. The original JSON-schema keywords are preserved rather than changing the contract to make it compile. Optional top-level output fields are rejected instead of silently becoming nullable required fields.
+Conversion to the SDK JsonSchemaDefinition and serialized function-tool parameters is validated rather than asserted: object type, object-valued property definitions, complete nonduplicated required-key set, additionalProperties=false and optional description are checked before any HTTP call. Original JSON-schema keywords are preserved. Optional top-level output fields are rejected instead of silently becoming nullable required fields.
 
-The corrected focused suite passes **13/13**, including twelve malformed schema shapes and an optional-output rejection with zero HTTP requests. The earlier 12-test receipt remains historical evidence; the additional test covers the integration correction. No runtime, credential, endpoint or dependency scope was expanded.
+The focused schema suite passes **13/13**, including twelve malformed schema shapes and an optional-output rejection with zero HTTP requests. This is wire/schema evidence, not live-model behavior qualification.
 
-A full-source strict no-emit check of this corrected provider worktree passed with exit 0 at a 1,024 MiB heap cap. The check included all worktree packages, apps and tests, with explicit source aliases so shared dependencies could not select another checkout's AE types:
+A full-source strict no-emit check of the provider source checkout passed with exit 0 at a 1,024 MiB heap cap. The check included all worktree packages, apps and tests, with explicit source aliases so shared dependencies could not select another checkout's AE types:
 
 ```text
 NODE_OPTIONS=--max-old-space-size=1024 node node_modules/typescript/lib/tsc.js -p /tmp/ae-provider-qualification/tsconfig.json --noEmit
 # exit 0; no diagnostics
 ```
 
-Lint and diff checks also passed. The root's later assembled check remains a separate integration receipt; this worktree check does not stand in for that run.
+Lint and diff checks also passed. The assembled check is recorded separately in [core acceptance](../acceptance-status.md); this source check does not stand in for that run.

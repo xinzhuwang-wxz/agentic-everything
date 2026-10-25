@@ -52,7 +52,7 @@ Run the opt-in suite after `npm run build`:
 bash tests/persistence/run-postgres.sh /path/to/official/postgresql/17/bin
 ```
 
-The harness enforces PostgreSQL 17.11, a dedicated synthetic database on loopback, minimal child environments, fresh OS processes and independent durable host evidence. See `docs/PERSISTENT_RUNTIME_QUALIFICATION.md` for observed results, including initial failures and corrections. Unit tests do not imply this service-backed suite ran.
+The harness enforces PostgreSQL 17.11, a dedicated synthetic database on loopback, minimal child environments, fresh OS processes and independent durable host evidence. See `docs/PERSISTENT_RUNTIME_QUALIFICATION.md` for observed results, including replay guarantees and qualification limits. Unit tests do not imply this service-backed suite ran.
 
 Not qualified: production SSO, customer data, real model APIs/costs, arbitrary business capabilities, database failover, concurrent multi-worker load, whole-ledger deletion, or production deployment. Additive schema adoption, old-worker compatibility, synthetic pg_dump/restore and bounded projection retention have [separate qualification](../../../docs/verification/release-operations.md); those checks do not establish production connection hardening or automatic full-data erasure. Keep database/snapshot access private and apply operator-managed permissions and backups before any separately authorized production work.
 

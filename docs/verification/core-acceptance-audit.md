@@ -26,7 +26,4 @@ documentation-only updates do not change the qualified executable inputs.
 - The cost comparison records scripted measured work, not human productivity.
   Optional knowledge and real mobile/provider/production claims remain excluded.
 
-Detailed historical audit text and raw process receipts are retained in the
-maintainer's private cloud evidence archive, separately from this product-facing
-status. Failed resource attempts remain failures; neither transpile-only probes
-nor stale generated outputs are substituted for the final strict build.
+Release qualification requires a clean strict build; component or transpile-only checks do not substitute for it.

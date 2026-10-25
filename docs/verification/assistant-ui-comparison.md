@@ -28,9 +28,9 @@ This comparison deliberately freezes the **current single-run workflow**. It doe
 
 The inspected implementation exposes `/api/runs`, not a conversation-bound start/history API. `RunView` has one run and its events/receipts, with no conversation ID or durable message collection. `AgenticPanel` replaces its current `runSnapshot` on the next completed-request cycle, retains only one local `lastInput`, and stores only a run ID in sessionStorage; restoration displays “已恢复的执行” rather than restoring the original message history. Principal/context generation guards are valuable, but they are not proof of a durable, authorized multi-turn conversation history. That missing module remains a concrete product gap after R4's bounded comparison is closed.
 
-Reopen assistant-ui qualification when the conversation target has an approved, server-owned contract: stable conversation/message/run IDs, current-principal read authorization, ordered message history and retention, plus a defined second-turn/unfinished-run policy. At that seam, an ExternalStoreRuntime may replace actual custom work for message-list reconciliation, part rendering, composer state, history paging, scroll anchoring and focus behavior. The present two-message projection cannot measure those savings fairly. Any branching, edit, regeneration, queueing or rich parts must be separately product-approved and qualified, not enabled merely because the library offers them.
+The server-owned multi-turn target has a separate [bounded presentation comparison](assistant-ui-bounded-comparison.md). This single-run report measures only its two-message projection; it does not establish savings for history paging, branching, editing, regeneration, queueing or rich parts. Those features require their own approved contracts and qualification.
 
-The new comparison should execute a real two-or-more-turn history, hydrate it after reload, switch conversations/principals while responses arrive, and reconcile interrupted runs without replaying writes. It must also verify that viewing or quoting a historical approval cannot authorize a new run, each run keeps its own release/current-rights/receipt binding, and history payloads stay inert. Re-measure removed custom state and shipped cost against that actual target. Neither assistant-ui's message repository nor an SDK RunState should become the authoritative conversation/permission store. This ticket does not implement that backend or broaden the frozen product scope.
+Multi-turn comparison criteria include real two-or-more-turn history, reload hydration, principal/conversation switching during responses, and interruption without replaying writes. Viewing or quoting historical approval cannot authorize a new run: release, current-rights and receipt bindings remain per-run, and history stays inert. Neither a presentation message repository nor SDK RunState is the authoritative permission store. Actual multi-turn results belong to the separate bounded report.
 
 ## What was actually reused and executed
 
@@ -56,7 +56,7 @@ The official registry's latest version at inspection was 0.15.31. The trial pins
 | `@assistant-ui/react@0.15.31` | MIT, copyright 2026 AgentbaseAI Inc. | [registry artifact](https://registry.npmjs.org/@assistant-ui/react/-/react-0.15.31.tgz), `sha512-vTTcI2963DO5CYrKh8CYkJ0stQcu0JXxUQM0nepsP2Zy4QfrovVuiYkAhKM1U4jMnGHy3sQ9ovxH0VTZrScnZg==` |
 | `@assistant-ui/core@0.3.31` | MIT, copyright 2026 AgentbaseAI Inc. | [registry artifact](https://registry.npmjs.org/@assistant-ui/core/-/core-0.3.31.tgz), `sha512-NrTSgdUTM0SVmos3YMAAvPqDDNlxFmwVTjnA06T+4A7DcXswsKrBw65BsfSEn4m1DFSwaD3rfMlIFTEK3ei4uQ==` |
 
-Exact package LICENSE files were read and preserved under `qualification/assistant-ui/evidence/`. React's declared peer range is `^18 || ^19`; both React and React DOM were pinned to AE's 19.3.1 and linked to the already-installed exact instances to avoid duplicate React. Installation used the official registry with `--ignore-scripts --no-audit --no-fund`; no lifecycle scripts or unknown-repository software ran. The initial default-cache metadata lookup failed with ENOENT for `/home/agent/.npm`; a writable isolated cache was used. There was no permission denial or bypass.
+Exact package LICENSE files were read and preserved under `qualification/assistant-ui/evidence/`. React's declared peer range is `^18 || ^19`; both React and React DOM were pinned to AE's 19.3.1 and linked to the already-installed exact instances to avoid duplicate React. Installation used the official registry with `--ignore-scripts --no-audit --no-fund`; no lifecycle scripts or unknown-repository software ran.
 
 The local lock contains every transitive version, official tarball and integrity. `evidence/dependencies.json` records license metadata and hashes of the actual license/notice files found in each artifact. Metadata licenses are MIT, BSD-3-Clause and 0BSD. Two transitives (`react-remove-scroll-bar`, `use-composed-ref`) contain no top-level LICENSE/COPYING/NOTICE file in their installed artifacts; their metadata is not complete redistributor notice clearance. A future production adoption must resolve those notices. No new upstream source is copied into production. Registry signatures/provenance were recorded as metadata, not independently cryptographically verified.
 
@@ -73,14 +73,11 @@ The exact packaged `@assistant-ui/core/src/runtimes/external-store/external-stor
 
 The browser used the already-qualified sandboxed Chromium headless-shell with `chromiumSandbox:true`, never `--no-sandbox`. Backend compiled artifacts came read-only from qualified commit `644496278c53bffe831e170b93a8228c5ac15c06`, whose relevant production inputs are identical to baseline 9268d98. This comparison freshly bundled the UI; it does **not** claim to have freshly rebuilt the borrowed backend or rerun its PostgreSQL qualification.
 
-### Initial failures and corrected harness assumptions
+### Scope
 
-The first 33-test run had 31 passes and two failures, retained in `evidence/tests-first.log`:
+The comparison covers the tested adapter and fixture only; it does not qualify a replacement runtime or production host.
 
-- The generated floating test imported the panel instead of the package barrel, omitting `placeFloatingLauncher`. The generator now imports its candidate barrel; no production implementation changed.
-- The old global `document.querySelectorAll('textarea')` assertion counted the autosize library's body-level measurement textarea. Actual library source marks it `aria-hidden=true`, `tabindex=-1` and hidden. The assertion now counts textarea elements inside `.ae-input`, the actual composer. All other frozen assertions remain, including height and IME. This is explicitly a test-selector qualification, not an assertion that the untouched original test passed.
-
-Two initial strict-check issues (optional attachment length and the library's restricted textarea style type) were fixed in the candidate adapter. A first test invocation used `.mjs` names while Vite emitted `.js`; the runnable commands were corrected. None of these initial failures is omitted from the evidence, and no business/runtime code was changed to accommodate the library.
+The composer checks target textarea elements inside `.ae-input`; the library also creates an inert, hidden, aria-hidden measurement textarea. This is a scoped selector qualification, not a claim that an unchanged global textarea-count assertion passed.
 
 ### Limits
 
@@ -90,4 +87,4 @@ This is a single-run presentation comparison, not full assistant-ui security or 
 
 See `qualification/assistant-ui/README.md`, its isolated package lock, frozen-seam generator, six new test cases, browser harness and source/license/runtime-input evidence. Use the existing exact root development dependencies, Node 24.19.0 and npm 11.9.0. No root lock or production source edits are required.
 
-The smallest justified production patch is **none**. Adopt the evidence-backed retention decision and reconcile plan/status wording accordingly. Keep this optional spike as reproducible comparison evidence, not a hidden alternate shipping UI or a requirement to install assistant-ui for normal AE use.
+The shipping UI retains its existing presentation base. This optional comparison is reproducible evidence, not an alternate shipping UI or a requirement to install assistant-ui for normal AE use.

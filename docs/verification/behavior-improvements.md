@@ -15,7 +15,7 @@ The host management rail now contains **行为改进**, separate from capability
 
 `packages/capabilities/src/behavior.ts` registers `synthetic-ticket-title-trim@1`: trim surrounding whitespace from the returned title, without mutating stored data, priority, resource version or permissions. Ordinary host reads and assistant tool reads call the same deterministic function with an explicit snapshot.
 
-The two-case baseline has reproducible observation and manifest hashes. The candidate hash binds the actual executable rule body, **not a whole repository source attestation**. Its exact contract permits only `synthetic-title → output/title`: `"  Printer offline  "` to `"Printer offline"`; the already-clean case must remain equal. This is synthetic fixture evidence, not automatic defect discovery, a genuine customer migration, or a claim that all inputs are covered. The original three external-project cases remain deferred.
+The two-case baseline has reproducible observation and manifest hashes. The candidate hash binds the actual executable rule body, **not a whole repository source attestation**. Its exact contract permits only `synthetic-title → output/title`: `"  Printer offline  "` to `"Printer offline"`; the already-clean case must remain equal. This is synthetic fixture evidence, not automatic defect discovery, a genuine customer migration, or a claim that all inputs are covered.
 
 ## Executable checks
 
