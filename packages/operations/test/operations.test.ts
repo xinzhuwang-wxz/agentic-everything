@@ -35,3 +35,10 @@ test('retention cursors and explicit page budgets fail closed before SQL',async(
   for(const cursor of ['', 'malformed', 'x'.repeat(2049), Buffer.from(JSON.stringify({v:1,binding:'wrong-scope',expiresAt:cutoff,id:'id'})).toString('base64url')])await assert.rejects(retention.run(principal,{cutoff,cursor}),/INVALID_RETENTION_CURSOR/);
   for(const maxBatches of [0,11,1.5])await assert.rejects(previewRetentionBatches(retention,principal,{cutoff,maxBatches}),/INVALID_RETENTION_BATCH_BUDGET/);
 });
+
+test('retention batch budget cannot expand while awaiting a page',async()=>{
+  const request={cutoff:'2026-01-01T00:00:00.000Z',limit:100,maxBatches:1};let calls=0;
+  const retention={run:async()=>{calls++;request.maxBatches=10;return {nextCursor:'fixture-continuation'};}} as unknown as ConversationRetention;
+  const principal={tenantId:'a',applicationId:'app',subjectId:'u',roles:['agentic:retention'],scopes:[]};
+  const result=await previewRetentionBatches(retention,principal,request);assert.equal(calls,1);assert.equal(result.pages.length,1);assert.equal(result.nextCursor,'fixture-continuation');
+});

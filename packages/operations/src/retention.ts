@@ -58,11 +58,12 @@ export class ConversationRetention {
 
 /** Bounded read-only page planning. Applying still requires each reviewed page's selection hash. */
 export async function previewRetentionBatches(retention:ConversationRetention,principal:Principal,request:{cutoff:string;limit?:number;cursor?:string;maxBatches:number}){
-  if(!Number.isInteger(request.maxBatches)||request.maxBatches<1||request.maxBatches>10)throw new PolicyError('INVALID_RETENTION_BATCH_BUDGET');
+  const {cutoff,limit,maxBatches}=request;
+  if(!Number.isInteger(maxBatches)||maxBatches<1||maxBatches>10)throw new PolicyError('INVALID_RETENTION_BATCH_BUDGET');
   const pages:{request:RetentionRequest;preview:RetentionResult}[]=[];
   let cursor=request.cursor;
-  for(let batch=0;batch<request.maxBatches;batch++){
-    const pageRequest:RetentionRequest={cutoff:request.cutoff,...(request.limit===undefined?{}:{limit:request.limit}),...(cursor===undefined?{}:{cursor})};
+  for(let batch=0;batch<maxBatches;batch++){
+    const pageRequest:RetentionRequest={cutoff,...(limit===undefined?{}:{limit}),...(cursor===undefined?{}:{cursor})};
     const preview=await retention.run(principal,pageRequest);pages.push({request:pageRequest,preview});
     if(preview.nextCursor===null)return {pages,nextCursor:null};
     cursor=preview.nextCursor;

@@ -3,16 +3,18 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, symlinkSync, chmodSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { installFixedSource, doctorInstallation, uninstallFixedSource } from '../../dist/packages/operations/src/index.js';
+import { doctorInstallation, uninstallFixedSource } from '../../dist/packages/operations/src/index.js';
 const [cache]=process.argv.slice(2);assert.ok(cache,'Pass an approved official-registry npm cache');
 const source=resolve('.'),commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),tree=execFileSync('git',['rev-parse',`${commit}^{tree}`],{encoding:'utf8'}).trim();
 const legacy=execFileSync('git',['rev-parse','55faf91'],{encoding:'utf8'}).trim(),legacyTree=execFileSync('git',['rev-parse',`${legacy}^{tree}`],{encoding:'utf8'}).trim();
 const directory=mkdtempSync(join(tmpdir(),'ae-clean-install-')),first=join(directory,'version-before'),second=join(directory,'version-after'),tests=[];
 const record=name=>{tests.push({name,status:'pass'});console.log(`PASS ${name}`);};
+// Separate public CLI processes release prior inventory buffers before the next bounded compiler.
+const install=(input)=>JSON.parse(execFileSync(process.execPath,['--max-old-space-size=256',join(source,'packages/cli/dist/index.js'),input.previous?'upgrade':'install',...Object.entries(input).flatMap(([key,value])=>['--'+key,value])],{encoding:'utf8',env:{...process.env,NODE_OPTIONS:'--max-old-space-size=256'},timeout:240000,maxBuffer:2*1024*1024}));
 mkdirSync(join(directory,'original-host'));writeFileSync(join(directory,'original-host','business.txt'),'ORIGINAL_HOST_UNCHANGED');
 console.log(`Evidence: ${directory}`);
-const installed=installFixedSource({source,commit:legacy,tree:legacyTree,destination:first,cache});assert.equal(installed.integrity,true);assert.equal(installed.commit,legacy);record('clean-offline-fixed-legacy-install-build-doctor');
-const upgraded=installFixedSource({source,commit,tree,destination:second,cache,previous:first});assert.equal(upgraded.integrity,true);assert.equal(upgraded.activation,'not-changed');assert.equal(doctorInstallation(first).integrity,true);record('side-by-side-pinned-upgrade-preserves-previous-install');
+const installed=install({source,commit:legacy,tree:legacyTree,destination:first,cache});assert.equal(installed.integrity,true);assert.equal(installed.commit,legacy);record('clean-offline-fixed-legacy-install-build-doctor');
+const upgraded=install({source,commit,tree,destination:second,cache,previous:first});assert.equal(upgraded.integrity,true);assert.equal(upgraded.activation,'not-changed');assert.equal(doctorInstallation(first).integrity,true);record('side-by-side-pinned-upgrade-preserves-previous-install');
 execFileSync(process.execPath,[join(second,'packages/cli/dist/index.js'),'doctor','--installation',second],{encoding:'utf8'});record('installed-public-cli-runs-version-integrity-diagnostics');
 const receiptPath=join(second,'.ae-installation.json'),receiptBytes=readFileSync(receiptPath),receipt=JSON.parse(receiptBytes.toString());
 for(const changes of [{version:'9.9.9'},{lockHash:'0'.repeat(64)},{schema:receipt.schema+1}]){writeFileSync(receiptPath,JSON.stringify({...receipt,...changes}));assert.equal(doctorInstallation(second).metadataConsistent,false);assert.equal(doctorInstallation(second).integrity,false);assert.throws(()=>uninstallFixedSource(second,commit),/MODIFIED_INSTALLATION/);assert.equal(existsSync(second),true);}
