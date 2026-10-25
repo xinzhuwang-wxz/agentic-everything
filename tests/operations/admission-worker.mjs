@@ -1,0 +1,12 @@
+import { createInterface } from 'node:readline';
+import { serve } from '@hono/node-server';
+import { createPersistentApi } from '../../dist/apps/api/src/persistent.js';
+import { SyntheticDurableHost,validateDatabaseUrl } from '../persistence/host.mjs';
+const [url]=process.argv.slice(2);validateDatabaseUrl(url);const host=new SyntheticDurableHost(url);
+const emit=value=>process.stdout.write('AE_PERSISTENCE '+JSON.stringify(value)+'\n');
+let session={tenantId:'operations-a',applicationId:'synthetic-helpdesk',subjectId:'http-rate',roles:['editor','agentic:admin'],scopes:['tickets:read','tickets:write']};
+let app;const server=serve({hostname:'127.0.0.1',port:0,fetch:request=>app.fetch(request)});if(!server.listening)await new Promise(resolve=>server.once('listening',resolve));const origin=`http://127.0.0.1:${server.address().port}`;
+const model={async complete(request){await host.pool.query('INSERT INTO qualification_host.model_calls(run_id,request_id,stage,messages,worker_pid) VALUES($1,$2,\'rate\',$3,$4)',[request.runId,request.requestId,JSON.stringify(request.messages),process.pid]);return {schemaVersion:'1',requestId:request.requestId,mode:'simulated',message:'Bounded admission fixture.',toolCalls:[],finishReason:'stop'};}};
+const composed=await createPersistentApi({databaseUrl:url,admissionPolicy:{maxStarts:2,windowSeconds:3600},host,model,resolvePrincipal:()=>session?host.currentPrincipal(session):undefined,currentConfigurationPrincipal:p=>p,applicationName:'Admission qualification',apiOrigin:origin,allowedOrigin:origin});
+await composed.startupRecovery;app=composed.app;emit({event:'ready',origin,pid:process.pid});
+const input=createInterface({input:process.stdin});input.on('line',async line=>{const command=JSON.parse(line);try{if(command.method==='session'){session=command.args[0];emit({event:'response',id:command.id,result:null});}else if(command.method==='shutdown'){await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));await composed.close();await host.close();emit({event:'response',id:command.id,result:null});input.close();}}catch(error){emit({event:'response',id:command.id,error:{message:String(error)}});}});

@@ -1,3 +1,4 @@
+import { admitNewIntent, checkedAdmissionPolicy, type AdmissionPolicy } from '@ae/operations';
 import type { BehaviorCatalog, CapabilityVersion, ModelProvider, Principal } from '@ae/contracts';
 import { configurationHostCatalog } from './host-catalog.js';
 import { PostgresControlPlane } from '@ae/control-plane/postgres';
@@ -7,6 +8,8 @@ import { recoverIntentBatch, validateIntentRow, STARTUP_RECOVERY_LIMIT, type Int
 import { createApi, type ApiOptions, type ApiRunView } from './app.js';
 export interface PersistentApiOptions {
   databaseUrl: string;
+  /** Server-only durable new-intent admission policy; no model or request overrides. */
+  admissionPolicy?: AdmissionPolicy;
   /** Register only a reviewed catalog actually implemented by this host adapter. */
   behaviorCatalog?: BehaviorCatalog;
   host: DurableTicketHost;
@@ -23,6 +26,7 @@ export interface PersistentApiOptions {
 }
 /** Explicit opt-in composition. Default fixture server remains memory-only; no connection is inferred. */
 export async function createPersistentApi(options: PersistentApiOptions) {
+  const admissionPolicy=checkedAdmissionPolicy(options.admissionPolicy);
   if (options.behaviorCatalog && options.host.behaviorRegistryHash !== options.behaviorCatalog.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
   const controlPlane = new PostgresControlPlane(options.databaseUrl, configurationHostCatalog(options.host, options.capabilityCatalog), options.currentConfigurationPrincipal, options.behaviorCatalog);
   const runtime = new PersistentRuntime({databaseUrl:options.databaseUrl,host:options.host,model:options.model,...(options.fault?{fault:options.fault}:{})});
@@ -50,6 +54,8 @@ export async function createPersistentApi(options: PersistentApiOptions) {
       const existing=(await connection.query('SELECT intent_key,intent_token,input_hash,run_id,start_hash,start FROM ae_api.intents WHERE intent_key=$1',[intentKey])).rows[0];
       if(existing){if(existing.input_hash!==inputHash)throw new PolicyError('IDEMPOTENCY_CONFLICT');return validateIntentRow(existing as unknown as IntentRow,{principal,intent:input.intent});}
       const release=await controlPlane.activeRelease(principal);if(!release)throw new PolicyError('RELEASE_REQUIRED');
+      await runtime.broker.current(principal);
+      await admitNewIntent(connection,principal,admissionPolicy);
       const runId=`intent-${intentKey}`;
       const binding=input.conversationId?await runtime.conversations.reserve(connection,input.conversationId,principal,runId,release.releaseId,input.input,input.intent,context):undefined;
       const value={runId,principal,releaseId:release.releaseId,release,...content,...(binding?{conversation:binding}:{})};

@@ -1,3 +1,4 @@
+import { AdmissionLimitError } from '@ae/operations';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { ApprovalDecisionSchema, ConversationContextSchema, type JsonObject, type ConversationContext, type ConversationView, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
@@ -42,6 +43,7 @@ export function createApi(options: ApiOptions): Hono {
   const ui = new URL(options.allowedOrigin);
   for (const origin of [api, ui]) if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname) || origin.origin !== origin.href.slice(0, -1)) throw new Error('Only exact loopback origins are supported by this fixture');
   app.onError((error, c) => {
+    if(error instanceof AdmissionLimitError){c.header('Retry-After',String(error.retryAfterSeconds));return c.json({error:{code:error.code,message:error.code}},429);}
     if (error instanceof HttpError) return c.json({ error: { code: error.code, message: error.code } }, error.status);
     if (error instanceof PolicyError) {
       const status = ['RUN_NOT_FOUND', 'CONVERSATION_NOT_FOUND'].includes(error.code) ? 404 : /DENIED/.test(error.code) ? 403 : 409;

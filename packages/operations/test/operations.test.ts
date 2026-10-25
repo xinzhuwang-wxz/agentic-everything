@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aeMigrations, AE_COMPATIBILITY, installFixedSource, doctorInstallation, ConversationRetention, type SqlPool } from '../src/index.js';
+import { aeMigrations, AE_COMPATIBILITY, installFixedSource, doctorInstallation, ConversationRetention, type SqlPool, checkedAdmissionPolicy } from '../src/index.js';
 test('migration ownership is one additive fixed list, never DBOS or host schemas',()=>{
-  assert.deepEqual(aeMigrations.map(m=>m.version),[1,2]);
+  assert.deepEqual(aeMigrations.map(m=>m.version),[1,2,3]);
   for(const m of aeMigrations){assert.doesNotMatch(m.sql,/\bDROP\b|\bDELETE\b|\bdbos\b|qualification_host/i);assert.match(m.sql,/IF NOT EXISTS/);}
   assert.equal(AE_COMPATIBILITY.runWorkflow,'ae-v1');assert.equal(AE_COMPATIBILITY.sdk,'0.21.0');
 });
@@ -26,3 +26,5 @@ test('retention refuses missing/current revoked authority and unsafe bounds with
   const allowed=new ConversationRetention(pool,p=>p);
   for(const request of [{cutoff:'invalid'},{cutoff:new Date(Date.now()+1e6).toISOString()},{cutoff:new Date().toISOString(),limit:101}])await assert.rejects(allowed.run(p,request),/INVALID_RETENTION_BOUND/);
 });
+
+test('durable admission accepts only bounded server policies',()=>{assert.deepEqual(checkedAdmissionPolicy(),{maxStarts:60,windowSeconds:60});for(const policy of [{maxStarts:0,windowSeconds:60},{maxStarts:1001,windowSeconds:60},{maxStarts:3,windowSeconds:0},{maxStarts:3,windowSeconds:3601}])assert.throws(()=>checkedAdmissionPolicy(policy),/INVALID_ADMISSION_POLICY/);});

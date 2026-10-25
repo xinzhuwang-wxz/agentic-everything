@@ -29,7 +29,7 @@ Persistent API configuration defaults to the legacy registry. A trusted composit
 
 ## Transaction/recovery boundaries
 
-`ae_runs_v1`, `ae_approvals_v1`, and `ae_operations_v1` are created by the versioned initial migration in `store.ts`. This is an opt-in initial schema, not a production upgrade/rollback framework. SQL values are parameterized. Run-row locks serialize approval, reservation, event and cancellation updates.
+All AE-owned runtime, conversation, control-plane and API tables use the one fixed additive migration owner in `@ae/operations`. Its dry-run, legacy adoption, checksum/catalog drift checks and transactional locking are separate from DBOS's own schema owner. See the [operations runbook](../../../docs/operations.md). SQL values are parameterized. Run-row locks serialize approval, reservation, event and cancellation updates.
 
 Initial creation is inside an already submitted DBOS workflow. A decision is submitted under `ae-v1:<runId>:<approvalId>` before its authoritative transaction commits, closing the committed-decision-but-never-scheduled gap. A read-only preflight rejects invalid hashes/owners/expiry before they can poison that workflow identity; the transactional check remains authoritative. Identical decisions return the same persisted view. Conflicting decisions are rejected.
 
@@ -54,7 +54,7 @@ bash tests/persistence/run-postgres.sh /path/to/official/postgresql/17/bin
 
 The harness enforces PostgreSQL 17.11, a dedicated synthetic database on loopback, minimal child environments, fresh OS processes and independent durable host evidence. See `docs/PERSISTENT_RUNTIME_QUALIFICATION.md` for observed results, including initial failures and corrections. Unit tests do not imply this service-backed suite ran.
 
-Not qualified: production SSO, customer data, real model APIs/costs, arbitrary business capabilities, schema upgrades, database loss/failover, concurrent multi-worker load, unbounded retention, or production deployment. The initial schema has no retention administration or production connection hardening. Keep database/snapshot access private and apply operator-managed permissions and backups before any separately authorized production work.
+Not qualified: production SSO, customer data, real model APIs/costs, arbitrary business capabilities, database failover, concurrent multi-worker load, whole-ledger deletion, or production deployment. Additive schema adoption, old-worker compatibility, synthetic pg_dump/restore and bounded projection retention have [separate qualification](../../../docs/verification/release-operations.md); those checks do not establish production connection hardening or automatic full-data erasure. Keep database/snapshot access private and apply operator-managed permissions and backups before any separately authorized production work.
 
 ## Published release composition
 

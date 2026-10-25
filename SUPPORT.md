@@ -13,8 +13,14 @@
 | Output file or destination already exists | CLI evidence output is create-only. Inspect and reuse the existing patch for verify/revert; do not overwrite evidence or bypass source-drift checks. |
 | Generated mount cannot resolve `@ae/*` | The first slice expects AE workspace integration. The recipe does not install dependencies or publish packages. |
 | Console loads but a run fails or times out | Check the API, exact loopback origin/proxy and the independently running file-IPC actor. No actor is launched automatically. |
-| Run disappears after server restart | Expected limitation: state and fixture data are in memory. Refresh recovery is not crash durability. |
+| Run disappears after server restart | The default fixture is memory-only. For explicitly selected PostgreSQL/DBOS, inspect the exact connection, schema diagnostic, pinned versions and startup recovery report; do not replay writes. |
 | Uncertain write or later patch edits | Stop and inspect/reconcile. Do not blindly repeat the action or force rollback. |
+
+## Installation and operational diagnostics
+
+Use the [fixed-source install/upgrade/recovery runbook](docs/operations.md) and [actual qualification evidence](docs/verification/release-operations.md). Doctor checks a managed installation, not an ordinary development checkout. An offline cache miss needs the exact approved lockfile cache, not a floating dependency update. A killed compiler is a failed build; use adequate disk-backed temporary storage and retry a fresh destination after diagnosing resource pressure. Changed installation files block uninstall so operator work is not erased.
+
+For schema history or fingerprint drift, stop the affected worker and inspect a verified backup; never rewrite ledger checksums. HTTP `ADMISSION_RATE_LIMITED` is 429 with a finite Retry-After; exact repeated intents are not newly charged. Unknown outcomes require receipt reconciliation, not a new idempotency key. See the runbook for current support scope and data retention limits.
 
 ## Ask for help with a useful reproduction
 

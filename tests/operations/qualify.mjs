@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { inspectAeSchema, migrateAeSchema, ConversationRetention } from '../../dist/packages/operations/src/index.js';
+import { inspectAeSchema, migrateAeSchema, ConversationRetention, admitNewIntent, AdmissionLimitError } from '../../dist/packages/operations/src/index.js';
 import { SyntheticDurableHost, validateDatabaseUrl } from '../persistence/host.mjs';
 import { Worker } from './worker-client.mjs';
 const [url,directory,pgBin,legacyRoot]=process.argv.slice(2);validateDatabaseUrl(url);
@@ -35,10 +35,10 @@ try{
   await pool.query('CREATE SCHEMA ae_api;CREATE TABLE ae_api.intents(intent_key text PRIMARY KEY,input_hash text NOT NULL,run_id text UNIQUE NOT NULL,start_hash text NOT NULL,start jsonb NOT NULL);INSERT INTO ae_api.intents VALUES(\'legacy-unbound\',\'hash\',\'legacy-missing-run\',\'hash\',\'{}\')');
   const before=(await rows('SELECT body FROM ae_runs_v1 WHERE id=$1',[paused.runId]))[0].body;
   const dbosBefore=await rows('SELECT version FROM dbos.dbos_migrations ORDER BY version');
-  const dry=await inspectAeSchema(pool);assert.equal(dry.currentVersion,0);assert.ok(dry.legacyTables.includes('ae_api.intents'));assert.equal(dry.pending.length,2);
+  const dry=await inspectAeSchema(pool);assert.equal(dry.currentVersion,0);assert.ok(dry.legacyTables.includes('ae_api.intents'));assert.equal(dry.pending.length,3);
   assert.deepEqual((await rows('SELECT body FROM ae_runs_v1 WHERE id=$1',[paused.runId]))[0].body,before);record('legacy-adoption-dry-run-preserves-old-pending-run');
-  const migrated=await Promise.all(Array.from({length:4},()=>migrateAeSchema(pool)));assert.ok(migrated.every(r=>r.currentVersion===2&&r.pending.length===0));
-  assert.equal((await rows('SELECT count(*)::int AS count FROM ae_metadata.schema_migrations'))[0].count,2);
+  const migrated=await Promise.all(Array.from({length:4},()=>migrateAeSchema(pool)));assert.ok(migrated.every(r=>r.currentVersion===3&&r.pending.length===0));
+  assert.equal((await rows('SELECT count(*)::int AS count FROM ae_metadata.schema_migrations'))[0].count,3);
   assert.equal((await rows("SELECT intent_token FROM ae_api.intents WHERE intent_key='legacy-unbound'"))[0].intent_token,null);
   assert.deepEqual((await rows('SELECT body FROM ae_runs_v1 WHERE id=$1',[paused.runId]))[0].body,before);assert.deepEqual(await rows('SELECT version FROM dbos.dbos_migrations ORDER BY version'),dbosBefore);record('concurrent-additive-upgrade-idempotent-preserves-rows-and-dbos-ownership');
   await pool.query("ALTER TABLE ae_runs_v1 ALTER COLUMN body SET DEFAULT '{}'::jsonb");await assert.rejects(inspectAeSchema(pool),/AE_SCHEMA_DRIFT/);await pool.query('ALTER TABLE ae_runs_v1 ALTER COLUMN body DROP DEFAULT');
@@ -54,7 +54,7 @@ try{
   assert.equal(createHash('sha256').update(readFileSync(backup)).digest('hex'),backupHash);
   execFileSync(join(pgBin,'pg_restore'),['--exit-on-error','--no-owner','--no-privileges','--dbname',url,backup]);
   pool=new pg.Pool({connectionString:url});host=new SyntheticDurableHost(url);
-  assert.deepEqual((await rows('SELECT body FROM ae_runs_v1 WHERE id=$1',[paused.runId]))[0].body,before);assert.equal((await inspectAeSchema(pool)).currentVersion,2);record('real-pg-dump-restore-recovers-schema-config-approval-sdk-and-dbos-data');
+  assert.deepEqual((await rows('SELECT body FROM ae_runs_v1 WHERE id=$1',[paused.runId]))[0].body,before);assert.equal((await inspectAeSchema(pool)).currentVersion,3);record('real-pg-dump-restore-recovers-schema-config-approval-sdk-and-dbos-data');
   const upgraded=await start(root,'upgraded-restored');const restored=await upgraded.request('get',paused.runId,p);assert.deepEqual(restored.approval,paused.approval);
   await assert.rejects(upgraded.request('get',paused.runId,{...p,tenantId:'other'}),/RUN_NOT_FOUND/);
   const decision={approvalId:paused.approval.binding.approvalId,expectedHash:paused.approval.expectedHash,decision:'approve'};
@@ -72,5 +72,25 @@ try{
   let rightsChecks=0;const revoked=new ConversationRetention(pool,current=>++rightsChecks>=4?{...current,roles:[]}:current);await assert.rejects(revoked.run(p,{cutoff,apply:true,expectedSelectionHash:plan.selectionHash}),/RETENTION_AUTHORITY_DENIED/);assert.equal((await rows("SELECT count(*)::int AS count FROM ae_conversation_turns_v1 WHERE conversation_id='expired-finished'"))[0].count,1);
   const purged=await retention.run(p,{cutoff,apply:true,expectedSelectionHash:plan.selectionHash});assert.equal(purged.deleted,1);assert.equal((await rows("SELECT count(*)::int AS count FROM ae_conversation_turns_v1"))[0].count,6);assert.deepEqual((await rows("SELECT context FROM ae_conversations_v1 WHERE id='expired-finished'"))[0].context,{});assert.equal((await rows("SELECT count(*)::int AS count FROM ae_runs_v1 WHERE id='retention-expired-finished'"))[0].count,1);
   const repeat=await retention.run(p,{cutoff});assert.equal(repeat.eligible.length,0);assert.equal((await rows('SELECT count(*)::int AS count FROM ae_operations_v1 WHERE run_id=$1',[paused.runId]))[0].count,2);record('physical-projection-retention-is-bounded-current-rights-scoped-atomic-and-preserves-audit');
+  const quota={...p,subjectId:'rate-user'},policy={maxStarts:3,windowSeconds:3600};
+  async function admission(principal=quota,configuration=policy){const c=await pool.connect();try{await c.query('BEGIN');await admitNewIntent(c,principal,configuration);await c.query('COMMIT');return 'admitted';}catch(e){await c.query('ROLLBACK');if(e instanceof AdmissionLimitError){assert.ok(e.retryAfterSeconds>=1&&e.retryAfterSeconds<=configuration.windowSeconds);return 'limited';}throw e;}finally{c.release();}}
+  const bursts=await Promise.all(Array.from({length:12},()=>admission()));assert.equal(bursts.filter(v=>v==='admitted').length,3);assert.equal(bursts.filter(v=>v==='limited').length,9);
+  await pool.end();pool=new pg.Pool({connectionString:url});assert.equal(await admission(),'limited');
+  for(const principal of [{...quota,tenantId:'other'},{...quota,applicationId:'other'},{...quota,subjectId:'other'}])assert.equal(await admission(principal),'admitted');
+  await pool.query("INSERT INTO ae_api.admission_windows(scope_hash,window_started_at,admissions) SELECT 'expired-'||n,clock_timestamp()-interval '3 hours',1 FROM generate_series(1,150) n");
+  assert.equal(await admission({...quota,subjectId:'cleanup-user'}),'admitted');assert.equal((await rows("SELECT count(*)::int AS count FROM ae_api.admission_windows WHERE scope_hash LIKE 'expired-%'"))[0].count,50);
+  const rateScope=createHash('sha256').update(JSON.stringify([quota.tenantId,quota.applicationId,quota.subjectId])).digest('hex');await pool.query("UPDATE ae_api.admission_windows SET window_started_at=clock_timestamp()-interval '2 hours' WHERE scope_hash=$1",[rateScope]);assert.equal(await admission(),'admitted');record('durable-admission-concurrency-restart-isolation-window-renewal-and-bounded-cleanup');
+  const httpPrincipal={...p,subjectId:'http-rate',roles:['editor','agentic:admin']};await host.seed(httpPrincipal,'http-rate-ticket');
+  async function httpWorker(label){const w=new Worker(root,url,directory,label,'tests/operations/admission-worker.mjs');workers.push(w);await w.ready();return w;}
+  let http=await httpWorker('http-rate-first');
+  const request=async(key,input='bounded input')=>{const origin=http.events.find(e=>e.event==='ready').origin;return fetch(origin+'/api/runs',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({input})});};
+  const firstResponse=await request('http-rate-one');assert.equal(firstResponse.status,201);const firstRun=await firstResponse.json();
+  const duplicate=await request('http-rate-one');assert.equal(duplicate.status,201);assert.equal((await duplicate.json()).runId,firstRun.runId);
+  assert.equal((await request('http-rate-one','conflicting input')).status,409);assert.equal((await request('http-rate-two')).status,201);
+  const modelBefore=(await rows("SELECT count(*)::int AS count FROM qualification_host.model_calls WHERE stage='rate'"))[0].count;assert.equal(modelBefore,2);
+  const rejected=await request('http-rate-three');assert.equal(rejected.status,429);assert.match(rejected.headers.get('retry-after'),/^[1-9][0-9]*$/);assert.ok(Number(rejected.headers.get('retry-after'))<=3600);
+  assert.equal((await rows("SELECT count(*)::int AS count FROM ae_api.intents WHERE start->'principal'->>'subjectId'='http-rate'"))[0].count,2);
+  await http.shutdown();http=await httpWorker('http-rate-restart');assert.equal((await request('http-rate-three')).status,429);assert.equal((await request('http-rate-one')).status,201);
+  await http.request('session',null);assert.equal((await request('no-auth')).status,401);assert.equal((await rows("SELECT count(*)::int AS count FROM qualification_host.model_calls WHERE stage='rate'"))[0].count,modelBefore);await http.shutdown();record('real-http-rate-429-retry-after-no-runspawn-idempotency-conflict-noauth-and-process-restart');
   writeFileSync(join(directory,'operations-report.json'),JSON.stringify({status:'pass',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),legacyCommit:execFileSync('git',['-C',legacyRoot,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),postgres:(await rows('SHOW server_version'))[0].server_version,backup:{sha256:backupHash,format:'pg_dump custom',restored:true},tests,limits:['Synthetic loopback data and deterministic model only','Projection retention is not full personal-data erasure','No production identity, deployment, credentials or live-provider qualification']},null,2)+'\n');
 }finally{for(const w of workers)await w.kill();await host.close();await pool.end();}

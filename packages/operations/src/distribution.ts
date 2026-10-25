@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { AE_COMPATIBILITY, AE_SCHEMA_VERSION } from './migrations.js';
+import { AE_COMPATIBILITY } from './migrations.js';
 const receiptName='.ae-installation.json';
 const hash=(value:Buffer|string)=>createHash('sha256').update(value).digest('hex');
 interface Entry {path:string;type:'file'|'directory'|'link';hash?:string;target?:string}
@@ -39,7 +39,7 @@ export function doctorInstallation(directory:string){
   const root=safePath(directory,true),receipt=load(root),actual=inventory(root);
   const unchanged=JSON.stringify(actual)===JSON.stringify(receipt.files);
   const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
-  return {status:unchanged?'ready':'modified',version:pkg.version,commit:receipt.commit,tree:receipt.tree,sourceHash:receipt.sourceHash,lockHash:receipt.lockHash,node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])===24,schema:AE_SCHEMA_VERSION,compatibility:AE_COMPATIBILITY,integrity:unchanged,productionQualified:false};
+  return {status:unchanged?'ready':'modified',version:pkg.version,commit:receipt.commit,tree:receipt.tree,sourceHash:receipt.sourceHash,lockHash:receipt.lockHash,node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])===24,schema:receipt.schema,inspectorCompatibility:AE_COMPATIBILITY,integrity:unchanged,productionQualified:false};
 }
 /** Explicit local source installation. No floating branch, network, global install, host patch or service start. */
 export function installFixedSource(input:{source:string;commit:string;tree:string;destination:string;cache:string;previous?:string}){
@@ -63,7 +63,10 @@ export function installFixedSource(input:{source:string;commit:string;tree:strin
   const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=640'};
   execFileSync('npm',['ci','--ignore-scripts','--offline','--no-audit','--no-fund'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
   execFileSync('npm',['run','build'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
-  const receipt:Receipt={format:'ae-source-install-v1',version:pkg.version,commit:input.commit,tree:input.tree,sourceHash:hash(JSON.stringify(files)),lockHash:hash(readFileSync(join(destination,'package-lock.json'))),schema:AE_SCHEMA_VERSION,node:process.versions.node,npm,files:inventory(destination)};
+  const schemaSource=join(destination,'packages/operations/src/migrations.ts');
+  const schema=existsSync(schemaSource)?Number(/export const AE_SCHEMA_VERSION = (\d+);/.exec(readFileSync(schemaSource,'utf8'))?.[1]):0;
+  if(!Number.isInteger(schema))throw new Error('INSTALLED_SCHEMA_VERSION_UNRECOGNIZED');
+  const receipt:Receipt={format:'ae-source-install-v1',version:pkg.version,commit:input.commit,tree:input.tree,sourceHash:hash(JSON.stringify(files)),lockHash:hash(readFileSync(join(destination,'package-lock.json'))),schema,node:process.versions.node,npm,files:inventory(destination)};
   writeFileSync(join(destination,receiptName),JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});
   return {destination,...doctorInstallation(destination),...(input.previous?{previousRetained:resolve(input.previous),activation:'not-changed'}:{})};
 }

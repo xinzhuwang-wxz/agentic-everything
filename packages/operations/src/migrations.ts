@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS ae_api.intents (intent_key text PRIMARY KEY, intent_t
 ALTER TABLE ae_api.intents ADD COLUMN IF NOT EXISTS intent_token text;
 `},
   {version: 2, name: 'expired-conversation-projection', sql: `ALTER TABLE public.ae_conversations_v1 ADD COLUMN IF NOT EXISTS payload_deleted_at timestamptz;`},
+  {version: 3, name: 'durable-admission-window', sql: `CREATE TABLE IF NOT EXISTS ae_api.admission_windows (scope_hash text PRIMARY KEY, window_started_at timestamptz NOT NULL, admissions integer NOT NULL CHECK(admissions>0));`},
 ] as const;
-export const AE_SCHEMA_VERSION = 2;
-export const AE_COMPATIBILITY = {schema: [1, 2], runWorkflow: 'ae-v1', sdk: '0.21.0', configuration: '1', rollback: 'Keep the additive schema. Do not run down migrations; never downgrade DBOS.'} as const;
+export const AE_SCHEMA_VERSION = 3;
+export const AE_COMPATIBILITY = {schema: [1, 2, 3], runWorkflow: 'ae-v1', sdk: '0.21.0', configuration: '1', rollback: 'Keep the additive schema. Do not run down migrations; never downgrade DBOS.'} as const;
 
 // This is a bounded adoption contract, not an ORM or arbitrary SQL migration framework.
 const tables: Record<string, string> = {
@@ -37,6 +38,7 @@ const tables: Record<string, string> = {
   'ae_control.releases':'tenant_id:text! application_id:text! release_id:text! draft_id:text! draft_revision:int4! document:jsonb!',
   'ae_control.active':'tenant_id:text! application_id:text! release_id:text!',
   'ae_api.intents':'intent_key:text! intent_token:text? input_hash:text! run_id:text! start_hash:text! start:jsonb!',
+  'ae_api.admission_windows':'scope_hash:text! window_started_at:timestamptz! admissions:int4!',
 };
 const keys: Record<string, string[]> = {
   'public.ae_runs_v1':['p:id'],
@@ -48,6 +50,7 @@ const keys: Record<string, string[]> = {
   'ae_control.releases':['p:tenant_id,application_id,release_id','u:tenant_id,application_id,draft_id,draft_revision','c:(draft_revision > 0)'],
   'ae_control.active':['p:tenant_id,application_id','f:tenant_id,application_id,release_id:ae_control.releases:tenant_id,application_id,release_id'],
   'ae_api.intents':['p:intent_key','u:run_id'],
+  'ae_api.admission_windows':['p:scope_hash','c:(admissions > 0)'],
 };
 export interface SchemaInspection {currentVersion: number; targetVersion: number; pending: {version: number; name: string; checksum: string}[]; legacyTables: string[]; schemaHash: string; compatibleRollback: typeof AE_COMPATIBILITY; dryRun: true}
 async function describe(c: SqlConnection) {
@@ -67,7 +70,7 @@ async function describe(c: SqlConnection) {
 function validateShape(state: Awaited<ReturnType<typeof describe>>, version: number): void {
   for (const [relation, definition] of Object.entries(tables)) {
     const actual = state.rows.filter(r=>r.relation===relation);
-    if (!actual.length) {if (version) throw new Error(`AE_SCHEMA_DRIFT: missing ${relation}`);continue;}
+    if (!actual.length) {if (version && !(relation==='ae_api.admission_windows'&&version<3)) throw new Error(`AE_SCHEMA_DRIFT: missing ${relation}`);continue;}
     const expected = new Map(definition.split(' ').map(token=>{const [name,type]=token.split(':');return [name!,type!];}));
     for (const row of actual) {
       const expectedType=expected.get(row.name);
