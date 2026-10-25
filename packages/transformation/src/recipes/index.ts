@@ -37,3 +37,9 @@ export function executionGates(ref: z.infer<typeof RecipeRefSchema>): string[] {
   if (ref.id === 'reveal-local') return ['host-syntax-check', 'host-business-tests', 'black-box-business-differential', 'local-authority-runtime', 'browser-acceptance', 'fixture-process-completion'];
   return ['python-inventory', 'java-spring-inventory'].includes(ref.id) ? ['host-compilation', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'cli-acceptance'] : ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance'];
 }
+
+export const genericManifests = ['package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml'];
+/** Same bounded registry observation set for assessment and offline delivery checks. */
+export function assessmentEvidencePaths(presentManifests: readonly string[]): Set<string> {
+  return new Set([...genericManifests, ...installedRecipes.filter(recipe => presentManifests.includes(recipe.manifest)).flatMap(recipe => recipe.inputs)]);
+}

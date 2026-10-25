@@ -2,13 +2,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { installedRecipes, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
+import { assessmentEvidencePaths, installedRecipes, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { requirePreparedBaseline } from './pre-apply.js';
 import { matchesProfileAssessment, verificationAuthorization, verificationExcludedActions, type VerificationProfile } from './profiles.js';
 import { assertMaterializableTrackedTree } from './source-materialization.js';
 import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type ArchivedBaseline, type VerificationReport } from '@ae/contracts';
 
-const GENERIC_MANIFESTS = ['package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml'];
+
 const MAX_FILE_BYTES = 256 * 1024;
 export function sha256(value: string): string { return createHash('sha256').update(value).digest('hex'); }
 export function canonical(value: unknown): string {
@@ -41,7 +41,7 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
   const unknowns = ['Static analysis does not establish production authentication, runtime permissions, deployment, or browser behavior.'];
   const contents = new Map<string, string>();
   // Generic manifest inspection plus the explicit installed recipe's bounded evidence needs.
-  for (const path of new Set([...GENERIC_MANIFESTS, ...installedRecipes.filter(recipe => read(root, recipe.manifest) !== null).flatMap(recipe => recipe.inputs)])) {
+  for (const path of assessmentEvidencePaths(installedRecipes.filter(recipe => read(root, recipe.manifest) !== null).map(recipe => recipe.manifest))) {
     const value = read(root, path); if (value === null) continue;
     contents.set(path, value); evidence.push({ path, sha256: sha256(value), startLine: 1, endLine: value.split('\n').length, note: 'Observed bounded source; not executed.' });
   }

@@ -5,7 +5,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { AdaptationPlanSchema, ArchivedBaselineSchema, ApprovedChangeSetSchema, DeliveryManifestSchema, maximumDeliveryArtifacts, PatchArtifactSchema, ProjectAssessmentSchema, Sha256, VerificationReportSchema, type AdaptationPlan, type ApprovedChangeSet, type DeliveryManifest, type DeliveryValidation, type ProjectAssessment, type VerificationReport } from '@ae/contracts';
 import { adaptationCodeHash, canonical, digest, expectedBaselineCodeHash, previewPatch, proposePlan, sha256, verifyAdaptation, type AppliedTransformation } from './index.js';
-import { recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
+import { assessmentEvidencePaths, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { validateArchivedBaseline } from './pre-apply.js';
 import { reviewedProfile, assertVerificationExclusions, type VerificationProfile } from './profiles.js';
 
@@ -75,7 +75,7 @@ function scope(assessment: ProjectAssessment, plan: AdaptationPlan, approval: Ap
   exact(patch.recipe, recipe.ref, 'Recipe mismatch');
   exact(patch.changes.map(c => c.path), recipe.outputs, 'Patch scope mismatch');
   exact(Object.keys(applied.originals).sort(), [...recipe.outputs].sort(), 'Rollback scope mismatch');
-  const allowedEvidence = new Set([...recipe.inputs, 'package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml']);
+  const allowedEvidence = assessmentEvidencePaths(assessment.evidence.map(e => e.path));
   if (assessment.baseline !== 'not-run' || recipe.inputs.some(path => !assessment.evidence.some(e => e.path === path))) throw new Error('Missing recipe assessment or unsupported baseline PASS');
   if (assessment.evidence.some(e => !allowedEvidence.has(e.path)) || new Set(assessment.evidence.map(e => e.path)).size !== assessment.evidence.length) throw new Error('Unexpected or duplicate assessment evidence');
   if (assessment.evidence.find(e => e.path === recipe.businessPath)?.sha256 !== applied.businessHash) throw new Error('Business baseline mismatch');
