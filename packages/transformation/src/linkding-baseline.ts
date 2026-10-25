@@ -466,8 +466,9 @@ export const linkdingCaseIds=['upstream-local-tests','authenticated-original-bro
 const coverage={scope:'Pinned real linkding 1.47.0: 356 original local-only query/tag/search/model/form assertions and authenticated bookmark-list/search visibility observations on an isolated seeded database.',unknowns:['The 1,380-test upstream full suite is not qualified: external URL tests are excluded, not counted as passed. This profile proves only its fixed local cases, not arbitrary Django applications, paid model quality, production uWSGI, multiworker routing or restart-resumable AE runs.']};
 export const linkdingNormalization: BaselineArchive['manifest']['normalization']=[{path:['receipt','rawLog'],reason:'Pytest prints elapsed duration and temporary execution paths. Assertion count, no failures and zero exit are independently checked before this log is normalized.',evidence:'The fixed original six-file pytest invocation emits a terminal 356 passed summary and exits zero; full raw stdout/stderr is retained.',kind:'nondeterministic'}];
 function git(root:string,args:string[]):string{return execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',root,...args],{encoding:'utf8',timeout:15000,maxBuffer:4*1024*1024}).trim();}
+export function isLinkdingSourcePath(path:string):boolean{return (path==='docs/src/assets/Add To Linkding.shortcut'||/^[a-zA-Z0-9_.\/-]+$/.test(path))&&!path.startsWith('/')&&!path.split('/').some(p=>p==='..'||p==='.'||p==='');}
 function boundedFile(root:string,path:string):Buffer{
- if(!/^[a-zA-Z0-9_.\/-]+$/.test(path)||path.split('/').some(p=>p==='..'||p==='.'))throw Error('Unsafe pinned source path');
+ if(!isLinkdingSourcePath(path))throw Error('Unsafe pinned source path');
  let at=root;for(const part of path.split('/')){at=join(at,part);if(lstatSync(at).isSymbolicLink())throw Error('Source symlink denied');}
  const stat=lstatSync(at);if(!stat.isFile()||stat.size>4*1024*1024)throw Error('Source file outside bounded profile');return readFileSync(at);
 }
