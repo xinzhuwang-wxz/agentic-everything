@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "compiledCandidate": "55faf91f5a47e2b7e4f5af003faa2801cee097b8",
+  "sourceBase": "55faf91f5a47e2b7e4f5af003faa2801cee097b8",
+  "processTests": { "passed": 3, "startedAt": "2026-10-25T03:08:35.924Z", "completedAt": "2026-10-25T03:08:45.174Z", "node": "v24.19.0", "heapMiB": 256, "childHeapMiB": 64, "allOwnedGroupsAbsent": true },
+  "inflightTest": { "passed": 1, "startedAt": "2026-10-25T03:15:45.036Z", "completedAt": "2026-10-25T03:15:45.665Z", "postgresql": "17.11", "heapMiB": 384, "sharedBuffersMiB": 32, "hostWrites": 1, "modelCalls": 2, "actualAbortedHttpResponses": 1, "postgresStopped": true },
+  "provenance": "All 333 generated dist file hashes from the root's successful 55faf91 strict build/check were verified unchanged before and after the inflight test. Main source HEAD had advanced to a87fb89 with unrelated Java/MCP additions; no claim is made that those additions were recompiled or covered by this test.",
+  "earlierHarnessFailure": "Initial process-test attempt failed because the test computed the compiled checkout root one directory too high. No child ran and no negative case passed in that attempt. Root discovery was corrected, then all three cases ran successfully. The original failed log is retained in the external evidence archive.",
+  "warnings": ["Existing pg client.query busy-client deprecation was observed.", "DBOS logged loss of workflow ownership after deliberate cancellation; the observed canonical outcome and receipt remained correct."],
+  "limits": ["Real OS fault children replace only the fixed child entrypoint inside the test process; no production override or runtime change.", "HTTP transport abort after host commit complements the separately qualified real browser offline-before-approval and process-restart cases.", "Reconciliation uses the existing trusted runtime method, not a new HTTP endpoint or a claimed browser reconcile control.", "Only synthetic host/model data; no paid provider, production authentication, deployment or universal exactly-once claim."]
+}

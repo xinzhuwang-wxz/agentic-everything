@@ -1,0 +1,31 @@
+{
+  "status": "fail",
+  "checks": [
+    {
+      "name": "synthetic-observation-before-terminal-fault",
+      "status": "pass",
+      "expected": "Test sentinel only, not product acceptance",
+      "actual": "Observed before injected terminal fault",
+      "evidence": []
+    },
+    {
+      "name": "fixture-process-completion",
+      "status": "fail",
+      "expected": "Zero exit without timeout or signal after all owned services and browser close",
+      "actual": "Harness did not finish cleanly: exit=null; signal=SIGKILL; timeout=true; groupClosed=true; forcedCleanup=false; cleanup=pending",
+      "evidence": []
+    }
+  ],
+  "cleanup": {
+    "status": "pending",
+    "reason": "Real server.close callback blocked by an open owned connection"
+  },
+  "process": {
+    "started": true,
+    "exitCode": null,
+    "signal": "SIGKILL",
+    "timedOut": true,
+    "groupClosed": true,
+    "forcedCleanup": false
+  }
+}

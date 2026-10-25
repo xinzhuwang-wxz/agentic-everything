@@ -1,0 +1,33 @@
+{
+  "status": "fail",
+  "checks": [
+    {
+      "name": "synthetic-observation-before-terminal-fault",
+      "status": "pass",
+      "expected": "Test sentinel only, not product acceptance",
+      "actual": "Observed before injected terminal fault",
+      "evidence": []
+    },
+    {
+      "name": "fixture-process-completion",
+      "status": "fail",
+      "expected": "Zero exit without timeout or signal after all owned services and browser close",
+      "actual": "Harness did not finish cleanly: exit=0; signal=null; timeout=false; groupClosed=true; forcedCleanup=false; cleanup=failed",
+      "evidence": []
+    }
+  ],
+  "cleanup": {
+    "status": "failed",
+    "errors": [
+      "ERR_SERVER_NOT_RUNNING"
+    ]
+  },
+  "process": {
+    "started": true,
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "groupClosed": true,
+    "forcedCleanup": false
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "startedAt": "2026-10-25T03:15:45.036Z",
+  "events": [
+    {
+      "event": "host-transaction-committed-before-response",
+      "at": "2026-10-25T03:15:45.575Z"
+    },
+    {
+      "event": "independent-host-truth-proves-one-commit-and-no-AE-receipt-yet",
+      "at": "2026-10-25T03:15:45.576Z",
+      "mutationCount": 1,
+      "operationId": "cff7a634e1adbc556c47062b223aa517bfb0cba177c1318a21c580e1eac25459"
+    },
+    {
+      "event": "actual-approval-http-response-closed-before-end",
+      "at": "2026-10-25T03:15:45.580Z"
+    },
+    {
+      "event": "cancel-after-disconnect-preserves-unknown-not-rollback",
+      "at": "2026-10-25T03:15:45.604Z"
+    },
+    {
+      "event": "exact-original-receipt-reconciles-without-new-write-model-or-intent",
+      "at": "2026-10-25T03:15:45.663Z",
+      "operationId": "cff7a634e1adbc556c47062b223aa517bfb0cba177c1318a21c580e1eac25459",
+      "receiptId": "556dad7d-669e-4ba6-a6b9-6009588cce3e",
+      "conflictingLateDecisionStatus": 409
+    }
+  ],
+  "modelCalls": 2,
+  "abortedHttpResponses": 1,
+  "scope": "Actual PostgreSQL transaction + HTTP transport abort + current AE/DBOS cancellation and receipt reconciliation; deterministic simulated model only",
+  "hostWrites": 1,
+  "runId": "intent-baa1759584d589b16ab342c91877650db452eed184f8c90a7811e0009532eeb4",
+  "operationId": "cff7a634e1adbc556c47062b223aa517bfb0cba177c1318a21c580e1eac25459",
+  "cleanup": {
+    "httpServer": "closed",
+    "runtime": "closed",
+    "hostPool": "closed"
+  },
+  "completedAt": "2026-10-25T03:15:45.665Z",
+  "runtimeCompiledHash": "100c2a3d7426c514c828102ef9448051b4dbf62a5a5fc797d68b41e833101929"
+}

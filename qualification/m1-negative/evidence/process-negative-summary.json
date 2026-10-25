@@ -1,0 +1,80 @@
+{
+  "status": "PASS",
+  "candidate": "55faf91f5a47e2b7e4f5af003faa2801cee097b8",
+  "runtimeSourceHash": "fe1fc587f4dd492350cef5adbcb5daf179738d91a4f6c749b5b8a4f56f9ba979",
+  "runtimeCompiledHash": "1b929cd0098da3351cac73877f6332182f462491fa532da0beebd819695e1834",
+  "testFiles": {
+    "process.mjs": "310c74876ebe371cb8839ac018e61cc212215ec28b67c51d18d464804fb92bae",
+    "process-child.mjs": "0a755bbd5823d68988de47bf3c9fc0fd39a2403275ae6a14b0875b2f36f84146"
+  },
+  "results": [
+    {
+      "mode": "timeout",
+      "startedAt": "2026-10-25T03:08:35.924Z",
+      "completedAt": "2026-10-25T03:08:40.436Z",
+      "elapsedMs": 4511.578987999999,
+      "outcome": {
+        "started": true,
+        "exitCode": null,
+        "signal": "SIGKILL",
+        "timedOut": true,
+        "groupClosed": true,
+        "forcedCleanup": false
+      },
+      "fault": {
+        "mode": "timeout",
+        "pid": 111,
+        "startedAt": "2026-10-25T03:08:36.152Z",
+        "sigtermCount": 1
+      },
+      "status": "PASS"
+    },
+    {
+      "mode": "cleanup-hang",
+      "startedAt": "2026-10-25T03:08:40.436Z",
+      "completedAt": "2026-10-25T03:08:44.944Z",
+      "elapsedMs": 4507.440678000001,
+      "outcome": {
+        "started": true,
+        "exitCode": null,
+        "signal": "SIGKILL",
+        "timedOut": true,
+        "groupClosed": true,
+        "forcedCleanup": false
+      },
+      "fault": {
+        "mode": "cleanup-hang",
+        "pid": 123,
+        "startedAt": "2026-10-25T03:08:40.668Z",
+        "sigtermCount": 1,
+        "openConnections": 1,
+        "cleanupStartedAt": "2026-10-25T03:08:40.674Z"
+      },
+      "status": "PASS"
+    },
+    {
+      "mode": "cleanup-failed",
+      "startedAt": "2026-10-25T03:08:44.944Z",
+      "completedAt": "2026-10-25T03:08:45.174Z",
+      "elapsedMs": 229.6171259999992,
+      "outcome": {
+        "started": true,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "groupClosed": true,
+        "forcedCleanup": false
+      },
+      "fault": {
+        "mode": "cleanup-failed",
+        "pid": 135,
+        "startedAt": "2026-10-25T03:08:45.165Z",
+        "sigtermCount": 0,
+        "cleanupError": "ERR_SERVER_NOT_RUNNING",
+        "cleanupCompletedAt": "2026-10-25T03:08:45.171Z"
+      },
+      "status": "PASS"
+    }
+  ],
+  "scope": "Actual production parent supervision and real OS deadline/signals/cleanup. Child entrypoint substituted only in this test process. No browser/business PASS claim is made from the sentinel child report."
+}
