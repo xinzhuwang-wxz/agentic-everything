@@ -1,4 +1,6 @@
 [project]
 name = "existing-inventory"
-version = "0.1.0"
+version = "0.2.0"
+description = "Synthetic Python inventory reservation host, without agent integration"
 requires-python = ">=3.11"
+dependencies = []

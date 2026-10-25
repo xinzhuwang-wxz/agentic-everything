@@ -123,7 +123,7 @@ test('baseline and transformed host both build as real browser applications', as
   revertAdaptation(applied);
 });
 
-test('different-domain Python software gets generic evidence, never a helpdesk diagnosis or automatic rewrite', () => {
+test('reviewed Python inventory gets its own recipe without rewriting its host language', () => {
   const parent = mkdtempSync(join(tmpdir(), 'ae-inventory-')); const source = join(parent, 'source');
   cpSync(resolve('fixtures/existing-python-inventory'), source, { recursive: true });
   const git = (...args: string[]) => execFileSync('git', ['-C', source, ...args], { encoding: 'utf8', stdio: 'pipe' });
@@ -133,11 +133,11 @@ test('different-domain Python software gets generic evidence, never a helpdesk d
   assert.match(assessment.projectId, /^project-/);
   assert.ok(assessment.detectedStack.includes('Python manifest observed'));
   assert.ok(assessment.evidence.some(item => item.path === 'pyproject.toml'));
-  assert.equal(assessment.supportLevel, 'L0');
-  assert.equal(assessment.businessFlows.length, 0);
-  assert.match(assessment.unknowns.join(' '), /coverage limitation/);
+  assert.equal(assessment.supportLevel, 'L2');
+  assert.equal(assessment.businessFlows.length, 1);
+  assert.match(assessment.businessFlows[0]!, /Python inventory/);
   assert.doesNotMatch(JSON.stringify(assessment), /helpdesk|readTicket|changePriority/);
-  assert.throws(() => proposePlan(assessment), /developer review/);
+  assert.equal(proposePlan(assessment).recipes[0]?.id, 'python-inventory');
   assert.equal(readFileSync(join(source, 'inventory.py'), 'utf8'), before);
   assert.equal(git('status', '--porcelain'), '');
 });

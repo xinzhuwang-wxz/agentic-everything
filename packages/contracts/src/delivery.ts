@@ -10,7 +10,7 @@ export const DeliveryManifestSchema = z.strictObject({
   permissions: ApprovedChangeSetSchema.pick({ allowedPaths: true, allowedCommands: true, networkAllowlist: true, maximumCostUsd: true, excludedActions: true, verificationAuthorization: true }),
   artifacts: z.array(z.strictObject({ path: RelativePath, sha256: Sha256, bytes: z.number().int().nonnegative().max(1048576) })).min(1).max(32),
   checks: VerificationReportSchema.shape.checks,
-  verificationScope: z.enum(['static-only', 'react-helpdesk-synthetic-v1']),
+  verificationScope: z.enum(['static-only', 'react-helpdesk-synthetic-v1', 'python-inventory-synthetic-v1']),
   limitations: z.array(z.string().min(1)).min(1),
 });
 export type DeliveryManifest = z.infer<typeof DeliveryManifestSchema>;

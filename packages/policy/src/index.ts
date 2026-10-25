@@ -24,14 +24,14 @@ interface RecordEntry { view: ApprovalView; state: 'pending' | 'approved' | 'rej
 /** Qualification-only synchronous ledger. Not a distributed transaction or durable store. */
 export class InMemoryApprovalLedger {
   private records = new Map<string, RecordEntry>();
-  constructor(private now: () => number = Date.now) {}
+  constructor(private now: () => number = Date.now, readonly policyVersion = 'tickets-policy-v1') { if (!policyVersion.trim()) throw new PolicyError('POLICY_VERSION_REQUIRED'); }
   create(principal: Principal, request: ToolRequest, releaseId: string, preview: JsonObject, ttlMs = 300_000): ApprovalView {
     const binding: ApprovalBinding = {
       schemaVersion: '1', approvalId: randomUUID(), runId: request.runId, invocationId: request.invocationId,
       principal: structuredClone(principal), capabilityId: request.capabilityId, capabilityVersion: request.capabilityVersion,
       argumentsHash: digest(request.arguments), targetId: request.targetId,
       ...(request.expectedResourceVersion ? { resourceVersion: request.expectedResourceVersion } : {}),
-      policyVersion: 'tickets-policy-v1', releaseId, operationId: request.operationId,
+      policyVersion: this.policyVersion, releaseId, operationId: request.operationId,
       expiresAt: new Date(this.now() + ttlMs).toISOString(),
     };
     const view = { binding, expectedHash: digest(binding), preview: structuredClone(preview) };
@@ -55,7 +55,7 @@ export class InMemoryApprovalLedger {
       binding.argumentsHash !== digest(request.arguments) || binding.targetId !== request.targetId ||
       binding.resourceVersion !== request.expectedResourceVersion || binding.operationId !== request.operationId ||
       binding.capabilityId !== request.capabilityId || binding.capabilityVersion !== request.capabilityVersion ||
-      binding.releaseId !== releaseId || binding.policyVersion !== 'tickets-policy-v1') throw new PolicyError('APPROVAL_BINDING_MISMATCH');
+      binding.releaseId !== releaseId || binding.policyVersion !== this.policyVersion) throw new PolicyError('APPROVAL_BINDING_MISMATCH');
     // No await between check and consume: atomic only within this single-process fixture.
     entry.state = 'consumed';
   }

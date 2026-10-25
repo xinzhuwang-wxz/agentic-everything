@@ -2,10 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { parse } from './ast.js';
+import { installedRecipes, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { requirePreparedBaseline } from './pre-apply.js';
-import { matchesTrustedFixtureAssessment } from './fixture-harness.js';
-import { helpdeskRecipe } from './recipes/react-helpdesk.js';
+import { matchesProfileAssessment, verificationAuthorization } from './profiles.js';
 import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type ArchivedBaseline, type VerificationReport } from '@ae/contracts';
 
 const GENERIC_MANIFESTS = ['package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml'];
@@ -41,7 +40,7 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
   const unknowns = ['Static analysis does not establish production authentication, runtime permissions, deployment, or browser behavior.'];
   const contents = new Map<string, string>();
   // Generic manifest inspection plus the explicit installed recipe's bounded evidence needs.
-  for (const path of new Set([...GENERIC_MANIFESTS, ...helpdeskRecipe.inputs])) {
+  for (const path of new Set([...GENERIC_MANIFESTS, ...installedRecipes.filter(recipe => read(root, recipe.manifest) !== null).flatMap(recipe => recipe.inputs)])) {
     const value = read(root, path); if (value === null) continue;
     contents.set(path, value); evidence.push({ path, sha256: sha256(value), startLine: 1, endLine: value.split('\n').length, note: 'Observed bounded source; not executed.' });
   }
@@ -63,19 +62,21 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
       if (pkg.dependencies?.vue) detectedStack.push('Vue (version requires review)');
     } catch { unknowns.push('Package manifest could not be parsed; framework conclusions remain unknown.'); }
   }
-  const covered = helpdeskRecipe.matches(contents, detectedStack);
+  const matching = installedRecipes.filter(recipe => recipe.matches(contents, detectedStack));
+  const covered = matching.length === 1 ? matching[0] : undefined;
+  if (matching.length > 1) unknowns.push('Conflicting installed recipe matches require explicit developer composition review.');
   if (!covered) unknowns.push('No installed patch recipe covers this project yet. This is a coverage limitation, not a conclusion that the software cannot be made agentic. A tailored business and identity assessment is required.');
-  return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'project-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: covered ? [helpdeskRecipe.observedFlow] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: covered ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
+  return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'project-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: covered ? [covered.observedFlow] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: covered ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
 }
-export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: 'react-helpdesk-synthetic-v1' }): AdaptationPlan {
+export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: 'react-helpdesk-synthetic-v1' | 'python-inventory-synthetic-v1' }): AdaptationPlan {
   ProjectAssessmentSchema.parse(assessment);
-  if (assessment.supportLevel !== 'L2' || !assessment.businessFlows.includes(helpdeskRecipe.observedFlow)) throw new Error('No installed recipe coverage: tailored plan needs developer review, not automatic patching');
-  if (options && (options.verificationProfile !== 'react-helpdesk-synthetic-v1' || !matchesTrustedFixtureAssessment(assessment))) throw new Error('Verification profile requires exact trusted synthetic fixture evidence');
-  return AdaptationPlanSchema.parse({ ...(options ? { verificationAuthorization: { version: '1', profile: options.verificationProfile, actions: ['baseline-differential', 'host-build', 'runtime-http', 'browser'], isolation: 'exact-fixture-temporary-worktree', network: 'loopback-only-no-external', maximumCostUsd: 0, maximumElapsedMs: 300000, maximumHeapMiB: 640 } } : {}), schemaVersion: '1', planId: 'adapt-' + digest(assessment).slice(0, 16), projectId: assessment.projectId, baseCommit: assessment.baseCommit, assessmentHash: digest(assessment), ...helpdeskRecipe.planDetails, recipes: [helpdeskRecipe.ref], allowedPaths: helpdeskRecipe.outputs });
+  const recipe = recipeForAssessment(assessment);
+  if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact trusted synthetic fixture evidence');
+  return AdaptationPlanSchema.parse({ ...(options ? { verificationAuthorization: verificationAuthorization(options.verificationProfile) } : {}), schemaVersion: '1', planId: 'adapt-' + digest(assessment).slice(0, 16), projectId: assessment.projectId, baseCommit: assessment.baseCommit, assessmentHash: digest(assessment), ...recipe.planDetails, recipes: [recipe.ref], allowedPaths: recipe.outputs });
 }
 /** Public recipe metadata is copied from the implementation, never separately versioned by a transport. */
 export function installedRecipeDescriptors() {
-  return [{ ref: { ...helpdeskRecipe.ref }, outputPaths: [...helpdeskRecipe.outputs] }];
+  return installedRecipes.map(recipe => ({ ref: { ...recipe.ref }, outputPaths: [...recipe.outputs] }));
 }
 export function approvePlan(plan: AdaptationPlan, input: { approverId: string; authorizationRef: string; expiresAt?: string }): ApprovedChangeSet {
   AdaptationPlanSchema.parse(plan);
@@ -84,11 +85,11 @@ export function approvePlan(plan: AdaptationPlan, input: { approverId: string; a
 }
 export function previewPatch(root: string, plan: AdaptationPlan, assessment: ProjectAssessment): { path: string; before: string | null; after: string }[] {
   if (digest(assessment) !== plan.assessmentHash || digest(proposePlan(assessment, plan.verificationAuthorization ? { verificationProfile: plan.verificationAuthorization.profile } : undefined)) !== digest(plan)) throw new Error('Plan does not match the assessed recipe');
-  return helpdeskRecipe.preview(path => read(root, path));
+  return recipeForAssessment(assessment).preview(path => read(root, path));
 }
 export interface AppliedTransformation { patch: PatchArtifact; originals: Record<string, string | null>; businessHash: string; preApplyBaseline?: ArchivedBaseline | undefined; }
 export function applyApprovedPlan(input: { sourceRoot: string; destination: string; assessment: ProjectAssessment; plan: AdaptationPlan; approval: ApprovedChangeSet; preApplyBaseline?: ArchivedBaseline }): AppliedTransformation {
-  const root = repo(input.sourceRoot); const { plan, assessment } = input; const approval = ApprovedChangeSetSchema.parse(input.approval);
+  const root = repo(input.sourceRoot); const { plan, assessment } = input; const recipe = recipeForAssessment(assessment); const approval = ApprovedChangeSetSchema.parse(input.approval);
   if (assessment.projectId !== 'project-' + sha256(root).slice(0, 12)) throw new Error('Assessment source root mismatch');
   if (git(root, ['config', '--list']).split('\n').some(line => /^filter\./i.test(line))) throw new Error('Configured Git filters require separate execution review');
   if (approval.planHash !== digest(plan) || approval.baseCommit !== plan.baseCommit || Date.parse(approval.expiresAt) <= Date.now() || Date.parse(approval.approvedAt) > Date.now()) throw new Error('Approval expired or does not bind this plan/base');
@@ -99,7 +100,7 @@ export function applyApprovedPlan(input: { sourceRoot: string; destination: stri
   if (git(root, ['rev-parse', 'HEAD']) !== plan.baseCommit) throw new Error('Base commit drift');
   for (const evidence of assessment.evidence) { if (sha256(read(root, evidence.path) ?? '') !== evidence.sha256) throw new Error('Source hash drift: ' + evidence.path); }
   // Dirty source in scope cannot be silently lost when checkout materializes HEAD.
-  if (git(root, ['status', '--porcelain', '--untracked-files=all', '--', ...helpdeskRecipe.inputs, ...helpdeskRecipe.outputs])) throw new Error('Dirty recipe scope; commit or resolve those changes before applying');
+  if (git(root, ['status', '--porcelain', '--untracked-files=all', '--', ...recipe.inputs, ...recipe.outputs])) throw new Error('Dirty recipe scope; commit or resolve those changes before applying');
   const destination = resolve(input.destination);
   if (existsSync(destination)) throw new Error('Isolation destination already exists; use the original patch artifact to verify or revert');
   // Destination must be outside the source repository, never traverse a symlink parent.
@@ -111,24 +112,24 @@ export function applyApprovedPlan(input: { sourceRoot: string; destination: stri
   const archived = plan.verificationAuthorization ? requirePreparedBaseline(input.preApplyBaseline, assessment, plan, approval, true) : undefined;
   git(root, ['worktree', 'add', '--detach', destination, plan.baseCommit]);
   for (const change of changes) { const target = safePath(destination, change.path); mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, change.after, { flag: change.before === null ? 'wx' : 'w' }); }
-  const patch = PatchArtifactSchema.parse({ schemaVersion: '1', planHash: digest(plan), baseCommit: plan.baseCommit, recipe: helpdeskRecipe.ref, changes: changes.map(c => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })), appliedAt: new Date().toISOString(), worktree: destination, ...(archived ? {preApplyBaselineHash:digest(archived.record)} : {}) });
-  return { patch, originals: Object.fromEntries(changes.map(c => [c.path, c.before])), businessHash: sha256(read(root, helpdeskRecipe.businessPath)!), ...(archived ? {preApplyBaseline:archived} : {}) };
+  const patch = PatchArtifactSchema.parse({ schemaVersion: '1', planHash: digest(plan), baseCommit: plan.baseCommit, recipe: recipe.ref, changes: changes.map(c => ({ path: c.path, beforeHash: c.before === null ? null : sha256(c.before), afterHash: sha256(c.after) })), appliedAt: new Date().toISOString(), worktree: destination, ...(archived ? {preApplyBaselineHash:digest(archived.record)} : {}) });
+  return { patch, originals: Object.fromEntries(changes.map(c => [c.path, c.before])), businessHash: sha256(read(root, recipe.businessPath)!), ...(archived ? {preApplyBaseline:archived} : {}) };
 }
 export function verifyAdaptation(applied: AppliedTransformation): VerificationReport {
-  const { patch } = applied; PatchArtifactSchema.parse(patch); const root = repo(patch.worktree);
+  const { patch } = applied; PatchArtifactSchema.parse(patch); const root = repo(patch.worktree); const recipe = recipeForRef(patch.recipe);
   const checks: VerificationReport['checks'] = [];
   for (const change of patch.changes) {
     const value = read(root, change.path); const equal = value !== null && sha256(value) === change.afterHash;
     checks.push({ name: 'patch:' + change.path, status: equal ? 'pass' : 'fail', expected: change.afterHash ?? 'absent', actual: value === null ? 'absent' : sha256(value), evidence: [] });
-    try { parse(change.path, value ?? ''); checks.push({ name: 'syntax:' + change.path, status: 'pass', expected: 'Parseable TSX', actual: 'TypeScript parser accepted', evidence: [] }); } catch { checks.push({ name: 'syntax:' + change.path, status: 'fail', expected: 'Parseable TSX', actual: 'Parse error', evidence: [] }); }
+    checks.push({ name: 'syntax:' + change.path, ...syntaxCheck(change.path, value ?? ''), evidence: [] });
   }
-  checks.push({ name: 'original-business-source', status: sha256(read(root, helpdeskRecipe.businessPath) ?? '') === applied.businessHash ? 'pass' : 'fail', expected: applied.businessHash, actual: sha256(read(root, helpdeskRecipe.businessPath) ?? ''), evidence: [] });
-  for (const name of ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance']) checks.push({ name, status: 'not-run', expected: 'Separately authorized isolated execution and observed evidence', actual: 'Static verifier does not execute customer code', evidence: [] });
+  checks.push({ name: 'original-business-source', status: sha256(read(root, recipe.businessPath) ?? '') === applied.businessHash ? 'pass' : 'fail', expected: applied.businessHash, actual: sha256(read(root, recipe.businessPath) ?? ''), evidence: [] });
+  for (const name of executionGates(patch.recipe)) checks.push({ name, status: 'not-run', expected: 'Separately authorized isolated execution and observed evidence', actual: 'Static verifier does not execute customer code', evidence: [] });
   return { schemaVersion: '1', planHash: patch.planHash, observedAt: new Date().toISOString(), environment: 'Node static verifier; no customer code execution', checks };
 }
 export function revertAdaptation(applied: AppliedTransformation): void {
-  const root = repo(applied.patch.worktree); PatchArtifactSchema.parse(applied.patch);
-  if (canonical(applied.patch.changes.map(c => c.path)) !== canonical(helpdeskRecipe.outputs)) throw new Error('Unexpected rollback scope');
+  const root = repo(applied.patch.worktree); PatchArtifactSchema.parse(applied.patch); const recipe = recipeForRef(applied.patch.recipe);
+  if (canonical(applied.patch.changes.map(c => c.path)) !== canonical(recipe.outputs)) throw new Error('Unexpected rollback scope');
   // Validate the complete operation before writing anything. Never clobber later customer edits.
   for (const change of applied.patch.changes) {
     const original = applied.originals[change.path];

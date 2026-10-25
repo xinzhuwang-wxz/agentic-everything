@@ -5,6 +5,7 @@ import type { AdaptationPlan } from '@ae/contracts';
 /** First curated example only. These business assumptions do not belong to the generic engine. */
 export const helpdeskRecipe = {
   ref: { id: 'react-helpdesk', version: '1.1.0' },
+  manifest: 'package.json',
   inputs: ['package.json', 'src/App.tsx', 'src/tickets.ts', 'src/api.ts', 'src/main.tsx', 'index.html', 'vite.config.ts'],
   outputs: ['src/App.tsx', 'src/ae/AgenticMount.tsx'],
   businessPath: 'src/tickets.ts',

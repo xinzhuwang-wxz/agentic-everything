@@ -4,7 +4,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AdaptationPlanSchema, ApprovedChangeSetSchema, ProjectAssessmentSchema, ArchivedBaselineSchema, PreApplyBaselineSchema, type AdaptationPlan, type ApprovedChangeSet, type ArchivedBaseline, type ProjectAssessment } from '@ae/contracts';
 import { applyApprovedPlan, canonical, digest, adaptationCodeHash, expectedBaselineCodeHash, previewPatch, type AppliedTransformation } from './index.js';
-import { captureFixtureBaseline, assertFixtureBaseline } from './fixture-baseline.js';
+import { reviewedProfile, type VerificationProfile } from './profiles.js';
 
 const prepared = new WeakSet<object>();
 const byteHash = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
@@ -14,12 +14,12 @@ function safe(path: string): string {
   return result;
 }
 function toolRoot(): string {let root=dirname(fileURLToPath(import.meta.url));for(let i=0;i<7;i++,root=dirname(root)){try{if(lstatSync(join(root,'package-lock.json')).isFile()&&lstatSync(join(root,'fixtures/existing-react-helpdesk')).isDirectory())return root;}catch{}}throw Error('AE collector checkout unavailable');}
-export function baselineCollector() {return {id:'trusted-helpdesk-delivery-v1' as const,version:'1' as const,codeHash:byteHash(readFileSync(new URL('./fixture-baseline.js',import.meta.url))),lockfileHash:byteHash(readFileSync(join(toolRoot(),'package-lock.json')))};}
+export function baselineCollector(profile: VerificationProfile = 'react-helpdesk-synthetic-v1') {const reviewed=reviewedProfile(profile);return {id:reviewed.collectorId,version:'1' as const,codeHash:byteHash(readFileSync(new URL(reviewed.collectorFile,import.meta.url))),lockfileHash:byteHash(readFileSync(join(toolRoot(),'package-lock.json')))};}
 function binding(baseline: ArchivedBaseline, assessment: ProjectAssessment, plan: AdaptationPlan, approval: ApprovedChangeSet): void {
   const {record}=baseline;
   if(!plan.verificationAuthorization||canonical(approval.verificationAuthorization)!==canonical(plan.verificationAuthorization))throw Error('Explicit baseline capture profile authorization required');
-  if(record.assessmentHash!==digest(assessment)||record.planHash!==digest(plan)||record.approvalHash!==digest(approval)||record.projectId!==assessment.projectId||record.baseCommit!==plan.baseCommit||record.archive.manifest.provenance.sourceVersion!==plan.baseCommit)throw Error('Pre-apply baseline source/plan/approval binding mismatch');
-  if(canonical(record.collector)!==canonical(baselineCollector()))throw Error('Baseline collector/toolchain drift');
+  if(record.profile!==plan.verificationAuthorization.profile||record.assessmentHash!==digest(assessment)||record.planHash!==digest(plan)||record.approvalHash!==digest(approval)||record.projectId!==assessment.projectId||record.baseCommit!==plan.baseCommit||record.archive.manifest.provenance.sourceVersion!==plan.baseCommit)throw Error('Pre-apply baseline source/plan/approval binding mismatch');
+  if(canonical(record.collector)!==canonical(baselineCollector(plan.verificationAuthorization.profile)))throw Error('Baseline collector/toolchain drift');
   const started=Date.parse(record.verificationStartedAt),captured=Date.parse(record.archive.manifest.capturedAt);
   if(started<Date.parse(approval.approvedAt)||captured<started||captured>Date.now())throw Error('Invalid baseline capture order');
 }
@@ -37,7 +37,7 @@ export async function validateArchivedBaseline(value: unknown, assessment: Proje
   const baseline=ArchivedBaselineSchema.parse(value);binding(baseline,assessment,plan,approval);
   if(Date.parse(baseline.record.archive.manifest.capturedAt)>Date.parse(appliedAt))throw Error('Baseline was not archived before apply');
   if(readOriginal)readArchive(baseline);
-  await assertFixtureBaseline(baseline.record.archive,{sourceVersion:plan.baseCommit});return baseline;
+  await reviewedProfile(baseline.record.profile).assertBaseline(baseline.record.archive,{sourceVersion:plan.baseCommit});return baseline;
 }
 export async function applyApprovedPlanWithBaseline(input: {sourceRoot:string;destination:string;assessment:ProjectAssessment;plan:AdaptationPlan;approval:ApprovedChangeSet;baselinePath:string}): Promise<AppliedTransformation> {
   const assessment=ProjectAssessmentSchema.parse(input.assessment),plan=AdaptationPlanSchema.parse(input.plan),approval=ApprovedChangeSetSchema.parse(input.approval);
@@ -51,8 +51,9 @@ export async function applyApprovedPlanWithBaseline(input: {sourceRoot:string;de
   if(realpathSync(dirname(path))!==dirname(path))throw Error('Unsafe baseline archive parent');
   try{lstatSync(path);throw Error('Baseline archive already exists; never overwrite');}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
   const verificationStartedAt=new Date().toISOString();
-  const archive=await captureFixtureBaseline({sourceRoot:source});
-  const record=PreApplyBaselineSchema.parse({schemaVersion:'1',kind:'ae-pre-apply-baseline',profile:plan.verificationAuthorization.profile,projectId:assessment.projectId,baseCommit:plan.baseCommit,assessmentHash:digest(assessment),planHash:digest(plan),approvalHash:digest(approval),verificationStartedAt,collector:baselineCollector(),archive});
+  const captureInput={sourceRoot:source,deadlineAt:Math.min(Date.parse(verificationStartedAt)+293000,Date.parse(approval.expiresAt))};
+  const archive=await reviewedProfile(plan.verificationAuthorization.profile).capture(captureInput);
+  const record=PreApplyBaselineSchema.parse({schemaVersion:'1',kind:'ae-pre-apply-baseline',profile:plan.verificationAuthorization.profile,projectId:assessment.projectId,baseCommit:plan.baseCommit,assessmentHash:digest(assessment),planHash:digest(plan),approvalHash:digest(approval),verificationStartedAt,collector:baselineCollector(plan.verificationAuthorization.profile),archive});
   if(Date.parse(approval.expiresAt)<=Date.now()||Date.now()-Date.parse(verificationStartedAt)>=293000)throw Error('Authorization or execution budget expired before baseline archive');
   const bytes=Buffer.from(JSON.stringify(record,null,2)+'\n');const fd=openSync(path,'wx',0o444);try{writeFileSync(fd,bytes);fsyncSync(fd);}finally{closeSync(fd);}
   const baseline=ArchivedBaselineSchema.parse({path,sha256:byteHash(bytes),record});prepared.add(baseline);

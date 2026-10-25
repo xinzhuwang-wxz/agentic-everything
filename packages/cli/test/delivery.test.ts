@@ -48,3 +48,27 @@ test('CLI only accepts the explicit versioned verification profile at new plan c
   writeFileSync(f.file('assessment'), JSON.stringify(assessment));
   assert.equal(invoke('plan', '--assessment', f.file('assessment'), '--verification-profile', 'react-helpdesk-synthetic-v1').status, 1);
 });
+
+test('public CLI produces the Python inventory through approved baseline, isolated patch and complete scoped delivery', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'ae-cli-inventory-')), source = join(directory, 'source'), candidate = join(directory, 'candidate'), bundle = join(directory, 'delivery');
+  cpSync(resolve('fixtures/existing-python-inventory'), source, { recursive: true });
+  const git = (...args: string[]) => execFileSync('git', ['-C', source, ...args], { stdio: 'pipe' });
+  git('init'); git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'Original Python inventory');
+  const file = (name: string) => join(directory, name + '.json');
+  const run = (...args: string[]) => { const result = invoke(...args); assert.equal(result.status, 0, result.stderr || result.stdout); return result; };
+  run('assess', '--repo', source, '--out', file('assessment'));
+  run('plan', '--assessment', file('assessment'), '--verification-profile', 'python-inventory-synthetic-v1', '--out', file('plan'));
+  const { planHash } = JSON.parse(readFileSync(file('plan'), 'utf8')) as { planHash: string };
+  run('approve', '--plan', file('plan'), '--plan-hash', planHash, '--approver', 'fixture-reviewer', '--authorization-ref', 'explicit-python-inventory-profile', '--out', file('approval'));
+  const apply = ['apply', '--repo', source, '--assessment', file('assessment'), '--plan', file('plan'), '--approval', file('approval'), '--worktree', candidate, '--out', file('patch')];
+  assert.equal(invoke(...apply).status, 1, 'Profile apply must require original baseline destination');
+  run(...apply, '--baseline-out', file('original-baseline'));
+  const verified = invoke('verify', '--patch', file('patch')); assert.equal(verified.status, 2, verified.stderr);
+  assert.equal(JSON.parse(verified.stdout).checks.find((c: { name: string }) => c.name === 'cli-acceptance').status, 'not-run');
+  const delivered = run('deliver', '--repo', source, '--assessment', file('assessment'), '--plan', file('plan'), '--approval', file('approval'), '--patch', file('patch'), '--out-dir', bundle);
+  assert.equal(JSON.parse(delivered.stdout).status, 'complete'); assert.equal(JSON.parse(delivered.stdout).verificationScope, 'python-inventory-synthetic-v1');
+  const checked = run('delivery-check', '--bundle', bundle); assert.equal(JSON.parse(checked.stdout).valid, true);
+  const baseline = JSON.parse(readFileSync(file('original-baseline'), 'utf8')); assert.deepEqual(JSON.parse(readFileSync(join(bundle, 'evidence/baseline.json'), 'utf8')), baseline.archive);
+  assert.equal(invoke(...apply, '--baseline-out', file('second-baseline')).status, 1);
+  run('revert', '--patch', file('patch')); assert.equal(execFileSync('git', ['-C', candidate, 'status', '--porcelain'], { encoding: 'utf8' }), '');
+});

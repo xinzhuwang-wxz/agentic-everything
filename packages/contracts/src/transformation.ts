@@ -14,12 +14,13 @@ export const ProjectAssessmentSchema = z.strictObject({
 });
 export type ProjectAssessment = z.infer<typeof ProjectAssessmentSchema>;
 export const RecipeRefSchema = z.strictObject({ id: z.string().min(1), version: z.string().min(1) });
-export const VerificationAuthorizationSchema = z.strictObject({
+const ReactVerificationAuthorizationSchema = z.strictObject({
   version: z.literal('1'), profile: z.literal('react-helpdesk-synthetic-v1'),
   actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-http'), z.literal('browser')]),
   isolation: z.literal('exact-fixture-temporary-worktree'), network: z.literal('loopback-only-no-external'),
   maximumCostUsd: z.literal(0), maximumElapsedMs: z.literal(300000), maximumHeapMiB: z.literal(640),
 });
+export const VerificationAuthorizationSchema = z.discriminatedUnion('profile', [ReactVerificationAuthorizationSchema, ReactVerificationAuthorizationSchema.extend({ profile: z.literal('python-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) })]);
 export type VerificationAuthorization = z.infer<typeof VerificationAuthorizationSchema>;
 export const AdaptationPlanSchema = z.strictObject({
   schemaVersion: SchemaVersion, planId: z.string().min(1), projectId: z.string().min(1), baseCommit: z.string().min(1),
