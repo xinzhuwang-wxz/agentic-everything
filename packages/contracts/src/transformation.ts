@@ -29,6 +29,7 @@ export const VerificationAuthorizationSchema = z.discriminatedUnion('profile', [
   ReactVerificationAuthorizationSchema.extend({ profile: z.literal('java-spring-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) }),
   PinnedUpstreamVerificationAuthorizationSchema.extend({ profile: z.literal('reveal-upstream-v1'), sourceCommit: z.literal('75dff6f515d2d08df0c32cf2b7328b89425c6f25') }),
   PinnedUpstreamVerificationAuthorizationSchema.extend({ profile: z.literal('linkding-upstream-v1'), sourceCommit: z.literal('24b5ad6cc9bde497b5d1b1e86aed5a2fb7d25c2f') }),
+  PinnedUpstreamVerificationAuthorizationSchema.extend({ profile: z.literal('kanboard-upstream-v1'), sourceCommit: z.literal('e197e71af4ff9f371b931ab0338b2b41827e6394') }),
 ]);
 export type VerificationAuthorization = z.infer<typeof VerificationAuthorizationSchema>;
 export const AdaptationPlanSchema = z.strictObject({

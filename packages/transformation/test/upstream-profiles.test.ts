@@ -6,6 +6,7 @@ import { verificationAuthorization, verificationExcludedActions, matchesProfileA
 const pins = {
   'reveal-upstream-v1': '75dff6f515d2d08df0c32cf2b7328b89425c6f25',
   'linkding-upstream-v1': '24b5ad6cc9bde497b5d1b1e86aed5a2fb7d25c2f',
+  'kanboard-upstream-v1': 'e197e71af4ff9f371b931ab0338b2b41827e6394',
 } as const;
 test('original three synthetic verification authorizations and exclusions retain their exact bindings', () => {
   for (const profile of ['react-helpdesk-synthetic-v1', 'python-inventory-synthetic-v1', 'java-spring-inventory-synthetic-v1'] as const) {
