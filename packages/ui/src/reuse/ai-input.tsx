@@ -13,9 +13,9 @@ import React, { useEffect, useId } from 'react';
 import { useAutoResizeTextarea } from './use-auto-resize-textarea.js';
 export interface AIInputProps {
  value:string; onChange:(value:string)=>void; onSubmit:()=>void;
- disabled:boolean; busy:boolean; contextLabel:string;
+ disabled:boolean; busy:boolean; contextLabel:string; submitLabel?:string;
 }
-export function AIInput({value,onChange,onSubmit,disabled,busy,contextLabel}:AIInputProps){
+export function AIInput({value,onChange,onSubmit,disabled,busy,contextLabel,submitLabel='发送'}:AIInputProps){
  const id=useId();
  const {textareaRef,adjustHeight}=useAutoResizeTextarea({minHeight:72,maxHeight:200});
  useEffect(()=>adjustHeight(),[value,adjustHeight]);
@@ -38,7 +38,7 @@ export function AIInput({value,onChange,onSubmit,disabled,busy,contextLabel}:AII
       if(event.nativeEvent.isComposing||event.keyCode===229)return;
       if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();submit()}
      }}/>
-    <div className="ae-input-toolbar"><span><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m8 1 5 2v4c0 4-5 7-5 7S3 11 3 7V3z"/><path d="m5.5 7.5 1.5 1.5 3.5-3.5"/></svg>修改前需确认</span><button type="submit" className="ae-primary" disabled={!value.trim()||disabled||busy}>{busy?'处理中…':'发送'}<span aria-hidden="true">↗</span></button></div>
+    <div className="ae-input-toolbar"><span><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m8 1 5 2v4c0 4-5 7-5 7S3 11 3 7V3z"/><path d="m5.5 7.5 1.5 1.5 3.5-3.5"/></svg>修改前需确认</span><button type="submit" className="ae-primary" disabled={!value.trim()||disabled||busy}>{busy?'处理中…':submitLabel}<span aria-hidden="true">↗</span></button></div>
    </div>
   </div>
   <div className="ae-input-help"><span>执行以服务端回执为准</span><span>Enter 换行 · Ctrl / ⌘ + Enter 发送</span></div>

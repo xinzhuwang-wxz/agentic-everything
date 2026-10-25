@@ -1,5 +1,5 @@
 import { MemorySession, type AgentInputItem } from '@openai/agents';
-import { ConversationContextSchema, ConversationRunBindingSchema, ConversationViewSchema, type ConversationContext, type ConversationRunBinding, type ConversationView, type Principal, type RunStatus } from '@ae/contracts';
+import { ConversationClientIntentIdSchema, ConversationContextSchema, ConversationRunBindingSchema, ConversationViewSchema, type ConversationContext, type ConversationRunBinding, type ConversationView, type Principal, type RunStatus } from '@ae/contracts';
 import { digest, PolicyError, samePrincipal } from '@ae/policy';
 import type { PersistentStore, Queryable, StoredRun } from './store.js';
 import type { PersistentToolBroker } from './broker.js';
@@ -7,6 +7,8 @@ import type { PersistentToolBroker } from './broker.js';
 export const conversationMigration = `
 CREATE TABLE IF NOT EXISTS ae_conversations_v1 (id text PRIMARY KEY, principal jsonb NOT NULL, context jsonb NOT NULL, authority_hash text NOT NULL, created_at timestamptz NOT NULL, expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS ae_conversation_turns_v1 (conversation_id text NOT NULL REFERENCES ae_conversations_v1(id), turn integer NOT NULL, run_id text UNIQUE NOT NULL, release_id text NOT NULL, input text NOT NULL, output text, created_at timestamptz NOT NULL, completed_at timestamptz, PRIMARY KEY(conversation_id,turn));
+ALTER TABLE ae_conversation_turns_v1 ADD COLUMN IF NOT EXISTS client_intent_id text;
+CREATE UNIQUE INDEX IF NOT EXISTS ae_conversation_turns_client_intent_v1 ON ae_conversation_turns_v1(conversation_id,client_intent_id) WHERE client_intent_id IS NOT NULL;
 `;
 interface ConversationRow { id: string; principal: Principal; context: ConversationContext; authority_hash: string; created_at: Date; expires_at: Date }
 const terminal = new Set<RunStatus>(['succeeded', 'failed', 'rejected', 'cancelled']);
@@ -47,12 +49,12 @@ export class ConversationStore {
   }
   async get(id: string, principal: Principal): Promise<ConversationView> {
     const row = await this.load(id, principal);
-    const turns = (await this.store.pool.query("SELECT t.*,r.body->'view'->>'status' AS status FROM ae_conversation_turns_v1 t LEFT JOIN ae_runs_v1 r ON r.id=t.run_id WHERE t.conversation_id=$1 ORDER BY t.turn", [id])).rows;
+    const turns = (await this.store.pool.query("SELECT t.*,r.body->'view'->>'status' AS status,r.id IS NOT NULL AS materialized FROM ae_conversation_turns_v1 t LEFT JOIN ae_runs_v1 r ON r.id=t.run_id WHERE t.conversation_id=$1 ORDER BY t.turn", [id])).rows;
     const messages: ConversationView['messages'] = [], runs: ConversationView['runs'] = [];
     let activeRunId: string | undefined;
     for (const t of turns) {
       const status = (t.status ?? 'queued') as RunStatus;
-      runs.push({ runId: t.run_id, releaseId: t.release_id, status });
+      runs.push({ runId: t.run_id, releaseId: t.release_id, status, materialized: t.materialized, ...(t.client_intent_id === null ? {} : { clientIntentId: t.client_intent_id }) });
       messages.push({ messageId: `${t.run_id}:user`, sequence: (t.turn - 1) * 2, runId: t.run_id, role: 'user', text: t.input, createdAt: t.created_at.toISOString() });
       if (t.output !== null) messages.push({ messageId: `${t.run_id}:assistant`, sequence: (t.turn - 1) * 2 + 1, runId: t.run_id, role: 'assistant', text: t.output, createdAt: t.completed_at.toISOString() });
       if (!terminal.has(status)) activeRunId = t.run_id;
@@ -61,14 +63,17 @@ export class ConversationStore {
     await this.load(id, principal);
     return ConversationViewSchema.parse({ conversationId: id, context: row.context, createdAt: row.created_at.toISOString(), expiresAt: row.expires_at.toISOString(), messages, runs, ...(activeRunId ? { activeRunId } : {}) });
   }
-  async reserve(client: Queryable, id: string, principal: Principal, runId: string, releaseId: string, input: string, context?: ConversationContext): Promise<ConversationRunBinding> {
+  async reserve(client: Queryable, id: string, principal: Principal, runId: string, releaseId: string, input: string, clientIntentId: string, context?: ConversationContext): Promise<ConversationRunBinding> {
     const row = await this.load(id, principal, client, true);
     if (context && digest(context) !== digest(row.context)) throw new PolicyError('CONVERSATION_CONTEXT_DENIED');
+    ConversationClientIntentIdSchema.parse(clientIntentId);
     const turns = (await client.query("SELECT t.*,r.body->'view'->>'status' AS status FROM ae_conversation_turns_v1 t LEFT JOIN ae_runs_v1 r ON r.id=t.run_id WHERE t.conversation_id=$1 ORDER BY t.turn", [id])).rows;
+    // Correlation is insert-only, never a second replay authority. Existing intents bypass reserve.
+    if (turns.some(t => t.client_intent_id === clientIntentId)) throw new PolicyError('IDEMPOTENCY_CONFLICT');
     if (turns.some(t => !terminal.has((t.status ?? 'queued') as RunStatus))) throw new PolicyError('CONVERSATION_RUN_UNFINISHED');
     if (turns.length >= 20 || Buffer.byteLength(input) + turns.reduce((bytes, t) => bytes + Buffer.byteLength(t.input) + Buffer.byteLength(t.output ?? ''), 0) + 65536 > maxBytes) throw new PolicyError('CONVERSATION_CAPACITY_REACHED');
     const turn = turns.length + 1;
-    await client.query('INSERT INTO ae_conversation_turns_v1(conversation_id,turn,run_id,release_id,input,created_at) VALUES($1,$2,$3,$4,$5,now())', [id, turn, runId, releaseId, input]);
+    await client.query('INSERT INTO ae_conversation_turns_v1(conversation_id,turn,run_id,release_id,input,client_intent_id,created_at) VALUES($1,$2,$3,$4,$5,$6,now())', [id, turn, runId, releaseId, input, clientIntentId]);
     return { conversationId: id, authorityHash: row.authority_hash, turn };
   }
   async assertRun(run: StoredRun, client: Queryable = this.store.pool): Promise<void> {

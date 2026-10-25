@@ -83,7 +83,7 @@ export function createApi(options: ApiOptions): Hono {
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new HttpError('INVALID_JSON', 400); }
   };
   if (options.controlPlane) app.route('/api/configuration', createConfigurationRoutes(options.controlPlane, options.resolvePrincipal));
-  app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: (await options.controlPlane?.activeRelease(p))?.releaseId ?? options.releaseId, durability: options.durability ?? 'memory_fixture' }); });
+  app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: (await options.controlPlane?.activeRelease(p))?.releaseId ?? options.releaseId, durability: options.durability ?? 'memory_fixture', ...(options.conversations && options.startIntent ? {conversationMode:'bounded-v1'} : {}) }); });
   app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = await options.controlPlane?.activeRelease(p); const catalog = await options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : options.requirePublishedRelease ? [] : catalog }); });
   app.get('/api/tickets/:ticketId', async c => {
     const p = await principal(c.req.raw);

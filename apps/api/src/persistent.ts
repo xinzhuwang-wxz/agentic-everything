@@ -52,7 +52,7 @@ export async function createPersistentApi(options: PersistentApiOptions) {
       if(existing){if(existing.input_hash!==inputHash)throw new PolicyError('IDEMPOTENCY_CONFLICT');return validateIntentRow(existing as unknown as IntentRow,{principal,intent:input.intent});}
       const release=await controlPlane.activeRelease(principal);if(!release)throw new PolicyError('RELEASE_REQUIRED');
       const runId=`intent-${intentKey}`;
-      const binding=input.conversationId?await runtime.conversations.reserve(connection,input.conversationId,principal,runId,release.releaseId,input.input,context):undefined;
+      const binding=input.conversationId?await runtime.conversations.reserve(connection,input.conversationId,principal,runId,release.releaseId,input.input,input.intent,context):undefined;
       const value={runId,principal,releaseId:release.releaseId,release,...content,...(binding?{conversation:binding}:{})};
       await connection.query('INSERT INTO ae_api.intents(intent_key,intent_token,input_hash,run_id,start_hash,start) VALUES($1,$2,$3,$4,$5,$6)',[intentKey,input.intent,inputHash,runId,digest(value),JSON.stringify(value)]);return value;
     });
