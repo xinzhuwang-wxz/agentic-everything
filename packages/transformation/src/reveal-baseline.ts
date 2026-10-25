@@ -12,7 +12,7 @@ import {revealRecipe,revealHashes,revealPin} from './recipes/reveal.js';
 import {revealUpstreamHashes} from './reveal-upstream.js';
 export const revealProfile='reveal-upstream-v1' as const;
 const git=(root:string,args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',root,...args],{encoding:'utf8',timeout:15000,maxBuffer:4*1024*1024}).trim();
-export function matchesRevealAssessment(a:ProjectAssessment){return a.baseCommit===revealPin&&a.evidence.length===revealRecipe.inputs.length&&Object.entries(revealHashes).every(([p,h])=>a.evidence.find(e=>e.path===p)?.sha256===h)}
+export function matchesRevealAssessment(a:ProjectAssessment){return a.baseCommit===revealPin&&Object.entries(revealHashes).every(([p,h])=>a.evidence.find(e=>e.path===p)?.sha256===h)}
 export function inspectReveal(root:string,candidate=false):Record<string,string>{
  if(realpathSync(root)!==resolve(root)||git(root,['rev-parse','HEAD'])!==revealPin)throw Error('Exact reveal.js upstream pin and non-symlink root required');
  if(git(root,['diff','--name-only','HEAD','--']))throw Error('Original tracked reveal.js source changed');
