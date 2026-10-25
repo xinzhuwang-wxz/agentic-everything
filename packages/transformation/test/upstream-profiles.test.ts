@@ -56,7 +56,7 @@ test('delivery and assessor share only bounded installed manifest input paths', 
   const { assessmentEvidencePaths } = await import('../src/recipes/index.js');
   const paths = assessmentEvidencePaths(['package.json']);
   assert.equal(paths.has('vite.config.ts'), true);
-  assert.equal(paths.has('js/reveal.js'), true);
+  assert.equal(paths.has('dist/reveal.js'), true);
   for (const secret of ['.env', 'arbitrary.js', 'app/Helper/ProjectRoleHelper.php']) assert.equal(paths.has(secret), false);
   assert.equal(assessmentEvidencePaths([]).has('vite.config.ts'), false);
 });
