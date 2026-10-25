@@ -1,0 +1,36 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 59fdd11..235f88f 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,3 +1,4 @@
++import { HelpdeskAgenticMount } from './ae/AgenticMount.js';
+ import React, { useCallback, useEffect, useState } from 'react';
+ import { fetchTicket, type TicketView } from './api.js';
+ 
+@@ -9,7 +10,7 @@ export default function App() {
+     catch (cause) { setError(cause instanceof Error ? cause.message : 'Ticket could not be loaded'); }
+   }, []);
+   useEffect(() => { void refreshTicket(); }, [refreshTicket]);
+-  return <main><h1>Helpdesk</h1>
++  return <main><HelpdeskAgenticMount onChanged={refreshTicket} /><h1>Helpdesk</h1>
+     <button type="button" onClick={() => void refreshTicket()}>Refresh ticket</button>
+     {error && <p role="alert">{error}</p>}
+     {!ticket && !error && <p>Loading ticket…</p>}
+diff --git a/src/ae/AgenticMount.tsx b/src/ae/AgenticMount.tsx
+new file mode 100644
+index 0000000..d00a041
+--- /dev/null
++++ b/src/ae/AgenticMount.tsx
+@@ -0,0 +1,12 @@
++import React, { useState } from 'react';
++import { AgenticMount } from '@ae/host-sdk';
++import '@ae/ui/styles.css';
++
++// Synthetic fixture integration. Production hosts supply their own session boundary,
++// navigation placement, reserved actions and modal suspension. This is not an admin grant.
++export function HelpdeskAgenticMount({ onChanged }: { onChanged: () => void | Promise<void> }) {
++  const [managementVisible, setManagementVisible] = useState(false);
++  return <><nav aria-label="Helpdesk administration"><button type="button" aria-expanded={managementVisible} aria-controls="helpdesk-agentic-settings" onClick={() => setManagementVisible(value => !value)}>Agentic settings & activity</button></nav>
++    <div id="helpdesk-agentic-settings"><AgenticMount apiBase="/api" ticketId="ticket-1" floating={{ applicationId: 'helpdesk-fixture', reservedAreas: [{ left: 0, top: 0, right: 360, bottom: 180 }] }} managementVisible={managementVisible} onRunChange={run => { if (run.status === 'succeeded') void onChanged(); }} /></div>
++  </>;
++}

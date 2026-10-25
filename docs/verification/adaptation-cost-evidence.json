@@ -1,0 +1,795 @@
+{
+  "schemaVersion": "1",
+  "kind": "bounded-direct-scripted-vs-ae-cost-summary",
+  "status": "pass",
+  "startedAt": "2026-10-25T04:54:42.627Z",
+  "invocation": [
+    "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+    "/workspace/scratch/3f0d047b74f0/ae-worktrees/adaptation-costs/scripts/adaptation-costs/measure.mjs",
+    "--output",
+    "/workspace/scratch/3f0d047b74f0/cloud-runtime-archives/ae-adaptation-costs/paired-20261025-0454"
+  ],
+  "method": {
+    "trialsPerHost": 1,
+    "hostOrder": [
+      "react-helpdesk",
+      "python-inventory"
+    ],
+    "stageOrder": "shared source setup; AE assess/plan/approve/archive/apply/static verify; direct copy/patch; direct acceptance; AE deliver/check; repeat guards; rollback both",
+    "baseline": "One original archive per host, captured by AE before either candidate is changed; both acceptance runs consume precisely that archive without recapture.",
+    "directRoute": "Frozen reviewed git patch applied by a script. Patch bytes were copied from the already-developed recipe output during preparation, not independently designed by a timed human.",
+    "equivalence": "Both routes reuse the same existing AE SDK/runtime and produce byte-identical intended host integration changes. Original business source is unchanged.",
+    "timing": "Monotonic process/stage elapsed milliseconds on one shared cloud machine. Setup, patch execution, AE lifecycle, common verification, rollback and measurement overhead are separate. No normalized total, ratio or speedup is computed.",
+    "sharedBaselineAccounting": "AE archive-and-apply includes baseline capture and isolation. The direct route reuses that archive as common test infrastructure; direct stage sum is not an independently complete compliance workflow.",
+    "approval": "Recorded synthetic-fixture approval granted to this measurement, not timed human review or a production user decision.",
+    "acceptance": "The same existing fixed host profile executes for each arm. Direct uses its reviewed profile harness; AE uses createDelivery and checkDelivery, which additionally package and validate lifecycle evidence.",
+    "model": "Deterministic simulated model only; no paid-provider inference or provider-token accounting.",
+    "defectDefinition": "Unexpected failed gate or assertion in this paired run; expected repeat guards and deliberate existing harness negative cases are not defects.",
+    "reworkDefinition": "Corrective source edits or reruns after an unexpected failure in this paired run, not historic recipe development.",
+    "limitations": [
+      "One fixed-order pair per tiny prequalified fixture; warm caches, process scheduling and harness overhead can affect timings.",
+      "Frozen direct patches give both arms prior implementation knowledge; this does not compare discovery, authoring, review or human skill.",
+      "No arbitrary customer project, production identity, live provider, deployment or new support qualification.",
+      "Equal lines changed prove equal modification scope, not time saved or defect probability."
+    ]
+  },
+  "costs": {
+    "paidCalls": 0,
+    "paidServiceSpendUsd": 0,
+    "developerHours": null,
+    "historicalEngineeringCost": null,
+    "modelTokens": null,
+    "cloudInfrastructureCostUsd": null,
+    "unknownReason": "No credible effort/token/infra-price meter or historical ledger is available; process elapsed time is not developer effort."
+  },
+  "hosts": [
+    {
+      "id": "react-helpdesk",
+      "profile": "react-helpdesk-synthetic-v1",
+      "status": "pass",
+      "stages": [
+        {
+          "arm": "shared",
+          "name": "create-pristine-source",
+          "startedAt": "2026-10-25T04:54:42.921Z",
+          "status": "pass",
+          "elapsedMs": 16.236
+        },
+        {
+          "arm": "ae",
+          "name": "assess",
+          "startedAt": "2026-10-25T04:54:42.941Z",
+          "status": "pass",
+          "elapsedMs": 34.712
+        },
+        {
+          "arm": "ae",
+          "name": "plan",
+          "startedAt": "2026-10-25T04:54:42.976Z",
+          "status": "pass",
+          "elapsedMs": 3.164
+        },
+        {
+          "arm": "ae",
+          "name": "approve-synthetic-record",
+          "startedAt": "2026-10-25T04:54:42.979Z",
+          "status": "pass",
+          "elapsedMs": 2.055
+        },
+        {
+          "arm": "ae",
+          "name": "archive-original-and-apply-isolated",
+          "startedAt": "2026-10-25T04:54:42.981Z",
+          "status": "pass",
+          "elapsedMs": 253.362
+        },
+        {
+          "arm": "ae",
+          "name": "verify-static",
+          "startedAt": "2026-10-25T04:54:43.235Z",
+          "status": "pass",
+          "elapsedMs": 6.454
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "copy-pristine-host",
+          "startedAt": "2026-10-25T04:54:43.242Z",
+          "status": "pass",
+          "elapsedMs": 1.825
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "patch-preflight-and-apply",
+          "startedAt": "2026-10-25T04:54:43.244Z",
+          "status": "pass",
+          "elapsedMs": 5.712
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "common-acceptance-harness",
+          "startedAt": "2026-10-25T04:54:43.269Z",
+          "status": "pass",
+          "elapsedMs": 9330.142
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "validate-common-evidence",
+          "startedAt": "2026-10-25T04:54:52.600Z",
+          "status": "pass",
+          "elapsedMs": 9.369
+        },
+        {
+          "arm": "ae",
+          "name": "deliver-with-common-acceptance",
+          "startedAt": "2026-10-25T04:54:52.609Z",
+          "status": "pass",
+          "elapsedMs": 9166.925
+        },
+        {
+          "arm": "ae",
+          "name": "check-delivery",
+          "startedAt": "2026-10-25T04:55:01.776Z",
+          "status": "pass",
+          "elapsedMs": 14.892
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "repeat-patch-guard",
+          "startedAt": "2026-10-25T04:55:01.793Z",
+          "status": "pass",
+          "elapsedMs": 4.24
+        },
+        {
+          "arm": "ae",
+          "name": "repeat-preview-guard",
+          "startedAt": "2026-10-25T04:55:01.797Z",
+          "status": "pass",
+          "elapsedMs": 1.13
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "rollback-owned-patch",
+          "startedAt": "2026-10-25T04:55:01.798Z",
+          "status": "pass",
+          "elapsedMs": 4.248
+        },
+        {
+          "arm": "ae",
+          "name": "rollback-owned-patch",
+          "startedAt": "2026-10-25T04:55:01.802Z",
+          "status": "pass",
+          "elapsedMs": 3.895
+        }
+      ],
+      "unexpectedDefectsObserved": 0,
+      "correctiveSourceEdits": 0,
+      "retriesAfterUnexpectedFailure": 0,
+      "original": {
+        "sourceCommit": "825e7a297d49e703670d1e3663dd7973cb0435ba",
+        "files": {
+          "README.md": {
+            "sha256": "d659ceb220f70413840db1176bba751a2ab2d065a9d45aab156f9a947cc6e19d",
+            "bytes": 733
+          },
+          "index.html": {
+            "sha256": "ff2e85ae4437145924971f70a7cd2716280df4434f79f27bb4de519b7cd6d5e6",
+            "bytes": 260
+          },
+          "package.json": {
+            "sha256": "58f3284f06f481a5e65acbe394222ff80a9b4cffd5d1d0359550c1183c841948",
+            "bytes": 318
+          },
+          "src/App.tsx": {
+            "sha256": "16768bb0d44a9ede89d01da77d545ddcfbba96f27bfc349b30db299b55dd77e5",
+            "bytes": 1143
+          },
+          "src/api.ts": {
+            "sha256": "b3957652c56fcddeb9b9a8f76aa82d22bd654b648f86e1d8a2d400115e362938",
+            "bytes": 619
+          },
+          "src/main.tsx": {
+            "sha256": "d4ed766ef457a435f4d2727fe6b62dd63896eb46473280d70c051a0eae4098af",
+            "bytes": 231
+          },
+          "src/tickets.ts": {
+            "sha256": "d7f284f03a26c5f1115d8c5d851d32ed17c9da2e0b0e07082508308166aaddda",
+            "bytes": 2397
+          },
+          "vite.config.ts": {
+            "sha256": "063b280b03e58e4e1d8445ef2c7f7a79939f86a0a7c5fa008021fc163d8df18d",
+            "bytes": 189
+          }
+        }
+      },
+      "originalBaseline": {
+        "path": "react-helpdesk/original-before-apply.json",
+        "sha256": "cf553d6aa1a5c0ed03fc6babe3cf5bfec10baec77ec5eef21d30addff32b8545",
+        "archiveHash": "b07b7c42beb519474d0c6c25fe572deca5602ec23f784f71272068c3317c0bac",
+        "capturedAt": "2026-10-25T04:54:43.182Z",
+        "appliedAt": "2026-10-25T04:54:43.233Z",
+        "cases": 10,
+        "mode": "444",
+        "reusedWithoutRecapture": true
+      },
+      "directPatch": {
+        "path": "scripts/adaptation-costs/direct-patches/react-helpdesk.patch",
+        "sha256": "3a6b538fd032472cddb2a11e8fc05ec018c27b20fa7061b4f11796d22dae54a2",
+        "provenance": "Frozen reviewed existing recipe output, prepared outside the measured execution."
+      },
+      "candidate": {
+        "files": {
+          "README.md": {
+            "sha256": "d659ceb220f70413840db1176bba751a2ab2d065a9d45aab156f9a947cc6e19d",
+            "bytes": 733
+          },
+          "index.html": {
+            "sha256": "ff2e85ae4437145924971f70a7cd2716280df4434f79f27bb4de519b7cd6d5e6",
+            "bytes": 260
+          },
+          "package.json": {
+            "sha256": "58f3284f06f481a5e65acbe394222ff80a9b4cffd5d1d0359550c1183c841948",
+            "bytes": 318
+          },
+          "src/App.tsx": {
+            "sha256": "6013a003bf162ee93516725a349709c9fc0093a5433004aa0a910ef2ba05d8f5",
+            "bytes": 1254
+          },
+          "src/ae/AgenticMount.tsx": {
+            "sha256": "d446d505af1532f5dd5519e026baa442502a1e58fd55134ebc5e2ec508f63c32",
+            "bytes": 1039
+          },
+          "src/api.ts": {
+            "sha256": "b3957652c56fcddeb9b9a8f76aa82d22bd654b648f86e1d8a2d400115e362938",
+            "bytes": 619
+          },
+          "src/main.tsx": {
+            "sha256": "d4ed766ef457a435f4d2727fe6b62dd63896eb46473280d70c051a0eae4098af",
+            "bytes": 231
+          },
+          "src/tickets.ts": {
+            "sha256": "d7f284f03a26c5f1115d8c5d851d32ed17c9da2e0b0e07082508308166aaddda",
+            "bytes": 2397
+          },
+          "vite.config.ts": {
+            "sha256": "063b280b03e58e4e1d8445ef2c7f7a79939f86a0a7c5fa008021fc163d8df18d",
+            "bytes": 189
+          }
+        },
+        "byteIdenticalAcrossArms": true
+      },
+      "changes": {
+        "direct": {
+          "files": [
+            {
+              "path": "src/App.tsx",
+              "added": 2,
+              "deleted": 1,
+              "beforeSha256": "16768bb0d44a9ede89d01da77d545ddcfbba96f27bfc349b30db299b55dd77e5",
+              "afterSha256": "6013a003bf162ee93516725a349709c9fc0093a5433004aa0a910ef2ba05d8f5"
+            },
+            {
+              "path": "src/ae/AgenticMount.tsx",
+              "added": 12,
+              "deleted": 0,
+              "beforeSha256": null,
+              "afterSha256": "d446d505af1532f5dd5519e026baa442502a1e58fd55134ebc5e2ec508f63c32"
+            }
+          ],
+          "filesChanged": 2,
+          "linesAdded": 14,
+          "linesDeleted": 1
+        },
+        "ae": {
+          "files": [
+            {
+              "path": "src/App.tsx",
+              "added": 2,
+              "deleted": 1,
+              "beforeSha256": "16768bb0d44a9ede89d01da77d545ddcfbba96f27bfc349b30db299b55dd77e5",
+              "afterSha256": "6013a003bf162ee93516725a349709c9fc0093a5433004aa0a910ef2ba05d8f5"
+            },
+            {
+              "path": "src/ae/AgenticMount.tsx",
+              "added": 12,
+              "deleted": 0,
+              "beforeSha256": null,
+              "afterSha256": "d446d505af1532f5dd5519e026baa442502a1e58fd55134ebc5e2ec508f63c32"
+            }
+          ],
+          "filesChanged": 2,
+          "linesAdded": 14,
+          "linesDeleted": 1
+        }
+      },
+      "gates": {
+        "direct": [
+          {
+            "name": "host-business-tests",
+            "status": "pass"
+          },
+          {
+            "name": "black-box-business-differential",
+            "status": "pass"
+          },
+          {
+            "name": "host-typecheck",
+            "status": "pass"
+          },
+          {
+            "name": "authenticated-runtime",
+            "status": "pass"
+          },
+          {
+            "name": "browser-acceptance",
+            "status": "pass"
+          },
+          {
+            "name": "fixture-process-completion",
+            "status": "pass"
+          }
+        ],
+        "ae": [
+          {
+            "name": "patch:src/App.tsx",
+            "status": "pass"
+          },
+          {
+            "name": "syntax:src/App.tsx",
+            "status": "pass"
+          },
+          {
+            "name": "patch:src/ae/AgenticMount.tsx",
+            "status": "pass"
+          },
+          {
+            "name": "syntax:src/ae/AgenticMount.tsx",
+            "status": "pass"
+          },
+          {
+            "name": "original-business-source",
+            "status": "pass"
+          },
+          {
+            "name": "host-business-tests",
+            "status": "pass"
+          },
+          {
+            "name": "black-box-business-differential",
+            "status": "pass"
+          },
+          {
+            "name": "host-typecheck",
+            "status": "pass"
+          },
+          {
+            "name": "authenticated-runtime",
+            "status": "pass"
+          },
+          {
+            "name": "browser-acceptance",
+            "status": "pass"
+          },
+          {
+            "name": "fixture-process-completion",
+            "status": "pass"
+          },
+          {
+            "name": "delivery-authorization-valid",
+            "status": "pass"
+          }
+        ]
+      },
+      "evidenceOverhead": {
+        "directHarnessOnly": {
+          "files": 7,
+          "bytes": 51886
+        },
+        "aeDeliveryBundle": {
+          "files": 17,
+          "bytes": 97711
+        },
+        "baselineArchiveBytes": 9674,
+        "note": "Actual bytes, not equivalent assurance scopes: AE bundle additionally contains chain, rollback and patch-owned source; direct uses shared baseline infrastructure."
+      },
+      "preservation": {
+        "originalSourceUnchanged": true,
+        "baselineArchiveUnchanged": true,
+        "directRollbackExact": true,
+        "aeRollbackExact": true,
+        "repeatedOperationsChangedFiles": 0
+      },
+      "timingMs": {
+        "shared": 16.236,
+        "ae": 9486.589,
+        "direct-scripted": 9355.536
+      }
+    },
+    {
+      "id": "python-inventory",
+      "profile": "python-inventory-synthetic-v1",
+      "status": "pass",
+      "stages": [
+        {
+          "arm": "shared",
+          "name": "create-pristine-source",
+          "startedAt": "2026-10-25T04:55:01.810Z",
+          "status": "pass",
+          "elapsedMs": 13.99
+        },
+        {
+          "arm": "ae",
+          "name": "assess",
+          "startedAt": "2026-10-25T04:55:01.827Z",
+          "status": "pass",
+          "elapsedMs": 10.573
+        },
+        {
+          "arm": "ae",
+          "name": "plan",
+          "startedAt": "2026-10-25T04:55:01.838Z",
+          "status": "pass",
+          "elapsedMs": 1.007
+        },
+        {
+          "arm": "ae",
+          "name": "approve-synthetic-record",
+          "startedAt": "2026-10-25T04:55:01.839Z",
+          "status": "pass",
+          "elapsedMs": 0.21
+        },
+        {
+          "arm": "ae",
+          "name": "archive-original-and-apply-isolated",
+          "startedAt": "2026-10-25T04:55:01.839Z",
+          "status": "pass",
+          "elapsedMs": 632.602
+        },
+        {
+          "arm": "ae",
+          "name": "verify-static",
+          "startedAt": "2026-10-25T04:55:02.472Z",
+          "status": "pass",
+          "elapsedMs": 3.206
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "copy-pristine-host",
+          "startedAt": "2026-10-25T04:55:02.476Z",
+          "status": "pass",
+          "elapsedMs": 1.519
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "patch-preflight-and-apply",
+          "startedAt": "2026-10-25T04:55:02.477Z",
+          "status": "pass",
+          "elapsedMs": 4.44
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "common-acceptance-harness",
+          "startedAt": "2026-10-25T04:55:02.499Z",
+          "status": "pass",
+          "elapsedMs": 11748.583
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "validate-common-evidence",
+          "startedAt": "2026-10-25T04:55:14.248Z",
+          "status": "pass",
+          "elapsedMs": 35.784
+        },
+        {
+          "arm": "ae",
+          "name": "deliver-with-common-acceptance",
+          "startedAt": "2026-10-25T04:55:14.284Z",
+          "status": "pass",
+          "elapsedMs": 11743.968
+        },
+        {
+          "arm": "ae",
+          "name": "check-delivery",
+          "startedAt": "2026-10-25T04:55:26.028Z",
+          "status": "pass",
+          "elapsedMs": 50.617
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "repeat-patch-guard",
+          "startedAt": "2026-10-25T04:55:26.080Z",
+          "status": "pass",
+          "elapsedMs": 4.172
+        },
+        {
+          "arm": "ae",
+          "name": "repeat-preview-guard",
+          "startedAt": "2026-10-25T04:55:26.084Z",
+          "status": "pass",
+          "elapsedMs": 0.612
+        },
+        {
+          "arm": "direct-scripted",
+          "name": "rollback-owned-patch",
+          "startedAt": "2026-10-25T04:55:26.085Z",
+          "status": "pass",
+          "elapsedMs": 2.979
+        },
+        {
+          "arm": "ae",
+          "name": "rollback-owned-patch",
+          "startedAt": "2026-10-25T04:55:26.088Z",
+          "status": "pass",
+          "elapsedMs": 2.955
+        }
+      ],
+      "unexpectedDefectsObserved": 0,
+      "correctiveSourceEdits": 0,
+      "retriesAfterUnexpectedFailure": 0,
+      "original": {
+        "sourceCommit": "f7972850f1364c02fee64d43d247e236c8915e7f",
+        "files": {
+          "README.md": {
+            "sha256": "6aa756d742b44b8b6106f0c54c48910703b4efcc4930d87fe3d66e99eab85ee2",
+            "bytes": 5839
+          },
+          "inventory.py": {
+            "sha256": "895c5d262caefa1a5e45c5a58bebf17f2b94031983eecbfb196df6f70dd4eff9",
+            "bytes": 11566
+          },
+          "pyproject.toml": {
+            "sha256": "14607bb7f5a29e77eca03c064a8e4a29ba88d385b21ffc3b5563abbc5fe6797e",
+            "bytes": 188
+          },
+          "test_inventory.py": {
+            "sha256": "ab05244cbfefb0904096e69b9c2b3cc9c184d1f222380fe076b24f07adbf4b19",
+            "bytes": 13133
+          }
+        }
+      },
+      "originalBaseline": {
+        "path": "python-inventory/original-before-apply.json",
+        "sha256": "fb64e8f996e6af80a733d5b6c55ea7c2ce6d62d49f770e0c2a2f9f4886f665ad",
+        "archiveHash": "3fcd40957040600a62041fcb7cc594e28a49ec9f9dad45f1c9614da53740ad94",
+        "capturedAt": "2026-10-25T04:55:02.414Z",
+        "appliedAt": "2026-10-25T04:55:02.471Z",
+        "cases": 13,
+        "mode": "444",
+        "reusedWithoutRecapture": true
+      },
+      "directPatch": {
+        "path": "scripts/adaptation-costs/direct-patches/python-inventory.patch",
+        "sha256": "46f68a6960c368cc1b133ce959b8ee4d2f60182bda9948a04e0acd61014f65e0",
+        "provenance": "Frozen reviewed existing recipe output, prepared outside the measured execution."
+      },
+      "candidate": {
+        "files": {
+          "README.md": {
+            "sha256": "6aa756d742b44b8b6106f0c54c48910703b4efcc4930d87fe3d66e99eab85ee2",
+            "bytes": 5839
+          },
+          "agentic/ae_adapter.py": {
+            "sha256": "7c6bfd951b3ec8b2c80a8529c1247684a14a9d0153ce826223e91e32d3dbf032",
+            "bytes": 3370
+          },
+          "inventory.py": {
+            "sha256": "895c5d262caefa1a5e45c5a58bebf17f2b94031983eecbfb196df6f70dd4eff9",
+            "bytes": 11566
+          },
+          "pyproject.toml": {
+            "sha256": "14607bb7f5a29e77eca03c064a8e4a29ba88d385b21ffc3b5563abbc5fe6797e",
+            "bytes": 188
+          },
+          "test_inventory.py": {
+            "sha256": "ab05244cbfefb0904096e69b9c2b3cc9c184d1f222380fe076b24f07adbf4b19",
+            "bytes": 13133
+          }
+        },
+        "byteIdenticalAcrossArms": true
+      },
+      "changes": {
+        "direct": {
+          "files": [
+            {
+              "path": "agentic/ae_adapter.py",
+              "added": 71,
+              "deleted": 0,
+              "beforeSha256": null,
+              "afterSha256": "7c6bfd951b3ec8b2c80a8529c1247684a14a9d0153ce826223e91e32d3dbf032"
+            }
+          ],
+          "filesChanged": 1,
+          "linesAdded": 71,
+          "linesDeleted": 0
+        },
+        "ae": {
+          "files": [
+            {
+              "path": "agentic/ae_adapter.py",
+              "added": 71,
+              "deleted": 0,
+              "beforeSha256": null,
+              "afterSha256": "7c6bfd951b3ec8b2c80a8529c1247684a14a9d0153ce826223e91e32d3dbf032"
+            }
+          ],
+          "filesChanged": 1,
+          "linesAdded": 71,
+          "linesDeleted": 0
+        }
+      },
+      "gates": {
+        "direct": [
+          {
+            "name": "host-compilation",
+            "status": "pass"
+          },
+          {
+            "name": "host-business-tests",
+            "status": "pass"
+          },
+          {
+            "name": "black-box-business-differential",
+            "status": "pass"
+          },
+          {
+            "name": "authenticated-runtime",
+            "status": "pass"
+          },
+          {
+            "name": "cli-acceptance",
+            "status": "pass"
+          },
+          {
+            "name": "fixture-process-completion",
+            "status": "pass"
+          }
+        ],
+        "ae": [
+          {
+            "name": "patch:agentic/ae_adapter.py",
+            "status": "pass"
+          },
+          {
+            "name": "syntax:agentic/ae_adapter.py",
+            "status": "pass"
+          },
+          {
+            "name": "original-business-source",
+            "status": "pass"
+          },
+          {
+            "name": "host-compilation",
+            "status": "pass"
+          },
+          {
+            "name": "host-business-tests",
+            "status": "pass"
+          },
+          {
+            "name": "black-box-business-differential",
+            "status": "pass"
+          },
+          {
+            "name": "authenticated-runtime",
+            "status": "pass"
+          },
+          {
+            "name": "cli-acceptance",
+            "status": "pass"
+          },
+          {
+            "name": "fixture-process-completion",
+            "status": "pass"
+          },
+          {
+            "name": "delivery-authorization-valid",
+            "status": "pass"
+          }
+        ]
+      },
+      "evidenceOverhead": {
+        "directHarnessOnly": {
+          "files": 7,
+          "bytes": 30367
+        },
+        "aeDeliveryBundle": {
+          "files": 15,
+          "bytes": 80279
+        },
+        "baselineArchiveBytes": 12693,
+        "note": "Actual bytes, not equivalent assurance scopes: AE bundle additionally contains chain, rollback and patch-owned source; direct uses shared baseline infrastructure."
+      },
+      "preservation": {
+        "originalSourceUnchanged": true,
+        "baselineArchiveUnchanged": true,
+        "directRollbackExact": true,
+        "aeRollbackExact": true,
+        "repeatedOperationsChangedFiles": 0
+      },
+      "timingMs": {
+        "shared": 13.99,
+        "ae": 12445.75,
+        "direct-scripted": 11797.477
+      }
+    }
+  ],
+  "failures": [],
+  "environment": {
+    "sourceCommit": "7313ce040a1527059119cd0363e7a571ab33a6ee",
+    "node": "v24.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "git": "git version 2.52.0",
+    "python": "Python 3.13.5",
+    "lockfileSha256": "762d169e68e916a31eefbf749a8a8173f1e78065b559e03931ea4dc0b80c22fd",
+    "scriptSha256": "2ff1a024f7b4744b58388c2f5c4f07d73e057294b31ce09633c40fee433555fe",
+    "sharedMachine": true,
+    "processHeapMiB": 640,
+    "measurementOutput": "/workspace/scratch/3f0d047b74f0/cloud-runtime-archives/ae-adaptation-costs/paired-20261025-0454"
+  },
+  "completedAt": "2026-10-25T04:55:26.094Z",
+  "elapsedMs": 43467.483,
+  "accountedStageMs": 43115.578,
+  "measurementOrUnclassifiedOverheadMs": 351.905,
+  "fullReceipt": {
+    "archivePath": "docs/verification/adaptation-cost-evidence.tar.gz",
+    "archiveSha256": "cad8b5f3be7fc36fd80abf5f4cb25f290407d5104078e364ab25cb2a522bea80",
+    "archiveBytes": 115570,
+    "fileCount": 103,
+    "receiptPath": "evidence/measurement.json",
+    "receiptSha256": "fa640238d310801dbe87411e8f718d2057b1628cd701ca77566fc918fe7add37",
+    "originalCloudEvidencePath": "/workspace/scratch/3f0d047b74f0/cloud-runtime-archives/ae-adaptation-costs/paired-20261025-0454",
+    "included": "Complete raw measurement, 102 hash-bound evidence/source files, original archives, direct evidence, AE delivery bundles and lifecycle records. No Git internals, generated builds or credentials."
+  },
+  "buildPreparation": {
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "NODE_OPTIONS": "--max-old-space-size=640",
+    "elapsedMs": 6831.105,
+    "exitCode": 0,
+    "maximumChildRssKiB": 806328,
+    "rssLimit": "Maximum child RSS, not sum of concurrent RSS.",
+    "preparationFailure": "First wrapper failed before build invocation because /usr/bin/time is absent; original log retained."
+  },
+  "outerProcess": {
+    "command": [
+      "node",
+      "--max-old-space-size=640",
+      "scripts/adaptation-costs/measure.mjs",
+      "--output",
+      "/workspace/scratch/3f0d047b74f0/cloud-runtime-archives/ae-adaptation-costs/paired-20261025-0454"
+    ],
+    "elapsedMs": 43558.452,
+    "exitCode": 0,
+    "maximumChildRssKiB": 552536,
+    "rssLimit": "Maximum child RSS, not concurrent aggregate RSS."
+  },
+  "offlineValidation": [
+    {
+      "case": "intact",
+      "expectedExit": 0,
+      "actualExit": 0,
+      "elapsedMs": 66.494
+    },
+    {
+      "case": "altered-patch",
+      "expectedExit": 1,
+      "actualExit": 1,
+      "elapsedMs": 65.927
+    },
+    {
+      "case": "missing-baseline",
+      "expectedExit": 1,
+      "actualExit": 1,
+      "elapsedMs": 65.232
+    },
+    {
+      "case": "false-zero-defects",
+      "expectedExit": 1,
+      "actualExit": 1,
+      "elapsedMs": 64.044
+    }
+  ]
+}
