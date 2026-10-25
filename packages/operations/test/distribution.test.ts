@@ -106,3 +106,41 @@ test('upgrade validates previous integrity in its isolated doctor before any des
     assert.equal(existsSync(join(previous,'package.json')),true);
   }finally{rmSync(directory,{recursive:true});}
 });
+
+test('installer rejects changed build sequences and lifecycle hooks before dependency or build execution',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'ae-build-sequence-'));
+  try{
+    const source=join(directory,'source'),cache=join(directory,'cache');mkdirSync(source);mkdirSync(cache);
+    const git=(args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,...args],{encoding:'utf8'}).trim();git(['init','-q']);
+    const build='node scripts/clean-build.mjs && tsc -p tsconfig.json && node scripts/link-build.mjs';
+    const cases=[undefined,{build:'node scripts/other-build.mjs'},{build,prebuild:'node scripts/before.mjs'},{build,postbuild:'node scripts/after.mjs'}];
+    for(const [index,scripts] of cases.entries()){
+      writeFileSync(join(source,'package.json'),JSON.stringify({name:'ae-build-sequence-fixture',version:'0.1.0',...(scripts===undefined?{}:{scripts})}));writeFileSync(join(source,'package-lock.json'),'{}\n');
+      git(['add','.']);git(['-c','user.name=AE Fixture','-c','user.email=fixture@example.invalid','commit','-qm',`unsupported build fixture ${index}`]);
+      const commit=git(['rev-parse','HEAD']),tree=git(['rev-parse','HEAD^{tree}']),destination=join(directory,`installation-${index}`);
+      assert.throws(()=>installFixedSource({source,destination,cache,commit,tree}),/UNSUPPORTED_INSTALL_BUILD_SEQUENCE/);
+      assert.equal(existsSync(join(destination,'package.json')),true,'failed source export is retained');
+      assert.equal(existsSync(join(destination,'node_modules')),false);
+      assert.equal(existsSync(join(destination,'.ae-installation.json')),false);
+    }
+  }finally{rmSync(directory,{recursive:true});}
+});
+
+test('reviewed direct build stops on clean failure without linking or writing a receipt',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'ae-build-stop-'));
+  try{
+    const source=join(directory,'source'),cache=join(directory,'cache'),destination=join(directory,'installation');mkdirSync(source);mkdirSync(cache);mkdirSync(join(source,'scripts'));
+    const pkg={name:'ae-build-stop-fixture',version:'0.1.0',private:true,type:'module',scripts:{build:'node scripts/clean-build.mjs && tsc -p tsconfig.json && node scripts/link-build.mjs'}};
+    writeFileSync(join(source,'package.json'),JSON.stringify(pkg));
+    writeFileSync(join(source,'package-lock.json'),JSON.stringify({name:pkg.name,version:pkg.version,lockfileVersion:3,requires:true,packages:{'':{name:pkg.name,version:pkg.version}}}));
+    writeFileSync(join(source,'scripts/clean-build.mjs'),"import { writeFileSync } from 'node:fs'; writeFileSync('clean-observed.json', JSON.stringify({heap:process.env.NODE_OPTIONS,offline:process.env.npm_config_offline})); process.exit(23);\n");
+    writeFileSync(join(source,'scripts/link-build.mjs'),"import { writeFileSync } from 'node:fs'; writeFileSync('link-must-not-run', 'unexpected');\n");
+    const git=(args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,...args],{encoding:'utf8'}).trim();git(['init','-q']);git(['add','.']);git(['-c','user.name=AE Fixture','-c','user.email=fixture@example.invalid','commit','-qm','reviewed build fail-stop fixture']);
+    const commit=git(['rev-parse','HEAD']),tree=git(['rev-parse','HEAD^{tree}']);
+    assert.throws(()=>installFixedSource({source,destination,cache,commit,tree}),/clean-build\.mjs/);
+    assert.deepEqual(JSON.parse(readFileSync(join(destination,'clean-observed.json'),'utf8')),{heap:'--max-old-space-size=576',offline:'true'});
+    assert.equal(existsSync(join(destination,'link-must-not-run')),false);
+    assert.equal(existsSync(join(destination,'.ae-installation.json')),false);
+    assert.equal(existsSync(join(destination,'package-lock.json')),true);
+  }finally{rmSync(directory,{recursive:true});}
+});

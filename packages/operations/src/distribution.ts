@@ -4,6 +4,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, openSync, readSync, clo
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { AE_COMPATIBILITY } from './migrations.js';
 const receiptName='.ae-installation.json';
+const reviewedBuild='node scripts/clean-build.mjs && tsc -p tsconfig.json && node scripts/link-build.mjs';
 const hash=(value:Buffer|string)=>createHash('sha256').update(value).digest('hex');
 interface Entry {path:string;type:'file'|'directory'|'link';mode:number;hash?:string;target?:string}
 interface Receipt {format:'ae-source-install-v1';version:string;commit:string;tree:string;sourceHash:string;lockHash:string;schema:number;node:string;npm:string;files:Entry[]}
@@ -103,11 +104,18 @@ export function installFixedSource(input:{source:string;commit:string;tree:strin
   // Failures retain the owned directory for inspection; never erase a partially installed tree automatically.
   for(const f of files){const target=join(destination,f.path);mkdirSync(dirname(target),{recursive:true});const bytes=execFileSync('git',safeGit(source,['cat-file','blob',f.oid]),{timeout:15000,maxBuffer:32*1024*1024});writeFileSync(target,bytes,{flag:'wx'});if(f.mode==='100755')chmodSync(target,0o755);}
   const pkg=JSON.parse(readFileSync(join(destination,'package.json'),'utf8'));
+  // Direct execution is supported only for this reviewed sequence, with no skipped lifecycle hooks.
+  if(!record(pkg?.scripts)||pkg.scripts.build!==reviewedBuild||Object.hasOwn(pkg.scripts,'prebuild')||Object.hasOwn(pkg.scripts,'postbuild'))throw new Error('UNSUPPORTED_INSTALL_BUILD_SEQUENCE');
   if(Number(process.versions.node.split('.')[0])!==24)throw new Error('NODE_24_REQUIRED');
   const npm=execFileSync('npm',['--version'],{encoding:'utf8'}).trim();if(!/^11\./.test(npm))throw new Error('NPM_11_REQUIRED');
-  const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=640'};
+  const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=576'};
   execFileSync('npm',['ci','--ignore-scripts','--offline','--no-audit','--no-fund'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
-  execFileSync('npm',['run','build'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
+  // Preserve clean -> strict compiler -> package linking without retaining npm/sh beside the compiler.
+  const buildStarted=performance.now();
+  for(const args of [['scripts/clean-build.mjs'],['node_modules/typescript/bin/tsc','-p','tsconfig.json'],['scripts/link-build.mjs']]){
+    const timeout=Math.floor(180000-(performance.now()-buildStarted));if(timeout<=0)throw new Error('INSTALL_BUILD_TIMEOUT');
+    execFileSync(process.execPath,args,{cwd:destination,env,stdio:'pipe',timeout,maxBuffer:8*1024*1024});
+  }
   const schema=installedSchema(destination);
   const receipt:Receipt={format:'ae-source-install-v1',version:pkg.version,commit:input.commit,tree:input.tree,sourceHash:hash(JSON.stringify(files)),lockHash:hash(readFileSync(join(destination,'package-lock.json'))),schema,node:process.versions.node,npm,files:inventory(destination)};
   writeFileSync(join(destination,receiptName),JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});
