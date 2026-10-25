@@ -1,0 +1,28 @@
+{
+  "format": "ae-operations-evidence-v1",
+  "candidateCommit": "8781169207af766333acd4200e475950e4f3ae2a",
+  "candidateTree": "e2e4787b71211e469b2ee5fb58f8d0c121a29921",
+  "aggregate": {
+    "command": "NODE_OPTIONS=--max-old-space-size=768 npm run check",
+    "tests": 257,
+    "passed": 257,
+    "failed": 0,
+    "node": "24.19.0",
+    "npm": "11.9.0"
+  },
+  "filesSha256": {
+    "THIRD_PARTY_LICENSES.txt": "9600a6bcb85e28a3560e0ef039fa5ff2f63f6922a441d89c36709c866223c1be",
+    "dependency-audit.json": "991b804ab74ea4f49daeb0da23c3529f4e4acd184b37e145f1aa825c1d0c30c9",
+    "distribution-report.json": "059e25dc2c808f0bb31edfc1d04345d4488e532a2d3c70f0f48e49bded5f14bd",
+    "installer-guards.json": "7a211a02bf9f7eac09ae6346bd958509576fca884465529ab9432b3655afc96e",
+    "npm-audit.json": "8fba679067cce2641c13c1037ddedff94dd746e9cd8c5cba92641ffb0aefdfef",
+    "postgres-report.json": "a6b5e08bfbf1f6522b4203836230d10e9b2e064e83e6dfd0bb731d054ae41c2c",
+    "sbom.cyclonedx.json": "d7a25c92c78490dc60192153011f4b0369b2e2a0a224eaf540b9d838d9661c4c"
+  },
+  "failuresRetained": [
+    "Initial catalog name[] parsing failed; fixed text[] conversion and complete reruns passed.",
+    "Incomplete offline cache failed without network fallback; exact lockfile cache was explicitly populated.",
+    "One install compiler was killed under tmpfs pressure; owned artifacts moved with 26256 mode/hash checks and clean disk-backed reruns passed."
+  ],
+  "scope": "Synthetic owned databases/files, no production deployment, paid inference, new credentials or customer data."
+}

@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "tests": [
+    "wrong-tree-pin-before-write",
+    "existing-host-repository-before-write",
+    "dirty-source-before-write",
+    "symlink-source-before-write"
+  ]
+}

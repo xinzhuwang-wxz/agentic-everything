@@ -1,0 +1,42 @@
+{
+  "status": "pass",
+  "commit": "8781169207af766333acd4200e475950e4f3ae2a",
+  "tree": "e2e4787b71211e469b2ee5fb58f8d0c121a29921",
+  "legacyCommit": "55faf91f5a47e2b7e4f5af003faa2801cee097b8",
+  "node": "v24.19.0",
+  "tests": [
+    {
+      "name": "clean-offline-fixed-legacy-install-build-doctor",
+      "status": "pass"
+    },
+    {
+      "name": "side-by-side-pinned-upgrade-preserves-previous-install",
+      "status": "pass"
+    },
+    {
+      "name": "installed-public-cli-runs-version-integrity-diagnostics",
+      "status": "pass"
+    },
+    {
+      "name": "uninstall-refuses-modified-extra-or-permission-changed-user-files",
+      "status": "pass"
+    },
+    {
+      "name": "symlink-and-wrong-version-uninstall-fail-closed",
+      "status": "pass"
+    },
+    {
+      "name": "compatible-binary-rollback-copy-remains-ready",
+      "status": "pass"
+    },
+    {
+      "name": "owned-install-uninstall-leaves-original-host-and-other-version-untouched",
+      "status": "pass"
+    }
+  ],
+  "limitations": [
+    "Local full-source distribution; no registry publication or signed remote provenance",
+    "No deployment, global installation, host patch, database change or activation switch",
+    "Exact file manifest is integrity evidence, not authentication against privileged local tampering"
+  ]
+}

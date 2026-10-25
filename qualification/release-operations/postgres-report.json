@@ -1,0 +1,62 @@
+{
+  "status": "pass",
+  "sourceCommit": "8781169207af766333acd4200e475950e4f3ae2a",
+  "legacyCommit": "55faf91f5a47e2b7e4f5af003faa2801cee097b8",
+  "postgres": "17.11 (Debian 17.11-0+deb13u1)",
+  "backup": {
+    "sha256": "5c26a657a5255ca95bcc8d544e039f5e854fa816572dd3ce205c735747e8c367",
+    "format": "pg_dump custom",
+    "restored": true
+  },
+  "tests": [
+    {
+      "name": "clean-schema-dry-run-has-no-side-effects",
+      "status": "pass"
+    },
+    {
+      "name": "failed-ddl-rolls-back-schema-and-ledger-atomically",
+      "status": "pass"
+    },
+    {
+      "name": "legacy-adoption-dry-run-preserves-old-pending-run",
+      "status": "pass"
+    },
+    {
+      "name": "concurrent-additive-upgrade-idempotent-preserves-rows-and-dbos-ownership",
+      "status": "pass"
+    },
+    {
+      "name": "schema-drift-and-modified-migration-history-fail-closed",
+      "status": "pass"
+    },
+    {
+      "name": "previous-binary-reads-old-approval-on-additive-schema-without-down-migration",
+      "status": "pass"
+    },
+    {
+      "name": "real-pg-dump-restore-recovers-schema-config-approval-sdk-and-dbos-data",
+      "status": "pass"
+    },
+    {
+      "name": "restored-old-run-resumes-pinned-release-exactly-once-with-current-scope-isolation",
+      "status": "pass"
+    },
+    {
+      "name": "physical-projection-retention-is-bounded-current-rights-scoped-atomic-and-preserves-audit",
+      "status": "pass"
+    },
+    {
+      "name": "durable-admission-concurrency-restart-isolation-window-renewal-and-bounded-cleanup",
+      "status": "pass"
+    },
+    {
+      "name": "real-http-rate-429-retry-after-no-runspawn-idempotency-conflict-noauth-and-process-restart",
+      "status": "pass"
+    }
+  ],
+  "limits": [
+    "Synthetic loopback data and deterministic model only",
+    "Projection retention is not full personal-data erasure",
+    "No production identity, deployment, credentials or live-provider qualification"
+  ]
+}

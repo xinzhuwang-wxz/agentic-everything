@@ -2,9 +2,9 @@
 
 This report qualifies a bounded synthetic operations path, not all M3 gates or production deployment. The implementation is in `@ae/operations`, configuration transfer uses the existing control plane, and the commands/runbook are in [operations](../operations.md).
 
-## Observed before final assembly
+## Observed candidate 8781169
 
-- Node 24.19.0 / npm 11.9.0; strict legacy and candidate TypeScript builds passed. The pre-admission assembled aggregate passed 256/256; seven focused operation/configuration tests passed after admission was added. The final assembled aggregate remains an integration-owner gate.
+- Node 24.19.0 / npm 11.9.0; the exact clean candidate 8781169 passed `npm run check`: lint, strict typecheck, clean build and all 257 tests. The legacy 55faf91 build passed separately. Final root assembly with other workstreams remains an integration-owner gate.
 - Real PostgreSQL 17.11: empty-schema read-only dry-run; actual failed SQL rolls back all DDL and ledger entries; old 55faf91 worker creates a pending Agents SDK checkpoint; legacy rows/admission-independent intent tokens remain unchanged during concurrent schema adoption; repeated migration is idempotent; schema/default/checksum drift is rejected.
 - Four concurrent migrations produce one complete history. DBOS migration rows remain unchanged. A previous binary can still read the exact pending approval against additive upgraded schema; no down migration is run.
 - Actual pg_dump custom backup, destruction of only the harness-owned synthetic database, fresh database creation and pg_restore restore the exact private run/configuration/approval/SDK state. A new worker resumes the original pinned release once. Repeating the decision leaves exactly one durable host mutation. Wrong-tenant read fails.
@@ -15,7 +15,7 @@ This report qualifies a bounded synthetic operations path, not all M3 gates or p
 
 ## Installation qualification
 
-The fixed-source installer, side-by-side upgrade, integrity doctor and guarded uninstall are implemented. The first clean offline attempt correctly failed on an incomplete cache rather than using the network. After the exact lockfile cache was populated from the official registry, an install build was killed under temporary-memory pressure. These are failed attempts, not passing installation evidence. Owned artifacts/cache were preserved on disk, with file hashes/modes verified and original temporary paths retained as links. The controlled disk-backed rerun passed clean offline legacy and candidate builds, side-by-side upgrade, installed public CLI doctor, modified/extra-file refusal, symlink/wrong-version refusal, previous-copy readiness and non-destructive owned uninstall. A final rerun also covers mode-change protection after hardening the manifest inventory.
+The fixed-source installer, side-by-side upgrade, integrity doctor and guarded uninstall are implemented. The first clean offline attempt correctly failed on an incomplete cache rather than using the network. After the exact lockfile cache was populated from the official registry, an install build was killed under temporary-memory pressure. These are failed attempts, not passing installation evidence. Owned artifacts/cache were preserved on disk, with file hashes/modes verified and original temporary paths retained as links. The controlled disk-backed rerun on exact 8781169 passed all seven cases: clean offline legacy and candidate builds, side-by-side upgrade, installed public CLI doctor, modified/extra/permission-changed file refusal, symlink/wrong-version refusal, previous-copy readiness and non-destructive owned uninstall. Four additional actual guard cases reject wrong tree, dirty source, an existing host-repository destination and a symlink source before creating any destination. No compilation or database process remains running.
 
 ## Reproduction
 
@@ -33,3 +33,9 @@ npm audit --package-lock-only --json --registry=https://registry.npmjs.org
 The PG harness only accepts its password-free loopback synthetic database and stops its owned server. Workers use minimal environments and deterministic simulated providers. The installer never runs a network fallback or lifecycle script and never activates a service. Archive/signature trust, production SSO, provider costs, scale/HA, real credential rotation, deployment, general deletion and all other adapters retain their separate support/evidence status.
 
 Initial SQL qualification exposed PostgreSQL `name[]` parsing at the catalog check; changing the query to return `text[]` fixed it, and the complete sequence was rerun. Failures are retained rather than reclassified as pass.
+
+## Retained release artifacts
+
+[PostgreSQL/DBOS report](../../qualification/release-operations/postgres-report.json), [distribution report](../../qualification/release-operations/distribution-report.json), [installer guards](../../qualification/release-operations/installer-guards.json), [exact lockfile dependency review](../../qualification/release-operations/dependency-audit.json), [CycloneDX SBOM](../../qualification/release-operations/sbom.cyclonedx.json), [full dependency licenses](../../qualification/release-operations/THIRD_PARTY_LICENSES.txt), [official npm advisory result](../../qualification/release-operations/npm-audit.json), and [evidence hashes](../../qualification/release-operations/evidence-manifest.json). The synthetic dump and detailed process logs remain in the private qualification workspace, not the source distribution.
+
+These close the implemented migration/configuration dry-run, old-run/backup recovery, fixed-source installation/diagnosis/compatible upgrade/uninstall, bounded admission and projection-retention gates for the recorded candidate. They do not mark all M3 extensions or an arbitrary production environment qualified. See [declared operational support](../support-matrix.md).

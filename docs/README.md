@@ -11,6 +11,7 @@
 
 See [current acceptance status and remaining gates](acceptance-status.md) before treating a bounded fixture pass as whole-product readiness.
 
+- [Declared support and operational owners](support-matrix.md).
 - [Installation, operations and recovery](operations.md): fixed-source distribution, one schema owner, backup/restore, configuration transfer, admission and projection retention.
 
 ## Work on AE
