@@ -10,7 +10,7 @@ Keep your product's language, business logic and permissions. Add an embedded as
 
 ![AE journey: your developer agent uses AE to adapt an existing product, with reviewed changes and the host retaining authority.](docs/assets/ae-journey.svg)
 
-> **Source-distributed development candidate.** Three bounded recipes adapt a React/TypeScript helpdesk and Python/SQLite and Java/Spring Core inventory hosts through the same lifecycle. The shared core includes a governed runtime, floating assistant and administration tab, opt-in PostgreSQL/DBOS recovery, and fixed-source install/upgrade tools. All recorded model runs are simulated; fixture qualification is not production readiness. [Current acceptance and exact remaining work](docs/acceptance-status.md).
+> **Source-distributed developer release.** Three bounded recipes adapt a React/TypeScript helpdesk and Python/SQLite and Java/Spring Core inventory hosts through the same lifecycle. The shared core includes a governed runtime, floating assistant and administration tab, opt-in PostgreSQL/DBOS recovery, and fixed-source install/upgrade tools. All recorded model runs are simulated; fixture qualification is not production readiness. [Core acceptance and release scope](docs/acceptance-status.md).
 
 ## From an existing app to an agentic product
 
@@ -58,11 +58,11 @@ No model key, account or database is needed for these local checks. Dependency d
 | Model contracts | AE-native injectable model port and official SDK Chat Completions-compatible HTTP adapter | [Second contract](docs/verification/second-provider-contract.md); synthetic responder, not live-model quality/cost |
 | Operations | Fixed-source install/doctor/side-by-side upgrade/uninstall, one AE migration owner, backup/restore, configuration transfer, durable admission and scoped projection retention | [Runbook](docs/operations.md) · [Qualification](docs/verification/release-operations.md) |
 | Optional extensions | Bounded DBOS automation, declared official A2A subset, mobile bridge contract experiment | [Support and limits](packages/extensions/README.md); knowledge disabled and real mobile platform unverified |
-| Not claimed | Arbitrary automatic adaptation, production identity/scale/SLA, live-provider quality, whole-account erasure, universal mobile SDKs or deployment | [Support matrix](docs/support-matrix.md) · [Exact remaining core gates](docs/acceptance-status.md) |
+| Not claimed | Arbitrary automatic adaptation, production identity/scale/SLA, live-provider quality, whole-account erasure, universal mobile SDKs or deployment | [Support matrix](docs/support-matrix.md) · [Core acceptance and release scope](docs/acceptance-status.md) |
 
 Each report names its tested inputs and limits. Static checks, unit tests, real HTTP/database runs and browser acceptance are distinct evidence; none silently certifies another host or deployment. The default in-memory fixture loses run/approval/operation state on restart. The opt-in persistent composition has separate recovery evidence and requires a qualified host receipt protocol. Do not expose the synthetic fixture or put customer data into it.
 
-Core acceptance and the three planned real external adaptations are not yet declared complete. Those adaptations will receive real before/after repository links and screenshots only after they exist and are verified, never placeholder URLs.
+The bounded core release is accepted at the recorded source and environments. The three external adaptations are separate deliverables still in progress; they will receive real before/after repository links and screenshots only after verification, never placeholder URLs.
 
 ## How the pieces fit
 

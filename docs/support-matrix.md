@@ -1,6 +1,6 @@
 # Declared support and operational ownership
 
-Support is scoped by host/version, surface, capability and environment. A fixture pass does not qualify every host in its language, and a contract experiment is not a deployed platform. [Acceptance status](acceptance-status.md) names the remaining original core gates; [operations](operations.md) describes installation and recovery.
+Support is scoped by host/version, surface, capability and environment. A fixture pass does not qualify every host in its language, and a contract experiment is not a deployed platform. [Acceptance status](acceptance-status.md) records the accepted core source and environments; [operations](operations.md) describes installation and recovery.
 
 ## Adaptation and runtime
 
@@ -22,7 +22,7 @@ Other framework/platform layouts receive analysis or reviewed custom-integration
 
 | Surface | Owner | Qualified or implemented scope | Evidence / limit |
 | --- | --- | --- | --- |
-| Fixed-source install, doctor, upgrade, uninstall | Operations + CLI | Node 24.19.0, npm 11.9.0, Git, Linux synthetic directories; exact commit/tree, offline lockfile, full builds and side-by-side versions | [Integrated installer](verification/release-operations.md#integrated-installer-closure). Editable receipts detect accidental drift, not coordinated rewriting or publisher identity. No registry publication, activation or general OS installer. |
+| Fixed-source install, doctor, upgrade, uninstall | Operations + CLI | Node 24 / npm 11, Git; recorded Linux synthetic-directory and exact-source macOS qualification; offline lockfile, full builds and side-by-side versions | [Final release record](acceptance-status.md#final-assembled-verification). Editable receipts detect accidental drift, not coordinated rewriting or publisher identity. No registry publication, activation or general OS installer. |
 | AE schema adoption/dry-run | Operations | PostgreSQL 17.11; additive versions 1–3; columns/defaults, keys/constraints/index checks, checksum history and transactional advisory lock | [Operations evidence](verification/release-operations.md). Legacy rows/NULL tokens preserved. DBOS schema, database roles/ACLs and host databases remain independently owned. |
 | Backup/restore and compatible rollback | PostgreSQL tools + operator | Real consistent synthetic dump, fresh owned-database restore, original approval/config/checkpoint preservation and single-write recovery; compatible prior binary remains usable | A real host may own a separate database. Production destination, access/encryption and coordinated host consistency need explicit setup/qualification. |
 | Configuration transfer | Contracts + control plane | Strict version-1 same-tenant/application envelope, exact capability/behavior pins, conflict preview and current-admin new draft only | No credential fields, identity grants, implicit publication, release overwrite or cross-tenant import. Free text still requires secret review. |
