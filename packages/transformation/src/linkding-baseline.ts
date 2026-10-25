@@ -511,12 +511,12 @@ export function copyLinkdingExecution(root:string,sourceRoot:string,candidate:bo
  }catch(error){rmSync(directory,{recursive:true,force:true});throw error;}
 }
 export interface LinkdingTestResult {exitCode:0;count:number;failed:0;rawLog:string;files:string[];network:'denied';}
-export function runLinkdingTests(directory:string,interpreter:string,deadlineAt:number,candidate=false):LinkdingTestResult{
- const files=candidate?[...linkdingTestFiles,'ae_linkding/tests.py']:linkdingTestFiles;
+export function runLinkdingTests(directory:string,interpreter:string,deadlineAt:number,candidate:false|true|'native'=false):LinkdingTestResult{
+ const files=candidate==='native'?['ae_linkding/tests.py']:candidate?[...linkdingTestFiles,'ae_linkding/tests.py']:linkdingTestFiles;
  const script='import os,sys,socket; sys.path.insert(0,sys.argv[1]); os.chdir(sys.argv[1]); os.environ["DJANGO_SETTINGS_MODULE"]="bookmarks.settings.dev"; os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"]="1"\ndef deny(*args,**kwargs): raise RuntimeError("Profile denies outbound network")\nsocket.socket.connect=deny; socket.create_connection=deny\nimport pytest; raise SystemExit(pytest.main(["-q","-p","no:cacheprovider","-p","pytest_django.plugin",*sys.argv[2:]]))';
  const child=spawnSync(interpreter,['-I','-B','-c',script,directory,...files],{encoding:'utf8',timeout:Math.min(100000,linkdingBudget(deadlineAt)),killSignal:'SIGKILL',maxBuffer:1024*1024,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTEST_DISABLE_PLUGIN_AUTOLOAD:'1',AE_ROOT:aeRoot(),AE_PYTHON:interpreter,AE_NODE:process.execPath}});
  const rawLog=child.stdout+'\n'+child.stderr;const counts=[...rawLog.matchAll(/(?:^|\n)(?:=+ )?(\d+) passed(?:, \d+ warnings?)? in /g)];const count=Number(counts.at(-1)?.[1]);
- if(child.error||child.status!==0||child.signal||(!candidate&&count!==356)||(candidate&&count!==376)||/\b(?:FAILED|ERRORS)\b/.test(rawLog))throw Error('Linkding fixed local tests failed: '+rawLog.slice(-4000));
+ if(child.error||child.status!==0||child.signal||(!candidate&&count!==356)||(candidate===true&&count!==376)||(candidate==='native'&&count!==20)||/\b(?:FAILED|ERRORS)\b/.test(rawLog))throw Error('Linkding fixed local tests failed: '+rawLog.slice(-4000));
  return {exitCode:0,count,failed:0,rawLog,files,network:'denied'};
 }
 export const linkdingBrowserAssertions=['original-session-login','own-bookmark-list','host-search-query','foreign-bookmark-invisible'];
@@ -533,11 +533,13 @@ export function runLinkdingBrowser(directory:string,interpreter:string,phase:'ba
 }
 function testCase(id:string){return {id,input:{suite:id},seed:{fixture:'linkding-isolated-seed-v1'},covers:[id]};}
 export function linkdingTestObservation(result:LinkdingTestResult):Observation{return {output:{tests:356,passed:356,failed:0,files:linkdingTestFiles},sideEffects:[],receipt:{exitCode:result.exitCode,rawLog:result.rawLog,network:result.network}};}
-export function linkdingBrowserObservation(result:LinkdingBrowserResult):Observation{return {output:result.business,sideEffects:[],receipt:{exitCode:0,rawLog:'browser raw observations retained in output',serverStopped:result.cleanup.serverStopped,browserClosed:result.cleanup.browserClosed}};}
+export interface LinkdingOriginalScreenshot {base64:string;sha256:string;}
+export function assertLinkdingScreenshot(value:unknown):asserts value is LinkdingOriginalScreenshot{const item=value as LinkdingOriginalScreenshot;assert.deepEqual(Object.keys(item).sort(),['base64','sha256']);assert.equal(typeof item.base64,'string');assert.ok(item.base64.length<700000);const bytes=Buffer.from(item.base64,'base64');assert.equal(bytes.toString('base64'),item.base64);assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');assert.equal(hash(bytes),item.sha256);}
+export function linkdingBrowserObservation(result:LinkdingBrowserResult,originalScreenshot:LinkdingOriginalScreenshot):Observation{assertLinkdingScreenshot(originalScreenshot);return {output:result.business,sideEffects:[],receipt:{exitCode:0,rawLog:'browser raw observations retained in output',serverStopped:result.cleanup.serverStopped,browserClosed:result.cleanup.browserClosed,originalScreenshot:{...originalScreenshot}}};}
 export function assertLinkdingObservation(id:string,value:Observation):void{
  assert.deepEqual(value.sideEffects,[]);const receipt=value.receipt as Record<string,unknown>;assert.equal(receipt.exitCode,0);assert.equal(typeof receipt.rawLog,'string');
- if(id==='upstream-local-tests'){assert.deepEqual(value.output,{tests:356,passed:356,failed:0,files:linkdingTestFiles});assert.equal(receipt.network,'denied');assert.match(String(receipt.rawLog),/\b(?:356|376) passed\b/);assert.doesNotMatch(String(receipt.rawLog),/\b(?:FAILED|ERRORS)\b/);}
- else if(id==='authenticated-original-browser'){const business=value.output as LinkdingBrowserResult['business'];assert.deepEqual(business,{authenticated:true,titles:['Django documentation','Python language'],searchTitles:['Django documentation'],foreignVisible:false});assert.equal(receipt.serverStopped,true);assert.equal(receipt.browserClosed,true);}
+ if(id==='upstream-local-tests'){assert.deepEqual(value.output,{tests:356,passed:356,failed:0,files:linkdingTestFiles});assert.equal(receipt.network,'denied');assert.match(String(receipt.rawLog),/\b356 passed\b/);assert.doesNotMatch(String(receipt.rawLog),/\b(?:FAILED|ERRORS)\b/);}
+ else if(id==='authenticated-original-browser'){const business=value.output as LinkdingBrowserResult['business'];assert.deepEqual(business,{authenticated:true,titles:['Django documentation','Python language'],searchTitles:['Django documentation'],foreignVisible:false});assert.equal(receipt.serverStopped,true);assert.equal(receipt.browserClosed,true);assertLinkdingScreenshot(receipt.originalScreenshot);}
  else throw Error('Unknown Linkding baseline case');
 }
 export async function assertLinkdingBaseline(value:unknown,binding:{sourceRoot?:string;sourceVersion?:string}={}):Promise<BaselineArchive>{
@@ -546,7 +548,7 @@ export async function assertLinkdingBaseline(value:unknown,binding:{sourceRoot?:
 export async function captureLinkdingBaseline(input:{sourceRoot:string;deadlineAt?:number}):Promise<BaselineArchive>{
  inspectLinkding(input.sourceRoot);const deadlineAt=input.deadlineAt??Date.now()+180000,interpreter=linkdingPython(input.sourceRoot,deadlineAt),work=copyLinkdingExecution(input.sourceRoot,input.sourceRoot,false);
  try{
-  const tests=runLinkdingTests(work.directory,interpreter,deadlineAt),browser=runLinkdingBrowser(work.directory,interpreter,'baseline',join(work.directory,'.ae-browser'),deadlineAt);const observations:Record<string,Observation>={'upstream-local-tests':linkdingTestObservation(tests),'authenticated-original-browser':linkdingBrowserObservation(browser)};
+  const tests=runLinkdingTests(work.directory,interpreter,deadlineAt),browser=runLinkdingBrowser(work.directory,interpreter,'baseline',join(work.directory,'.ae-browser'),deadlineAt);const image=readFileSync(join(work.directory,'.ae-browser/before.png'));const originalScreenshot={base64:image.toString('base64'),sha256:hash(image)};const observations:Record<string,Observation>={'upstream-local-tests':linkdingTestObservation(tests),'authenticated-original-browser':linkdingBrowserObservation(browser,originalScreenshot)};
   const archive=await captureBaseline({adapter:{safety:'isolated-seeded-fixture',async execute(test){return observations[test.id]!;}},cases:linkdingCaseIds.map(testCase),provenance:linkdingProvenance(),normalization:linkdingNormalization,coverage});return assertLinkdingBaseline(archive,{sourceRoot:input.sourceRoot,sourceVersion:linkdingCommit});
  }finally{rmSync(work.directory,{recursive:true,force:true});}
 }
