@@ -149,6 +149,13 @@ test('reviewed public environment sample cannot be carried through a symlink', (
   assert.throws(() => applyApprovedPlan({ ...f, sourceRoot: f.source, assessment, plan, approval }), /symlinks/);
   assert.equal(existsSync(f.destination), false);
 });
+test('a reviewed sample never permits another tracked credential or discloses its value', () => {
+  const f = setup(); const marker = 'synthetic-password-must-not-appear-in-errors';
+  commitMaterializationFixture(f, '.env.sample', publicEnvSample());
+  const input = commitMaterializationFixture(f, '.env.local', 'PASSWORD=' + marker);
+  assert.throws(() => applyApprovedPlan(input), (error: unknown) => error instanceof Error && /secret files/.test(error.message) && !error.message.includes(marker));
+  assert.equal(existsSync(f.destination), false);
+});
 
 test('baseline and transformed host both build as real browser applications', async () => {
   const f = setup();
