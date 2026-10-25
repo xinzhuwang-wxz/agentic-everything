@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, symlinkSync, chmodSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { installFixedSource, doctorInstallation, uninstallFixedSource } from '../../dist/packages/operations/src/index.js';
@@ -15,7 +15,7 @@ const installed=installFixedSource({source,commit:legacy,tree:legacyTree,destina
 const upgraded=installFixedSource({source,commit,tree,destination:second,cache,previous:first});assert.equal(upgraded.integrity,true);assert.equal(upgraded.activation,'not-changed');assert.equal(doctorInstallation(first).integrity,true);record('side-by-side-pinned-upgrade-preserves-previous-install');
 execFileSync(process.execPath,[join(second,'packages/cli/dist/index.js'),'doctor','--installation',second],{encoding:'utf8'});record('installed-public-cli-runs-version-integrity-diagnostics');
 const readme=join(second,'README.md'),original=readFileSync(readme);writeFileSync(readme,Buffer.concat([original,Buffer.from('\noperator edit\n')]));assert.equal(doctorInstallation(second).integrity,false);assert.throws(()=>uninstallFixedSource(second,commit),/MODIFIED_INSTALLATION/);writeFileSync(readme,original);
-writeFileSync(join(second,'user-file.txt'),'preserve me');assert.throws(()=>uninstallFixedSource(second,commit),/MODIFIED_INSTALLATION/);unlinkSync(join(second,'user-file.txt'));record('uninstall-refuses-modified-or-extra-user-files');
+writeFileSync(join(second,'user-file.txt'),'preserve me');assert.throws(()=>uninstallFixedSource(second,commit),/MODIFIED_INSTALLATION/);unlinkSync(join(second,'user-file.txt'));const previousMode=statSync(readme).mode&0o777;chmodSync(readme,previousMode^0o100);assert.throws(()=>uninstallFixedSource(second,commit),/MODIFIED_INSTALLATION/);chmodSync(readme,previousMode);record('uninstall-refuses-modified-extra-or-permission-changed-user-files');
 symlinkSync(first,join(directory,'linked'));assert.throws(()=>uninstallFixedSource(join(directory,'linked'),legacy),/SYMLINK_PATH/);assert.throws(()=>uninstallFixedSource(first,commit),/COMMIT_MISMATCH/);record('symlink-and-wrong-version-uninstall-fail-closed');
 assert.equal(doctorInstallation(first).integrity,true);record('compatible-binary-rollback-copy-remains-ready');
 uninstallFixedSource(second,commit);assert.equal(existsSync(second),false);assert.equal(doctorInstallation(first).integrity,true);uninstallFixedSource(first,legacy);assert.equal(readFileSync(join(directory,'original-host','business.txt'),'utf8'),'ORIGINAL_HOST_UNCHANGED');record('owned-install-uninstall-leaves-original-host-and-other-version-untouched');

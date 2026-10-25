@@ -15,7 +15,7 @@ test('configuration transfer previews read-only and imports new draft without pu
 });
 test('transfer rejects schema/secret fields, corrupt hash, wrong scope, capability drift and stale active-release preview',async()=>{
   const store=new InMemoryControlPlane(ticketCapabilities),transfer=new ConfigurationTransfer(asAsyncControlPlane(store)),draft=store.save(admin,config),envelope=await transfer.export(admin,draft.draftId,1);
-  for(const bad of [{...envelope,schemaVersion:'2'},{...envelope,apiKey:'not-allowed'},{...envelope,configuration:{...config,providerKey:'not-allowed'}},{...envelope,contentHash:'0'.repeat(64)},seal({...envelope,tenantId:'other'}),seal({...envelope,capabilities:envelope.capabilities.map(c=>({...c,version:'2'}))}),seal({...envelope,capabilities:[]})]){
+  for(const bad of [{...envelope,schemaVersion:'2'},{...envelope,apiKey:'not-allowed'},{...envelope,configuration:{...config,providerKey:'not-allowed'}},{...envelope,contentHash:'0'.repeat(64)},seal({...envelope,tenantId:'other'}),seal({...envelope,capabilities:envelope.capabilities.map(c=>({...c,version:'2'}))}),seal({...envelope,capabilities:[]}),seal({...envelope,configuration:{...config,behavior:{baselineHash:'a'.repeat(64),candidateCodeHash:'b'.repeat(64),registryHash:'c'.repeat(64),enabled:[]}}})]){
     const preview=await transfer.preview(admin,bad);assert.equal(preview.valid,false);await assert.rejects(transfer.import(admin,bad,preview.previewHash),/IMPORT_CONFLICT/);
   }
   const preview=await transfer.preview(admin,envelope);store.publish(admin,draft.draftId,1);await assert.rejects(transfer.import(admin,envelope,preview.previewHash),/PREVIEW_CONFLICT/);

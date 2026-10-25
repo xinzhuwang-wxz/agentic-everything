@@ -5,7 +5,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { AE_COMPATIBILITY } from './migrations.js';
 const receiptName='.ae-installation.json';
 const hash=(value:Buffer|string)=>createHash('sha256').update(value).digest('hex');
-interface Entry {path:string;type:'file'|'directory'|'link';hash?:string;target?:string}
+interface Entry {path:string;type:'file'|'directory'|'link';mode:number;hash?:string;target?:string}
 interface Receipt {format:'ae-source-install-v1';version:string;commit:string;tree:string;sourceHash:string;lockHash:string;schema:number;node:string;npm:string;files:Entry[]}
 function safePath(value:string,mustExist=false):string{
   const path=resolve(value);
@@ -22,9 +22,9 @@ function inventory(root:string,path=root):Entry[]{
   for(const name of readdirSync(path).sort()){
     const file=join(path,name),rel=relative(root,file);if(rel===receiptName)continue;
     const stat=lstatSync(file);
-    if(stat.isSymbolicLink()){const target=readlinkSync(file);if(!within(root,resolve(dirname(file),target)))throw new Error('INSTALL_SYMLINK_ESCAPE');result.push({path:rel,type:'link',target});}
-    else if(stat.isDirectory()){result.push({path:rel,type:'directory'});result.push(...inventory(root,file));}
-    else if(stat.isFile())result.push({path:rel,type:'file',hash:hash(readFileSync(file))});
+    if(stat.isSymbolicLink()){const target=readlinkSync(file);if(!within(root,resolve(dirname(file),target)))throw new Error('INSTALL_SYMLINK_ESCAPE');result.push({path:rel,type:'link',mode:stat.mode&0o777,target});}
+    else if(stat.isDirectory()){result.push({path:rel,type:'directory',mode:stat.mode&0o777});result.push(...inventory(root,file));}
+    else if(stat.isFile())result.push({path:rel,type:'file',mode:stat.mode&0o777,hash:hash(readFileSync(file))});
     else throw new Error('UNSUPPORTED_INSTALL_FILE');
   }
   return result;

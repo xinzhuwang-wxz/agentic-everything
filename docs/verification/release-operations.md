@@ -15,7 +15,7 @@ This report qualifies a bounded synthetic operations path, not all M3 gates or p
 
 ## Installation qualification
 
-The fixed-source installer, side-by-side upgrade, integrity doctor and guarded uninstall are implemented. The first clean offline attempt correctly failed on an incomplete cache rather than using the network. After the exact lockfile cache was populated from the official registry, an install build was killed under temporary-memory pressure. These are failed attempts, not passing installation evidence. Owned artifacts/cache were preserved on disk, with file hashes/modes verified and original temporary paths retained as links. Final clean installation evidence is pending the controlled rerun.
+The fixed-source installer, side-by-side upgrade, integrity doctor and guarded uninstall are implemented. The first clean offline attempt correctly failed on an incomplete cache rather than using the network. After the exact lockfile cache was populated from the official registry, an install build was killed under temporary-memory pressure. These are failed attempts, not passing installation evidence. Owned artifacts/cache were preserved on disk, with file hashes/modes verified and original temporary paths retained as links. The controlled disk-backed rerun passed clean offline legacy and candidate builds, side-by-side upgrade, installed public CLI doctor, modified/extra-file refusal, symlink/wrong-version refusal, previous-copy readiness and non-destructive owned uninstall. A final rerun also covers mode-change protection after hardening the manifest inventory.
 
 ## Reproduction
 
