@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -524,13 +524,28 @@ export interface LinkdingBrowserResult {phase:'baseline'|'candidate';business:{a
 export function assertLinkdingBrowser(value:unknown,phase:'baseline'|'candidate'):asserts value is LinkdingBrowserResult{
  const data=value as LinkdingBrowserResult;assert.equal(data.phase,phase);assert.equal(data.business.authenticated,true);assert.equal(data.business.foreignVisible,false);assert.deepEqual([...data.business.titles].sort(),['Django documentation','Python language']);assert.deepEqual(data.business.searchTitles,['Django documentation']);for(const name of linkdingBrowserAssertions)assert.ok(data.assertions.includes(name));assert.deepEqual(data.cleanup,{serverStopped:true,browserClosed:true});const names=phase==='baseline'?['before.png']:['after-collapsed.png','after-approval.png','after.png','after-narrow.png'];assert.deepEqual(Object.keys(data.screenshots).sort(),names.sort());for(const image of Object.values(data.screenshots)){assertLinkdingScreenshot({kind:'pre-apply-original-evidence-reference',...image});}if(Buffer.byteLength(JSON.stringify(data))>900000)throw Error('Linkding browser evidence exceeds artifact byte bound');
 }
-export function runLinkdingBrowser(directory:string,interpreter:string,phase:'baseline'|'candidate',output:string,deadlineAt:number):LinkdingBrowserResult{
+export async function runLinkdingBrowser(directory:string,interpreter:string,phase:'baseline'|'candidate',output:string,deadlineAt:number):Promise<LinkdingBrowserResult>{
  assertFixtureBrowser(fixtureBrowserPath);
  const collector=join(aeRoot(),'tests/browser/linkding-delivery.mjs');if(!existsSync(collector)||lstatSync(collector).isSymbolicLink())throw Error('Reviewed Linkding browser collector not installed');mkdirSync(output,{recursive:true});
- const child=spawnSync(process.execPath,[collector,'--source',directory,'--python',interpreter,'--phase',phase,'--output',output,'--deadline',String(deadlineAt)],{encoding:'utf8',timeout:Math.min(120000,linkdingBudget(deadlineAt)),killSignal:'SIGKILL',maxBuffer:1024*1024,detached:true,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',AE_ROOT:aeRoot(),AE_PYTHON:interpreter,AE_NODE:process.execPath,PYTHONDONTWRITEBYTECODE:'1'}});
- let groupAlive=false;if(child.pid){try{process.kill(-child.pid,0);groupAlive=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}}if(groupAlive){try{process.kill(-child.pid!,'SIGKILL');}catch{}throw Error('Linkding collector left an outstanding process group; forced cleanup, not PASS');}
- if(child.error||child.status!==0||child.signal)throw Error('Linkding browser collector failed: '+(child.stdout+'\n'+child.stderr).slice(-4000));const result=JSON.parse(readFileSync(join(output,'result.json'),'utf8')) as unknown;assertLinkdingBrowser(result,phase);return result;
+ const timeout=Math.min(120000,linkdingBudget(deadlineAt));
+ const child=spawn(process.execPath,[collector,'--source',directory,'--python',interpreter,'--phase',phase,'--output',output,'--deadline',String(deadlineAt)],{detached:true,stdio:['ignore','pipe','pipe'],env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',AE_ROOT:aeRoot(),AE_PYTHON:interpreter,AE_NODE:process.execPath,PYTHONDONTWRITEBYTECODE:'1'}});
+ let outputText='',forced=false,failure:Error|undefined;
+ const groupAlive=()=>{if(!child.pid)return false;try{process.kill(-child.pid,0);return true;}catch(error){if((error as NodeJS.ErrnoException).code==='ESRCH')return false;throw error;}};
+ const stopGroup=()=>{forced=true;if(child.pid)try{process.kill(-child.pid,'SIGKILL');}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')failure=error instanceof Error?error:Error(String(error));}};
+ const outcome=await new Promise<{code:number|null;signal:NodeJS.Signals|null}>(resolveOutcome=>{
+  const timer=setTimeout(()=>{failure=Error('Linkding browser collector deadline exceeded');stopGroup();},timeout);
+  const collect=(chunk:Buffer)=>{if(Buffer.byteLength(outputText)+chunk.length>1024*1024){failure=Error('Linkding browser collector output exceeded limit');stopGroup();}else outputText+=chunk.toString('utf8');};
+  child.stdout.on('data',collect);child.stderr.on('data',collect);
+  child.on('error',error=>{failure=error;stopGroup();});
+  child.on('close',(code,signal)=>{clearTimeout(timer);resolveOutcome({code,signal});});
+ });
+ // Normal collector exit is insufficient if a server, runtime child or browser survived it.
+ for(let attempt=0;attempt<10&&groupAlive()&&Date.now()<deadlineAt;attempt++)await new Promise(done=>setTimeout(done,25));
+ if(groupAlive()){stopGroup();throw Error('Linkding collector left an outstanding process group; forced cleanup, not PASS');}
+ if(failure||forced||outcome.code!==0||outcome.signal)throw Error('Linkding browser collector failed: '+(failure?.message??'nonzero exit/signal')+' '+outputText.slice(-4000));
+ const result=JSON.parse(readFileSync(join(output,'result.json'),'utf8')) as unknown;assertLinkdingBrowser(result,phase);return result;
 }
+
 function testCase(id:string){return {id,input:{suite:id},seed:{fixture:'linkding-isolated-seed-v1'},covers:[id]};}
 export function linkdingTestObservation(result:LinkdingTestResult):Observation{return {output:{tests:356,passed:356,failed:0,files:linkdingTestFiles},sideEffects:[],receipt:{exitCode:result.exitCode,rawLog:result.rawLog,network:result.network}};}
 /** Immutable pre-apply evidence reference, never a candidate screenshot or business observation. */
@@ -549,7 +564,7 @@ export async function assertLinkdingBaseline(value:unknown,binding:{sourceRoot?:
 export async function captureLinkdingBaseline(input:{sourceRoot:string;deadlineAt?:number}):Promise<BaselineArchive>{
  inspectLinkding(input.sourceRoot);const deadlineAt=input.deadlineAt??Date.now()+180000,interpreter=linkdingPython(input.sourceRoot,deadlineAt),work=copyLinkdingExecution(input.sourceRoot,input.sourceRoot,false);
  try{
-  const tests=runLinkdingTests(work.directory,interpreter,deadlineAt),browser=runLinkdingBrowser(work.directory,interpreter,'baseline',join(work.directory,'.ae-browser'),deadlineAt);const image=readFileSync(join(work.directory,'.ae-browser/before.png'));const originalScreenshot:LinkdingOriginalScreenshot={kind:'pre-apply-original-evidence-reference',base64:image.toString('base64'),sha256:hash(image)};const observations:Record<string,Observation>={'upstream-local-tests':linkdingTestObservation(tests),'authenticated-original-browser':linkdingBrowserObservation(browser,originalScreenshot)};
+  const tests=runLinkdingTests(work.directory,interpreter,deadlineAt),browser=await runLinkdingBrowser(work.directory,interpreter,'baseline',join(work.directory,'.ae-browser'),deadlineAt);const image=readFileSync(join(work.directory,'.ae-browser/before.png'));const originalScreenshot:LinkdingOriginalScreenshot={kind:'pre-apply-original-evidence-reference',base64:image.toString('base64'),sha256:hash(image)};const observations:Record<string,Observation>={'upstream-local-tests':linkdingTestObservation(tests),'authenticated-original-browser':linkdingBrowserObservation(browser,originalScreenshot)};
   const archive=await captureBaseline({adapter:{safety:'isolated-seeded-fixture',async execute(test){return observations[test.id]!;}},cases:linkdingCaseIds.map(testCase),provenance:linkdingProvenance(),normalization:linkdingNormalization,coverage});return assertLinkdingBaseline(archive,{sourceRoot:input.sourceRoot,sourceVersion:linkdingCommit});
  }finally{rmSync(work.directory,{recursive:true,force:true});}
 }
