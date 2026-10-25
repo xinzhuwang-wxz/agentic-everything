@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "sourceCommit": "b15629e05e6cc04982424fdd6cfe7cefb8b83faf",
+  "postgres": "17.11 (Debian 17.11-0+deb13u1)",
+  "tests": [
+    {
+      "name": "bounded-keyset-pages-pass-101-blocked-rows-with-exact-microsecond-order-scope-and-budget",
+      "status": "pass"
+    },
+    {
+      "name": "changed-payload-status-and-current-authority-reject-before-deletion-or-roll-back",
+      "status": "pass"
+    },
+    {
+      "name": "apply-locks-current-run-status-and-refuses-concurrent-terminal-to-unknown-change",
+      "status": "pass"
+    },
+    {
+      "name": "reviewed-bounded-drain-removes-only-later-terminal-projection-preserves-blocked-and-audit-and-rejects-stale-replay",
+      "status": "pass"
+    }
+  ],
+  "limits": [
+    "Synthetic owned data only",
+    "At most 100 conversations per page and 10 explicitly requested preview batches",
+    "Blocked diagnostics are page subsets, not exhaustive",
+    "No immutable run, approval, operation, intent or DBOS deletion"
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "format": "ae-operations-review-followup-v1",
+  "sourceCommit": "b369c0d78d04870e7448d6c7e9b3322327d1087c",
+  "sourceReview": "No open confirmed source-level findings at the recorded source commit. This is not executable release acceptance.",
+  "observed": [
+    {
+      "sourceCommit": "8b5226af00077da2ba327739d7807767edf24c6f",
+      "command": "NODE_OPTIONS=--max-old-space-size=768 npm run check",
+      "status": "pass",
+      "tests": 260,
+      "includes": [
+        "lint",
+        "strict typecheck",
+        "clean build",
+        "all compiled tests"
+      ]
+    },
+    {
+      "sourceCommit": "df2c560145b37fc34ce8059164a11c186f13b6ad",
+      "command": "NODE_OPTIONS=--max-old-space-size=768 npm run build",
+      "status": "pass",
+      "includes": [
+        "strict TypeScript compilation",
+        "workspace exports"
+      ]
+    },
+    {
+      "sourceCommit": "b15629e05e6cc04982424fdd6cfe7cefb8b83faf",
+      "command": "bash tests/operations/run-retention-postgres.sh /official/postgresql/17/bin 55519",
+      "status": "pass",
+      "cases": 4,
+      "report": "retention-pagination-report.json",
+      "postgresStopped": true
+    },
+    {
+      "sourceCommit": "b369c0d78d04870e7448d6c7e9b3322327d1087c",
+      "command": "Lightweight TypeScript ESNext transpile of changed retention source/unit test; NODE_OPTIONS=--max-old-space-size=192 node --test dist/packages/operations/test/*.test.js dist/packages/control-plane/test/transfer.test.js; node scripts/lint.mjs",
+      "status": "pass",
+      "tests": 12,
+      "limitation": "Focused runtime tests and source hygiene, not a full strict build of this exact final source."
+    }
+  ],
+  "failed": [
+    {
+      "sourceCommit": "b15629e05e6cc04982424fdd6cfe7cefb8b83faf",
+      "phase": "In-process clean distribution fixture",
+      "result": "Legacy offline install/build/doctor passed; candidate build OS-killed with exit 137 and no TypeScript diagnostic. Candidate retained; successful legacy receipt/doctor/uninstall evidence archived before guarded cleanup."
+    },
+    {
+      "sourceCommit": "b369c0d78d04870e7448d6c7e9b3322327d1087c",
+      "phase": "Preliminary final aggregate typecheck at 768 MiB",
+      "result": "OS-killed with exit 137 and no TypeScript diagnostic. The subsequent separate-public-CLI installer retry did not execute."
+    }
+  ],
+  "pending": [
+    "Integrated exact-source strict/build/test acceptance",
+    "Separate-process public CLI clean install/side-by-side upgrade/receipt guards/rollback/uninstall fixture at integrated source"
+  ],
+  "retentionReportSha256": "be9c4b05fa7eaea9a00518e3ae3b8b6d6baebd271a60bdf5b58b0c16770a910a",
+  "scope": "Synthetic owned data/files only. No new feature work, production access, credential change or deployment. Prior 8781169 evidence files are unchanged."
+}
