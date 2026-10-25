@@ -9,6 +9,7 @@ import type {BaselineArchive,Observation,ProjectAssessment,Provenance} from '@ae
 import {hash,treeHash} from './inventory-baseline.js';
 import {fixtureBrowserPath,fixtureBrowserHash,assertFixtureBrowser} from './fixture-harness.js';
 import {revealRecipe,revealHashes,revealPin} from './recipes/reveal.js';
+import {revealUpstreamHashes} from './reveal-upstream.js';
 export const revealProfile='reveal-upstream-v1' as const;
 const git=(root:string,args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',root,...args],{encoding:'utf8',timeout:15000,maxBuffer:4*1024*1024}).trim();
 export function matchesRevealAssessment(a:ProjectAssessment){return a.baseCommit===revealPin&&a.evidence.length===revealRecipe.inputs.length&&Object.entries(revealHashes).every(([p,h])=>a.evidence.find(e=>e.path===p)?.sha256===h)}
@@ -18,6 +19,7 @@ export function inspectReveal(root:string,candidate=false):Record<string,string>
  if(git(root,['config','--list']).split('\n').some(l=>/^filter\./i.test(l)))throw Error('Git filters denied');
  const paths=git(root,['ls-tree','-r','--name-only','HEAD']).split('\n');const files:Record<string,string>={};
  for(const p of paths){const f=join(root,p),s=lstatSync(f);if(s.isSymbolicLink()||!s.isFile()||s.size>5*1024*1024||realpathSync(f)!==f)throw Error('Unsafe reveal source path');files[p]=hash(readFileSync(f))}
+ assert.deepEqual(files,revealUpstreamHashes,'Full pinned upstream bytes differ');
  const untracked=git(root,['ls-files','--others','--exclude-standard']).split('\n').filter(Boolean);
  if(untracked.some(p=>!candidate||!revealRecipe.outputs.includes(p)))throw Error('Unapproved reveal untracked input');
  for(const c of revealRecipe.preview(()=>null)){const p=join(root,c.path);if(candidate){if(!existsSync(p)||realpathSync(p)!==p||readFileSync(p,'utf8')!==c.after)throw Error('Reveal candidate template drift');files[c.path]=hash(c.after)}else if(existsSync(p))throw Error('Original already adapted')}
