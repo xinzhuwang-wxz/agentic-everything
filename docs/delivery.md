@@ -62,7 +62,7 @@ The third profile, `java-spring-inventory-synthetic-v1`, captures the original J
 
 ## Available qualification and its scope
 
-Profile completion is not overall AE acceptance. [Current milestone evidence and exact remaining gates](acceptance-status.md) distinguish profile completion from whole-core acceptance. Cross-stack, operational and extension receipts are separately scoped, not silently imported into the bundle.
+Profile completion is not overall AE acceptance. [Current acceptance and qualification scope](acceptance-status.md) distinguish profile completion from whole-core acceptance. Cross-stack, operational and extension receipts are separately scoped, not silently imported into the bundle.
 
 [The current delivery qualification](verification/delivery-qualification.md) records the actual end-to-end CLI result, negative controls, aggregate checks and its bounded scope.
 

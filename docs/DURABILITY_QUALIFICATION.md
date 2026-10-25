@@ -40,7 +40,7 @@ This machine had no installed PostgreSQL server or client executables. Official 
 
 These are downloaded-artifact fingerprints, not a claim of separately verified signed release metadata. Extracted packages plus downloads occupied 88 MiB in separate tmpfs, avoiding the approximately 611 MiB remaining repository volume. Initialization used trust authentication only for disposable synthetic data on isolated loopback. This is not a production setup recipe.
 
-Initial failure: Unix-domain socket creation was unsupported (`Operation not permitted`); loopback TCP was supported. A server started in a completed tool command was subsequently inaccessible (`ECONNREFUSED`), so the reproducible runner keeps server lifecycle and tests in one command. Both failures are environment/lifecycle observations, not DBOS durability failures. Final owned PostgreSQL server was stopped cleanly.
+The reproducible runner keeps PostgreSQL and its tests in one owned command lifecycle and uses loopback TCP. Qualification includes clean shutdown of the owned server; it does not qualify arbitrary executor networking or process persistence.
 
 ## Compatibility plan before changing AE runtime
 

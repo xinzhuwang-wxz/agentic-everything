@@ -7,9 +7,7 @@
 runtime, test, recipe, schema or dependency inputs.
 
 Acceptance covers the finite requirements in the approved implementation plan,
-not arbitrary-host adaptation or production deployment. Local/GitHub delivery and
-the three independent external adaptations remain delivery work; core acceptance
-is their prerequisite, not a claim that those deliverables already exist.
+not arbitrary-host adaptation, external-project adaptations or production deployment.
 
 ## Final assembled verification
 
@@ -23,11 +21,9 @@ is their prerequisite, not a claim that those deliverables already exist.
 | Deterministic workflows | Same source: 15 real PostgreSQL/DBOS cases across 16 workers, including crash recovery, bound approval, branch/read retry, revocation and unknown-no-redispatch; clean shutdown | Pass; relevant sources unchanged |
 | Supply chain and tracked-source review | Current lock hash and all current-release evidence hashes verified; exact locked dependency notices and SBOM, recorded zero npm advisories, no findings from narrow tracked-source secret heuristic | Pass within the stated review scope |
 
-The final macOS receipt completed at 06:54:46 UTC. Its retained receipt SHA-256 is
+The macOS qualification receipt SHA-256 is
 `d507185c6d1fee072dda3f11a6016fbe1e74ca5d1f9a50e2e1239f0c66286532`.
-Qualification processes exited; no source edit, service activation or publication
-was part of that qualification. An installed source copy is not the final Git
-repository delivery.
+This is source qualification, not service activation or deployment.
 
 The source comparison from `ec84e21` to the validated commit changes the installer
 build launcher and portable Python selection, plus documentation/supply-chain
@@ -36,11 +32,8 @@ operations integration harness inputs did not change. The exact-source macOS
 aggregate and distribution checks cover the changed assembled inputs; unchanged
 component receipts retain only their originally observed scope.
 
-A redundant cloud build attempt was killed with exit 137 under resource pressure.
-It is a failed attempt, not a passing build; the exact macOS build is the final
-strict-build authority. A supplemental transpile-only extension probe is excluded
-from release acceptance. Cloud ignored `dist/` is not a release artifact; use the
-standard build from a clean source checkout.
+Release artifacts require the standard strict build from a clean source checkout.
+Transpile-only output is not strict-build evidence.
 
 ## Qualified product requirements
 
@@ -82,8 +75,3 @@ qualified. Arbitrary Java, Spring Boot/MVC, production identity, deployment,
 customer data, universal platform support and whole-account erasure are not
 claimed. The scripted cost comparison is not a human productivity or speedup
 claim. See the [support matrix](support-matrix.md).
-
-The separate external projects are Kanboard, reveal.js and linkding. Each must
-retain its upstream license, own original baseline, actual AE adaptation,
-before/after business checks, screenshots and independent `*-agentic` repository.
-Only verified original/adapted repository links belong in the AE showcase.

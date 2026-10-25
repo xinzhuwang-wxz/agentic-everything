@@ -30,7 +30,7 @@ The runtime worker separately reports an approval pause with zero mutations, one
 
 `qualification-trace.json` retains request IDs, canonical request and response hashes, finish reasons, tool names and simulation provenance. Raw conversations and detailed local response traces remain uncommitted in `.runtime` / shared IPC. No hidden chain of thought is recorded. No watcher remains running; per-request file checks were bounded and only started after runtime handshake.
 
-Limitations: these rounds demonstrate a dynamic in-session model simulation and read-only intent variation, not production model quality, measured provider usage, broad capability coverage, or real provider reliability. A real provider adapter remains future work.
+Limitations: these rounds demonstrate a dynamic in-session model simulation and read-only intent variation, not production model quality, measured provider usage, broad capability coverage, or real provider reliability. The separate provider wire-contract adapter does not qualify live-provider reliability or quality.
 
 ## Separate UI/HTTP flow
 
@@ -38,11 +38,11 @@ Limitations: these rounds demonstrate a dynamic in-session model simulation and 
 
 ## Generated-host flow: partial attempt
 
-`host-qualification-partial-trace.json` records four model rounds in the generated-host/configuration acceptance attempt. The first three rounds read low/version 1, proposed high at that exact version, and summarized an actual succeeded high/version 2 receipt. The fourth was a new run whose actual catalog contained only `read_ticket`; the actor selected that read and explicitly declined unavailable write capability. The browser worker then reported premature server shutdown and a host refresh-loop defect. No read result or final response for that new run was received. Therefore this trace does **not** establish completion or acceptance of the new read-only run. Polling stopped, with no watcher left active. A fresh attempt must use separate IPC and evidence.
+`host-qualification-partial-trace.json` is incomplete and excluded from completed-flow qualification. It contains three completed read/write/receipt rounds and one read-only request with no received result or final response; it does not establish completion of that read-only run.
 
 ## Isolated synthetic generated-host fixture: final1
 
-`host-final1-qualification-trace.json` records five new dynamic model rounds from a fresh isolated IPC directory, without reusing responses from the interrupted attempt. The old run supplied read/write capabilities: the actor read low/version 1, proposed high with the exact version and confirmation boundary, then summarized a succeeded high/version 2 host receipt. A new run supplied only `read_ticket`; the actor read actual high/version 2 and returned a final explicitly stating that no write capability was available and no change back to low was submitted. All five responses are simulated, with unmeasured usage. These are synthetic fixture results, not a real production application or paid model-provider qualification. Browser UI approval, release-pinning, host-state and refresh assertions remain the browser worker's separate evidence. No watcher remains active.
+`host-final1-qualification-trace.json` records five dynamic model rounds from an isolated IPC directory. The old run supplied read/write capabilities: the actor read low/version 1, proposed high with the exact version and confirmation boundary, then summarized a succeeded high/version 2 host receipt. A new run supplied only `read_ticket`; the actor read actual high/version 2 and returned a final explicitly stating that no write capability was available and no change back to low was submitted. All five responses are simulated, with unmeasured usage. These are synthetic fixture results, not a real production application or paid model-provider qualification. Browser UI approval, release-pinning, host-state and refresh assertions have separate browser/runtime evidence. No watcher remains active.
 
 ## Isolated persistent-UI fixture: persistent-ui1
 

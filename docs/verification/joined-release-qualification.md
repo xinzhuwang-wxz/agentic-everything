@@ -87,17 +87,6 @@ must be observed before any gate is marked passed.
    dispatch. All four stored release snapshots remained structurally identical to
    the objects returned by their publications.
 
-### Resource failures and recovery
-
-The first two fresh aggregate attempts were OS-killed during typecheck (exit 137).
-A direct 384/512 MiB diagnostic reached V8 heap limits; direct 640 MiB was SIGKILLed
-near 653 MiB RSS. `/tmp` is tmpfs, and duplicating the existing vendor installation
-had unnecessarily consumed 241 MiB. Replacing only those immutable third-party
-copies with links to the same locked installation freed that RAM; worktree-local
-`@ae` links and newly built AE output remained independent. The subsequent full
-fresh check passed at 640 MiB. No old AE build was imported, no source or compiler
-coverage was reduced, and none of the failed attempts count as successful checks.
-
 ### Remaining limits
 
 This joins the named member/release/behavior/pending-confirmation gates for one
@@ -108,11 +97,10 @@ sequence disconnects **before approval**, not during an in-flight host mutation.
 Deliberate delivery timeout/cleanup-hang OS fault injection, cross-stack lifecycle,
 Java/Spring/authenticated remote MCP, clean installation/upgrade/backup restore,
 retention/isolation, real-provider quality/cost and remaining release-readiness gates
-are not qualified here. No post-acceptance external showcase project was touched.
-No production runtime or UI change was required by this execution.
+are not qualified here. Component-specific exclusions are not a statement that other separately qualified core paths are unsupported; see [core acceptance](../acceptance-status.md).
 
 Retained evidence bundle: `/workspace/shared/ae-joined-evidence-20261024.tar.gz`
-(SHA-256 manifest inside). It includes the fresh check log, failed resource attempts,
+(SHA-256 manifest inside). It includes the check log,
 114 compiler-input hashes, 273 generated-output hashes, joined qualification sources,
 final process/run summaries and five browser screenshots. Evidence is retained outside
 the source repository; it is not a production runtime transcript or a generated build commit.

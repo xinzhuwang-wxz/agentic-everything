@@ -1,6 +1,6 @@
-# Foundation handoff
+# Foundation contracts and toolchain
 
-## Frozen first-loop contract
+## Shared contracts
 
 Import browser-safe schemas and inferred types from `@ae/contracts`.
 The source of truth is `packages/contracts/src/index.ts`, with transformation and runtime modules.
@@ -28,21 +28,10 @@ Package-local build output is ignored. The @ae/* TypeScript paths map to package
 Source tests named *.test.ts compile and run with Node test runner, sequentially to bound memory.
 Use node:test and node:assert/strict, including mounted UI tests. Fixtures are excluded from core compilation.
 
-## Actual initial checks
+## Toolchain and verification
 
-Node v24.19.0; npm 11.9.0. TypeScript 5.9.3; Zod 4.6.7; @types/node 24.10.1.
-`npm run check`: passed source hygiene, strict typecheck, build and six contract tests.
-`npm run schemas`: passed, twenty JSON Schema exports. These are foundation checks, not business E2E,
-SDK integration, durable recovery, UI acceptance, or production release qualification.
+Node 24 and npm 11 run the locked TypeScript workspace. Exact package versions and integrity are in package-lock.json; use `npm ci --ignore-scripts`, `npm run check` and `npm run schemas`.
 
-Official registry lookups on 2026-10-24 found Agents JS 0.21.0, DBOS SDK 5.3.0 and assistant-ui 0.15.31.
-Runtime uses only the selected Agents JS loop. DBOS is not installed because no real database is qualified;
-no alternative durable workflow engine is silently introduced. UI uses React/Radix for the first governed
-surface, without claiming assistant-ui compatibility or hiding its pending qualification.
-All npm installs use registry.npmjs.org with ignore-scripts and exact top-level versions; package-lock.json
-pins integrity and transitive versions. No dependency installation script or paid API was run.
+The official Agents JS loop owns model execution. Explicit PostgreSQL/DBOS composition owns durable scheduling; memory mode remains a separate fixture. React/Radix and the attributed Kokonut components supply presentation. The bounded assistant-ui comparison is documented separately and does not add another runtime owner.
 
-Post-install checks also passed: `npm ls --all --depth=0` (all top-level dependencies resolve),
-`node node_modules/vite/bin/vite.js --version` (8.3.5 on Node 24.19.0; no install script required).
-Installed dependencies occupy approximately 181 MiB; npm's isolated cache approximately 233 MiB.
-A clean npm ci has not yet been executed while parallel consumers share the installed dependencies.
+[Core acceptance](acceptance-status.md) records the current assembled build and regression evidence. [Persistent qualification](PERSISTENT_RUNTIME_QUALIFICATION.md), [UI comparison](verification/assistant-ui-bounded-comparison.md) and [support matrix](support-matrix.md) state their tested inputs and limits. Schema generation alone is not business, recovery or production qualification.

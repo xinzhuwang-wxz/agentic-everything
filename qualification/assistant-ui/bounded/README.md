@@ -16,7 +16,7 @@ node --test --test-concurrency=1 --import ./qualification/assistant-ui/bounded/n
 
 `AE_ASSISTANT_UI_DEPS=/absolute/path/to/existing/qualification/node_modules` may select another existing copy of the same pinned candidate. Without it, the default is the parent qualification's `node_modules`. Set the variable for both checking and building. Root development tools and React always come from the current repository's `node_modules`; the scripts fail rather than silently using a second React instance. All paths are resolved from script locations, not the shell's current directory. Fresh generated bundles, compiler configuration, dependency identity and network logs go under ignored `generated/`, not recorded evidence.
 
-The build is a focused Vite SSR test bundle. It does not run the root build, browser, database or model API. Run it when the integration owner has made a verification slot available.
+The build is a focused Vite SSR test bundle. It does not run the root build, browser, database or model API.
 
 ## Recorded evidence
 

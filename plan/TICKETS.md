@@ -1,21 +1,18 @@
-# AE implementation status
+# AE implementation and evidence map
 
-User-approved implementation continues across the three milestones in [the plan](../IMPLEMENTATION_PLAN.md). The fixed synthetic delivery profile is qualified; AE as a whole has not passed its milestone exit/release gates. No external-project case, website, AE account or AE service-key flow is part of this work.
+The bounded core release is accepted at the exact source and environments in the [acceptance record](../docs/acceptance-status.md). This map describes supported scope, not universal adaptation or production certification.
 
-| Ticket | Scope | Current state / evidence |
-|---|---|---|
-| AE-FOUNDATION | TS workspace, strict contracts, schema export and checks | Implemented; latest member/assignee qualification passed 188 tests. [Delivery qualification](../docs/verification/delivery-qualification.md). |
-| AE-TRANSFORM | Assessment, plan approval, isolated recipe and guarded revert | Qualified for the exact React/TypeScript helpdesk fixture. Generic manifest assessment is available; other stacks require tailored work. Pre-apply archival and the bound full fixture delivery route are qualified. [Current workflow](../skills/ae-adapt/SKILL.md). |
-| AE-RUNTIME | Governed model/tool execution, approval and receipt recovery | Implemented memory path and opt-in PostgreSQL/DBOS path with bounded real-process qualification. Not production-qualified. [Runtime](../docs/RUNTIME_HANDOFF.md), [persistent adapter](../packages/runtime-adapters/db/README.md). |
-| AE-SURFACE | Host management entry and floating assistant | Implemented and exercised through real synthetic browser journeys, including retained approval, host refresh, keyboard, touch and narrow layout. [Browser qualification](../docs/FLOATING_UI_VERIFICATION.md). |
-| AE-MODEL-ACTOR | Independent dynamic actor behind the model port | Two bounded independent-actor scenarios qualified; deterministic simulation used by the repeatable delivery profile. Neither is real-provider quality/cost evidence. [Actor evidence](../docs/RUNTIME_HANDOFF.md#reproduction). |
-| AE-CONTROL-BEHAVIOR | Immutable releases and default-OFF behavior choices | Implemented with bounded runtime, PostgreSQL and UI qualification. ON/OFF acceptance is separate from the fixed delivery profile. [Evidence](../docs/verification/behavior-improvements.md). |
-| AE-MCP | Developer-agent toolkit | Read-only official SDK stdio integration qualified; authenticated remote MCP is not qualified. [Contract](../packages/mcp-server/README.md). |
-| AE-DELIVERY | Same-run source/plan/approval/patch/evidence bundle | Qualified only for `react-helpdesk-synthetic-v1`; observed process exit/cleanup is mandatory. Unprofiled or missing-tool paths remain partial. [Contract](../docs/delivery.md). |
-| AE-REUSE-IMPLEMENTATION | Execute mature bases, remove duplicate contracts and qualify composition | Audit complete at `67bd11b`; actual MCP recipe drift fixed in `5bb191e`. Canonical capability definitions and one SDK tool factory now implemented; strict build/lint and 68 focused tests pass, including pre-factory SDK snapshot restoration. Broker/DBOS boundaries retained; no fresh PG run. Next: unified acceptance and one UI adapter comparison. [Full module audit and commands](reuse-implementation-audit.md). |
-| AE-M1-EXIT | Whole first-milestone acceptance | Open: final selected behavior/release/recovery/rollback combination acceptance. Fixed-fixture member/assignee coverage and its durable restart session are qualified; they do not close the remaining combination. Component passes do not close this row. |
-| AE-M2-CROSS-STACK | Repeatable second-stack adaptation and developer beta | Not qualified: second non-React/non-TS lifecycle, Java/Spring and remote MCP contract, installation/upgrade/uninstall evidence. |
-| AE-M3-RELEASE | Operational release candidate | Not release-qualified: clean installation, upgrade/backup recovery, lifecycle/security/license/SBOM and applicable extension qualifications. |
-| AE-EXTERNAL-CASES | Three distinct real open-source adaptations | Deferred until AE acceptance under plan §20.4. No selection, download, repository creation or publication started. |
+| Area | Qualified scope | Evidence |
+| --- | --- | --- |
+| Foundation and assembly | Strict clean build, 325 tests and eight fixed-source distribution cases | [Core acceptance](../docs/acceptance-status.md) |
+| Transformation | React/TypeScript helpdesk, Python/SQLite inventory and Java 21/Spring Core inventory recipes; reviewed layouts only | [Examples](../docs/examples.md) |
+| Runtime | Governed Agents JS loop; explicit memory and PostgreSQL/DBOS modes; host authorization, approval and receipt recovery | [Persistent runtime](../docs/PERSISTENT_RUNTIME_QUALIFICATION.md) |
+| Surfaces and conversations | Floating assistant, host administration, bounded conversation continuity and generic reference context | [Conversation UI](../docs/verification/conversation-ui.md), [generic host](../docs/verification/generic-host-ui.md) |
+| Model contracts | Simulated repeatable runs and loopback provider wire contract; no live-model quality/cost claim | [Provider contract](../docs/verification/second-provider-contract.md) |
+| Control and behavior | Immutable releases, default-OFF improvements, bound selected-ON comparison and current-rights checks | [Joined release](../docs/verification/joined-release-qualification.md) |
+| MCP | Official SDK stdio toolkit and declared authenticated read-only remote subset | [Remote contract](../docs/verification/java-spring-remote-mcp.md) |
+| Deterministic workflows | Versioned finite trusted-server read/branch/approval/terminal-write definitions on the same DBOS owner | [Workflow evidence](../docs/verification/deterministic-workflows.md) |
+| Operations | Fixed-source installation, diagnosis, side-by-side upgrade, schema ownership, backup/restore, bounded retention and admission | [Operations](../docs/verification/release-operations.md) |
+| Optional extensions | Bounded automation/A2A and mobile contract fixture; knowledge disabled, real mobile platform unqualified | [Extensions](../packages/extensions/README.md) |
 
-See [acceptance status and remaining gates](../docs/acceptance-status.md). Status is tied to the named evidence scope, not a blanket claim that every planned feature works.
+Exact fixture profiles and component receipts have distinct scopes. [Support matrix](../docs/support-matrix.md) defines exclusions; a component pass does not qualify a different host, deployment or protocol subset.

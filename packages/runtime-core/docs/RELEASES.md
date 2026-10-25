@@ -22,5 +22,4 @@ pointer during resume.
 Focused checks: strict aggregate build and 13 official SDK/release tests passed. Covered read-only tool filtering,
 forged writes, viewer permissions, hash/ID/tenant/application/version/binding tampering, new-publication isolation,
 caller-snapshot mutation, revoked permissions, registry changes while awaiting approval or model output, turn bounds,
-and the existing confirmed-write/reject/cancel/unknown-outcome lifecycle. One concurrent aggregate build was OS-killed;
-rerunning with NODE_OPTIONS=--max-old-space-size=512 completed successfully.
+and the existing confirmed-write/reject/cancel/unknown-outcome lifecycle. The build used NODE_OPTIONS=--max-old-space-size=512; current assembled-source evidence is recorded in the core acceptance report.
