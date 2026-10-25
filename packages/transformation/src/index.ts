@@ -72,7 +72,7 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
 export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: VerificationProfile }): AdaptationPlan {
   ProjectAssessmentSchema.parse(assessment);
   const recipe = recipeForAssessment(assessment);
-  if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact reviewed source evidence');
+  if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact trusted reviewed source evidence');
   return AdaptationPlanSchema.parse({ ...(options ? { verificationAuthorization: verificationAuthorization(options.verificationProfile) } : {}), schemaVersion: '1', planId: 'adapt-' + digest(assessment).slice(0, 16), projectId: assessment.projectId, baseCommit: assessment.baseCommit, assessmentHash: digest(assessment), ...recipe.planDetails, recipes: [recipe.ref], allowedPaths: recipe.outputs });
 }
 /** Public recipe metadata is copied from the implementation, never separately versioned by a transport. */
