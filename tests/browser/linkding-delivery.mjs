@@ -1,5 +1,6 @@
 // Reviewed fixed upstream Linkding collector. Never executes arbitrary script names.
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -60,7 +61,8 @@ try{
  }
  await browser.close();closed=true;browser=undefined;
  server.kill('SIGINT');await new Promise(r=>server.once('exit',r));assert.equal(serverExit,0);assert.equal(serverSignal,null);
- const result={phase,business,assertions,cleanup:{serverStopped:true,browserClosed:true},...(runtime?{runtime}:{})};writeFileSync(join(out,'result.json'),JSON.stringify(result,null,2)+'\n');process.stdout.write(JSON.stringify(result)+'\n');
+ const imageNames=phase==='baseline'?['before.png']:['after-collapsed.png','after-approval.png','after.png','after-narrow.png'];const screenshots=Object.fromEntries(imageNames.map(name=>{const bytes=readFileSync(join(out,name));return [name,{base64:bytes.toString('base64'),sha256:createHash('sha256').update(bytes).digest('hex')}]}));
+ const result={phase,business,assertions,screenshots,cleanup:{serverStopped:true,browserClosed:true},...(runtime?{runtime}:{})};writeFileSync(join(out,'result.json'),JSON.stringify(result,null,2)+'\n');process.stdout.write(JSON.stringify(result)+'\n');
 }finally{
  if(browser)await browser.close();if(server&&server.exitCode===null){server.kill('SIGINT');await new Promise(r=>server.once('exit',r));}rmSync(work,{recursive:true,force:true});
 }
