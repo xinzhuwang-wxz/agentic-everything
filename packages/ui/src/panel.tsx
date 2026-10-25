@@ -8,19 +8,19 @@ import * as Tabs from '@radix-ui/react-tabs';
 import type { CapabilityVersion } from '@ae/contracts';
 import type { AeClient, RuntimeMeta, RunView } from './types.js';
 export type { AeClient, RuntimeMeta, RunView } from './types.js';
-export interface AgenticPanelProps { client:AeClient; context:{ticketId:string}; title?:string; storageKey?:string; onRunChange?:(run:RunView)=>void; configurationClient?:ConfigurationClient; floating?:FloatingAssistantOptions; managementVisible?:boolean }
+export interface AgenticPanelProps { client:AeClient; context:{ticketId:string}; title?:string; storageKey?:string; conversationStorageKey?:string; onRunChange?:(run:RunView)=>void; configurationClient?:ConfigurationClient; floating?:FloatingAssistantOptions; managementVisible?:boolean }
 const labels:Record<string,string>={queued:'等待执行',running:'正在执行', 'awaiting-approval':'等待你的确认',succeeded:'已完成',failed:'执行失败',rejected:'已拒绝',cancelled:'已取消','outcome-unknown':'结果未知',reconciling:'正在核对结果','manual-review':'需要人工核查'};
 const active = new Set(['queued','running','reconciling']);
 const inspect = (value:unknown) => JSON.stringify(value,null,2);
 const emptyConversation:ConversationSnapshot={connected:false,busy:false,pending:false,error:'',recoveryInputRequired:false};
 const noSubscription=()=>()=>{}; const emptySnapshot=()=>emptyConversation;
-export function AgenticPanel({client,context,title='业务助手',storageKey,onRunChange,configurationClient,floating,managementVisible=true}:AgenticPanelProps) {
+export function AgenticPanel({client,context,title='业务助手',storageKey,conversationStorageKey,onRunChange,configurationClient,floating,managementVisible=true}:AgenticPanelProps) {
  const [pendingInput,setPendingInput]=useState('');
  const [selectedTab,setSelectedTab]=useState(floating?'capabilities':'assistant');
  const [meta,setMeta]=useState<RuntimeMeta>(); const [capabilities,setCapabilities]=useState<CapabilityVersion[]>([]);
  const [runSnapshot,setRunSnapshot]=useState<{view:RunView;generation:number}>();
  const conversationMode=meta?.conversationMode==='bounded-v1';
- const session=useMemo(()=>conversationMode&&client.conversations?new ConversationSession(client.conversations,id=>client.get(id),{ticketId:context.ticketId},storageKey?`ae:conversation:v1:${storageKey}`:undefined):undefined,[client,context.ticketId,storageKey,conversationMode]);
+ const session=useMemo(()=>conversationMode&&client.conversations?new ConversationSession(client.conversations,id=>client.get(id),{ticketId:context.ticketId},conversationStorageKey??(storageKey?`ae:conversation:v1:${storageKey}`:undefined)):undefined,[client,context.ticketId,storageKey,conversationStorageKey,conversationMode]);
  const conversationState=useSyncExternalStore(session?.subscribe??noSubscription,session?.getSnapshot??emptySnapshot,emptySnapshot);
  useEffect(()=>{if(session)void session.connect();return()=>session?.dispose()},[session]);
  const run=session?conversationState.run:runSnapshot?.view;

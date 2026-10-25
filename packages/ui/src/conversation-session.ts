@@ -78,7 +78,11 @@ export class ConversationSession {
       const run = selected && selected.materialized !== false ? await this.getRun(selected.runId) : undefined;
       if (!this.current(epoch) || version !== this.readVersion) return;
       if (run && run.runId !== selected?.runId) throw Object.assign(new Error('运行响应与当前会话不符'),{code:'CONVERSATION_RESPONSE_MISMATCH'});
-      if (correlated && run && this.journal && pending && this.journal.pending?.intent === pending.intent) { delete this.journal.pending; this.originalInput = undefined; this.save(); }
+      if (correlated && run && this.journal && pending && this.journal.pending?.intent === pending.intent) {
+        delete this.journal.pending;
+        try{this.save()}catch(error){this.journal.pending=pending;throw error}
+        this.originalInput=undefined;
+      }
       this.snapshot = { conversation, ...(run ? { run } : {}), connected: true, busy: this.acting || (this.admitting && !run), pending: !!this.journal?.pending, error: '', recoveryInputRequired: !!this.journal?.pending && !this.originalInput };
       for (const listener of this.listeners) listener(); this.schedule();
     } catch (error) { if (this.current(epoch) && version === this.readVersion) { this.fail(error); clearTimeout(this.timer); } }

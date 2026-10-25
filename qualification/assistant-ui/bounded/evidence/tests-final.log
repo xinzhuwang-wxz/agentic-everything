@@ -1,0 +1,20 @@
+✔ real ExternalStoreRuntime and Thread primitives hydrate ordered server IDs and text after reload (106.927296ms)
+✔ bounded 40-message snapshot remains exact; no paging, branch, queue, attachment or frontend tool capabilities (74.175632ms)
+✔ principal and conversation switch synchronously hides old DOM and starts a repository without old messages (32.73256ms)
+✔ late old-scope snapshot cannot repopulate the new conversation (21.305877ms)
+✔ explicit denial unmounts all history and composer; reconnect hydrates only the fresh authorized snapshot (29.249342ms)
+✔ latest pending run is separate from historic completed text and prevents a new turn (46.542519ms)
+✔ historical approval JSON, HTML and Markdown remain literal and cannot authorize or invoke anything (10.691414ms)
+✔ real composer routes one text-only user request to AE without adding local history or executing a model (17.421193ms)
+✔ AE persistence opt-out prevents ambient history copies, including running-to-complete transition (36.352592ms)
+✔ diagnostic: unkeyed messages-array replacement retains old repository branches even when DOM path changes (2.239327ms)
+✔ diagnostic: ambient history adapter actually copies without AE explicit persistence opt-out (17.553529ms)
+✔ adapter rejects non-text append and assistant-role append before any AE request (13.308782ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1573.047523

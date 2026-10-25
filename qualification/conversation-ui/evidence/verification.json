@@ -1,0 +1,8 @@
+{
+  "aggregate": { "tests": 225, "passed": 225, "failed": 0, "skipped": 0, "sourcePreparation": "TypeScript --noCheck --declaration false --sourceMap false; disposable output, not a strict build" },
+  "strictUiSdk": { "status": "PASS", "scope": "packages/ui and packages/host-sdk with local source aliases", "note": "One optional journal access diagnostic was corrected before the passing check; final post-review source check is pending." },
+  "fullStrict": { "status": "PENDING", "attempts": ["512MiB heap exhaustion exit134", "768MiB command killed137 with no diagnostics"], "topology": "Corrected readonly per-package node_modules overlay, local @ae symlinks; stock TypeScript file-list pass1113files, zero source files from original root" },
+  "backendCorrelation": { "unitTests": 5, "postgresGroups": 5, "status": "PASS" },
+  "browser": { "groups": 6, "status": "PASS", "hostWrites": 1, "externalRequests": 0, "postgresStopped": true },
+  "provider": "Deterministic synthetic model only; no paid calls or quality claim"
+}

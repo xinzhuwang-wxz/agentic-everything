@@ -1,0 +1,35 @@
+# Bounded conversation UI and response-loss recovery
+
+The persistent composition advertises `conversationMode: "bounded-v1"` only when its trusted host enables conversation history. The existing host SDK then connects the same floating/inline assistant to the authenticated conversation API. The in-memory fixture and existing one-shot clients remain one-shot; there is no fallback from a rejected conversation into a new legacy run.
+
+## Ownership and integration
+
+The server remains the only owner of conversation history, live historical authority, run releases, approvals, operation receipts and durable scheduling. `ConversationSession` coordinates presentation and requests; it is not a second agent loop, workflow queue or approval ledger. React/Radix and the previously qualified Kokonut composer/status components remain the presentation base. The actual multi-turn assistant-ui comparison is recorded separately in [bounded presentation qualification](assistant-ui-bounded-comparison.md).
+
+`AgenticMount` still takes the helpdesk fixture's `ticketId`. The server conversation context is domain-neutral, but this mounted adapter is not a claim that arbitrary hosts are already integrated. The host must rotate the opaque `sessionKey` and replace injected clients whenever its authenticated principal, tenant or session changes. `fixture` remains a synthetic default, not automatic detection of cookie identity changes. The conversation journal key encodes `[apiBase, sessionKey, context]` as a tuple, so separator characters cannot collide across scopes. Direct panel users must provide an equally scoped `conversationStorageKey` or `storageKey`.
+
+The floating shell remains presentation-only. Closing it, opening management or suspending it does not unmount the conversation coordinator. A client/context/session boundary creates a fresh coordinator; stale results cannot repaint the new scope. Draft text is hidden synchronously when its context owner changes.
+
+## Browser storage and recovery
+
+Session storage contains only a version, creation nonce, conversation ID, and, while admission is unresolved, the exact turn nonce, a hash of normalized input/context and an optional correlated run ID. It contains no plaintext message, approval hash, credentials, principal, SDK checkpoint or receipt. Launcher position remains coordinates-only in its separate local-storage namespace. These identifiers are not authorization: every recovery read rechecks the server's current principal/context/history authority.
+
+1. The creation nonce is saved before `POST /conversations`. If its response is lost, reload uses the same nonce and context against the existing idempotent create route.
+2. A turn nonce and body hash are saved before submission. Authorized history returns `runs[].clientIntentId`, copied once from the original intent header at atomic turn reservation. The durable intent ledger remains the replay authority. There is no new status endpoint and no text or "latest run" heuristic for unresolved admission.
+3. `materialized: false` distinguishes an accepted reservation whose run row has not yet appeared. It remains queued/active; the UI polls history and neither fetches a nonexistent run nor creates another intent. Nullable legacy rows omit `clientIntentId`; they are not guessed or backfilled from text.
+4. Matching the original nonce locates the exact run. Reload retrieves its currently authorized run view before exposing an actionable approval. Historical messages contain only literal text; old approval-looking text cannot authorize anything.
+5. Missing correlation is unresolved, not proof that execution never happened. Refresh only reads. An explicit "retry original request" action may reuse the original nonce/body; after reload, the user must re-enter text matching the stored hash. Changed text is rejected locally. No new nonce or implicit resubmission is used.
+6. Network failures retain the last authorized view as uncertain. Explicit authority/identity denial or expiry removes displayed history and approval controls and blocks continuation. A 403 does not mean an earlier operation failed to execute. Unresolved identifiers are retained for later authorized reconciliation.
+7. Storage failure before sending prevents dispatch. Failure after server acceptance preserves the pending nonce, including failure while clearing the journal. Reload must correlate the already accepted run rather than repeat its side effect.
+
+A bounded conversation admits another turn only after the server reports no active run and the current run is succeeded, failed, rejected or cancelled. Unknown/manual-review/approval/pending states remain blocked. A new empty conversation is an explicit UI action available only after the current conversation is settled. Expired/unauthorized history is not silently replaced by a new conversation.
+
+## Qualification
+
+The focused controller tests cover two-turn restore, lost creation and turn responses, exact nonce rather than text correlation, reserved-only state, explicit original-body retry, authority denial, stale generations, storage failures, duplicate admission and StrictMode-style reconnection. Mounted tests cover literal rendering, floating/admin continuity, exact current approval, delayed identity changes and namespace separation. Existing one-shot UI, host callbacks and transport tests remain regression gates.
+
+The synthetic cloud-browser harness is `qualification/conversation-ui/run.sh`. It uses the current source, a disposable PostgreSQL database, the real Hono HTTP API, DBOS and Agents SDK, and a deterministic synthetic model. It verifies actual second-turn model history, exact transcript reload, lost create/start responses, one explicit approved host write, current-history revocation, sessionKey isolation and narrow layout. Browser requests are restricted to the fixture origin, service workers and WebSockets are blocked, and Chromium sandboxing is enabled. Server, browser and PostgreSQL close in `finally`/trap.
+
+This is not a production SSO test, real-provider quality/privacy test, arbitrary-host acceptance, or a new guarantee of retention/deletion. The 24-hour, 20-turn, 128-KiB backend bounds remain. There is no branching, edit/regenerate, attachments, token streaming, queue or long-term memory.
+
+Recorded results: 225/225 aggregate regression tests passed from explicitly transpile-only output; five focused backend tests and five actual PostgreSQL correlation/migration groups passed; six actual browser journey groups passed with one host mutation and zero external requests. Focused UI/SDK semantic TypeScript checking passed before the final review additions. The full repository strict gate has not yet passed in this worktree: 512MiB heap exhaustion and later 768MiB killed commands are recorded separately from source diagnostics. No aggregate test result or browser run substitutes for that open static gate; see `qualification/conversation-ui/evidence/verification.json` for current exact status.

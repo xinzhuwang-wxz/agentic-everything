@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-25",
+  "transformation": "Only the contract import in adapter/test changed from absolute scratch path to repository-relative path. Build, typecheck and network guard scripts were separately made portable. Copied original logs do not claim a relocated rerun.",
+  "files": {
+    "adapter.tsx": {
+      "originalSha256": "4e2e9968393ae87cc12a9b6f5d2c0bf317f16c00ebdbc59db5611eb2ac1333bd",
+      "portableSha256": "51f6f1a1e1685734e366802710dd78da870f4d23ed654f3ff4310c5f99d8fa4f"
+    },
+    "qualification.test.tsx": {
+      "originalSha256": "5e3adfe7c9ad212e50878d5f3afdc12bf7040f7e5a6aed681ca57027f7fa262d",
+      "portableSha256": "35286187a5c25fcec09cfb81d96177a14c9422228291ca906ee3453942d957c5"
+    }
+  }
+}

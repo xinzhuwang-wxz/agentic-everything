@@ -1,6 +1,6 @@
 # Bounded, host-authorized conversation continuity
 
-Status: the bounded backend passed synthetic SDK/PG/HTTP qualification, including final authority, cancellation, reconciliation and connection-pool boundary cases. No UI, real-provider or production readiness claim.
+Status: the bounded backend passed synthetic SDK/PG/HTTP qualification, including final authority, cancellation, reconciliation and connection-pool boundary cases. The bounded UI and its separate synthetic qualification are described in [conversation UI](conversation-ui.md); no real-provider or production readiness claim.
 
 ## Reuse and actual ownership
 
@@ -51,7 +51,7 @@ Intent identity includes the conversation ID only for conversation-bound runs. E
 
 This is session-sized continuity: 24-hour read/continuation expiry, at most 20 turns, and 128 KiB of persisted conversation text, reserving space for the existing maximum assistant output. Capacity fails closed; history is not silently truncated or summarized. Expiry is an access/continuation limit, not a promise of physical deletion. Retention administration, backup deletion and production migration policy remain separate work.
 
-No long-term memory, automatic cross-conversation recall, branching, edit/regenerate, queueing, attachment parts, token streaming or SDK-managed provider conversations. No UI adoption decision or `assistant-ui` production dependency is part of this backend patch. The existing floating/admin shells are unchanged. Real two-turn reload/identity-race UI qualification is a subsequent gate against this server contract.
+No long-term memory, automatic cross-conversation recall, branching, edit/regenerate, queueing, attachment parts, token streaming or SDK-managed provider conversations. No `assistant-ui` production dependency is introduced. The existing floating/admin shells now consume this contract through the separately qualified bounded conversation coordinator; the [presentation comparison](assistant-ui-bounded-comparison.md) records the actual reuse decision.
 
 ## Reproduction and observed evidence
 
@@ -60,7 +60,7 @@ No long-term memory, automatic cross-conversation recall, branching, edit/regene
 - Final fresh `npm run build`: passed with strict TypeScript. Focused SDK/session/intent tests: 8/8 passed. Final aggregate tests: 200/200 passed, 0 failed/skipped, 25.286 seconds. `node scripts/lint.mjs` and `git diff --check` also passed.
 - `bash tests/persistence/run-conversations-postgres.sh /tmp/ae-durability-pg/root/usr/lib/postgresql/17/bin 55472`: final expanded 16-case run passed with clean PostgreSQL shutdown (command exit 0, PostgreSQL stop exit 0, postmaster PID removed). The suite uses a disposable synthetic PostgreSQL 17.11 database, real HTTP/DBOS/SDK, fresh worker processes and SIGKILL. It is not part of ordinary unit-test pass counts.
 
-Remaining gates include real UI wiring/qualification, current production-host history authority implementation, production SSO/origins, migrations/retention/recovery operations, concurrent multi-worker load and separately authorized real-provider quality/cost/privacy testing.
+Remaining gates include current production-host history authority implementation, production SSO/origins, migrations/retention/recovery operations, concurrent multi-worker load and separately authorized real-provider quality/cost/privacy testing.
 
 
 The final 16 PostgreSQL/HTTP groups cover: two-turn history and exact reload after SIGKILL; duplicate intents without model replay; tenant/application/subject/context/target isolation; approved checkpoint restart after field-grant changes; mid-model revocation before text persistence; post-reservation revocation before write; cancellation during the final target callback; all nine other pool connections occupied while completion reuses its transaction client; unknown-outcome admission blocking and successful reconciliation continuity; late reconciliation text-savepoint rollback with canonical success retained; exact call/approval/release pins and one write per intended target; owner/read access insufficient after field epoch changes; capability/role/expiry denial; commit-before-submission recovery; text-capacity rejection; and legacy one-shot compatibility.

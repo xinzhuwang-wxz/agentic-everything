@@ -1,0 +1,12 @@
+waiting for server to start.... done
+server started
+(node:33) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS old-schema migration and repeated migration preserve nullable legacy rows and queued projection
+PASS atomic intent/turn correlation is visible before materialization, then changes to the real run without a status bypass
+PASS durable intent replay preserves one run and immutable nonce; conflict rejects while identical text under a new nonce creates a distinct turn
+PASS scoped unique nonce index prevents duplicate reservations and allows the same nonce in isolated conversations/principals
+PASS authenticated principal, strict nonce/context, and current authority remain mandatory for history/correlation, replay, and run reads
+waiting for server to shut down.... done
+server stopped
+Evidence: /tmp/ae-correlation-postgres-wM3RIz

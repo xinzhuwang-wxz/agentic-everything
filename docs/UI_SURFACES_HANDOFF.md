@@ -6,7 +6,7 @@ Daily interaction uses a draggable circular launcher above the existing business
 
 `AgenticMount` accepts `floating={{ applicationId, reservedAreas?, suspended?, layer? }}` and `managementVisible`. The host places this one mount at a stable page/shell location and drives `managementVisible` from its own navigation. With floating enabled the management tabs do not contain an Assistant tab. Without floating, the legacy inline presentation remains available for compatibility. New React helpdesk recipe output selects floating presentation, adds a host administration navigation toggle, and retains all original business content and refresh logic.
 
-There is one `AgenticPanel` state owner. The floating shell only presents its existing conversation children through a body portal. Closing, dragging, or hiding the management section does not unmount the composer, approval or current run. Configuration uses the existing ConfigurationPanel/API and server-returned `canConfigure`; the launcher grants no administration or business authority. `onRunChange` preserves observable-run deduplication and current-context generation checks.
+There is one `AgenticPanel` surface, with one session coordinator for the selected transport mode. The floating shell only presents its existing conversation children through a body portal. Closing, dragging, or hiding the management section does not unmount the composer, approval or current run. Configuration uses the existing ConfigurationPanel/API and server-returned `canConfigure`; the launcher grants no administration or business authority. `onRunChange` preserves observable-run deduplication and current-context generation checks.
 
 ## Placement and accessibility
 
@@ -25,7 +25,7 @@ Change the opaque `sessionKey` whenever authenticated user/tenant/session change
 
 API base `/api`: GET `/meta`, GET `/capabilities`, POST `/runs` with `{input,context:{ticketId}}` and Idempotency-Key, GET `/runs/:runId`, POST `/runs/:runId/approval` with `{approvalId,decision,expectedHash}`, and POST `/runs/:runId/cancel`. UI states follow server receipts; unknown outcomes block new execution and require reconciliation. Configuration uses the same backend state; publishing refreshes metadata/capabilities without changing an existing run's release.
 
-Successful run IDs restore via sessionStorage and server GET. Uncertain starts retain idempotency keys only during the mounted client lifetime; full-reload recovery of a start without a returned run ID remains a qualification gap. No claim of production authentication or durability is made by the synthetic browser fixture.
+Legacy one-shot run IDs restore via sessionStorage and server GET; uncertain legacy starts still retain keys only for the mounted client lifetime. Persistent hosts advertising `conversationMode: "bounded-v1"` use the bounded multi-turn API, an identifier-only scoped session journal and exact intent correlation to recover lost creation/start responses across reload. See [conversation UI and recovery](verification/conversation-ui.md) for current-authority denial, explicit original-body retry, storage failures and verification limits. No claim of production authentication is made by the synthetic browser fixture.
 
 ## Reuse and verification
 

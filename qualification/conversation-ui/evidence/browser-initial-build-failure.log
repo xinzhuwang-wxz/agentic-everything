@@ -1,0 +1,21 @@
+✗ Build failed in 20ms
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Build failed with 1 error:
+
+[31m[PARSE_ERROR] [0mExpected `,` or `}` but found `;`
+ - `,` or `}` expected in qualification/conversation-ui/browser.mjs at 3271..3272
+ - Opened here in qualification/conversation-ui/browser.mjs at 2353..2354
+
+    at aggregateBindingErrorsIntoJsError (file:///workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/rolldown/dist/shared/error-D0SD8_tL.mjs:49:18)
+    at unwrapBindingResult (file:///workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/rolldown/dist/shared/error-D0SD8_tL.mjs:19:128)
+    at #build (file:///workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/rolldown/dist/shared/rolldown-CMhwwZPA.mjs:145:34)
+    at async buildEnvironment (file:///workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/vite/dist/node/chunks/node.js:34849:66)
+    at async Object.build (file:///workspace/scratch/3f0d047b74f0/agentic-everything/node_modules/vite/dist/node/chunks/node.js:35270:19)
+    at async file:///tmp/ae-conversation-ui/qualification/conversation-ui/build.mjs:7:1 {
+  errors: [Getter/Setter]
+}
+
+Node.js v24.19.0

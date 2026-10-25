@@ -33,5 +33,5 @@ export interface AgenticMountProps { apiBase:string; ticketId:string; client?:Ae
 export function AgenticMount({apiBase,ticketId,client,title,onRunChange,configurationClient,sessionKey='fixture',floating,managementVisible}:AgenticMountProps){
  const transport=useMemo(()=>client??createAeClient({apiBase}),[apiBase,client,sessionKey]);
  const configuration=useMemo(()=>configurationClient??createConfigurationClient(apiBase),[apiBase,configurationClient,sessionKey]);
- return <AgenticPanel {...(floating?{floating}:{})} {...(managementVisible===undefined?{}:{managementVisible})} key={sessionKey} configurationClient={configuration} client={transport} context={{ticketId}} storageKey={`ae:run:${apiBase}:${sessionKey}:${ticketId}`} {...(title===undefined?{}:{title})} {...(onRunChange===undefined?{}:{onRunChange})}/>;
+ return <AgenticPanel {...(floating?{floating}:{})} {...(managementVisible===undefined?{}:{managementVisible})} key={sessionKey} configurationClient={configuration} client={transport} context={{ticketId}} storageKey={`ae:run:${apiBase}:${sessionKey}:${ticketId}`} conversationStorageKey={`ae:conversation:v1:${JSON.stringify([apiBase,sessionKey,{ticketId}])}`} {...(title===undefined?{}:{title})} {...(onRunChange===undefined?{}:{onRunChange})}/>;
 }
