@@ -1,0 +1,1961 @@
+{
+  "status": "pass",
+  "sourceCommit": "4b021ba33915a2a3f84dd708bda965944b7f515f",
+  "lockSha256": "762d169e68e916a31eefbf749a8a8173f1e78065b559e03931ea4dc0b80c22fd",
+  "sbomSha256": "493ee1e0f97ef494e20e82f28aae7776eb66e0786b4a0f874e0da781c6a026d4",
+  "packageCount": 153,
+  "installedCount": 130,
+  "packages": [
+    {
+      "path": "node_modules/@a2a-js/sdk",
+      "name": "@a2a-js/sdk",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-OpK4nygUnLKlpTFZlM2IrYu7f3c/B7c4u4Z14+vgMq24lEINTVCxH/BqZx+GL92rNf7CoBL5oTP5UhNsl75yyg==",
+      "source": "https://registry.npmjs.org/@a2a-js/sdk/-/sdk-1.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@a2a-js/sdk/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@asamuzakjp/css-color",
+      "name": "@asamuzakjp/css-color",
+      "version": "7.1.7",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Q7ioeear07HwixdIitIn9KS1LZi97CEDFCSjPNm9v+y8KNbsu9q4Lrd4zUQW4faED+E7qxvfeVnbNRW46wFKuw==",
+      "source": "https://registry.npmjs.org/@asamuzakjp/css-color/-/css-color-7.1.7.tgz",
+      "licenseFiles": [
+        "node_modules/@asamuzakjp/css-color/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@asamuzakjp/dom-selector",
+      "name": "@asamuzakjp/dom-selector",
+      "version": "10.0.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-EgmJ7oEaGQECTn3H3wmnQpEy4hKY66VvM7VQndwPIQob3p877BgbyOUE3EX0LgXQCciF2H8KMdR+RznqjMNOLw==",
+      "source": "https://registry.npmjs.org/@asamuzakjp/dom-selector/-/dom-selector-10.0.5.tgz",
+      "licenseFiles": [
+        "node_modules/@asamuzakjp/dom-selector/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@bramus/specificity",
+      "name": "@bramus/specificity",
+      "version": "2.4.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-0GEz8qJWokkUVYQYRukmkSHIFNoBH8QTreeHrAFbvz1XFYc3Y+puhMs8PQ5x8GNugiC2l5jvDBXKLbBIByeSBw==",
+      "source": "https://registry.npmjs.org/@bramus/specificity/-/specificity-2.4.3.tgz",
+      "licenseFiles": [
+        "node_modules/@bramus/specificity/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/color-helpers",
+      "name": "@csstools/color-helpers",
+      "version": "6.1.2",
+      "license": "MIT-0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-grhRy3OKmniaAEKXMjua5z/EODX0MSqBGjunw8+j/3HQjOnahs2AGhvEOIYVUWcU6ScApbhLhVrQTX8XqrMrow==",
+      "source": "https://registry.npmjs.org/@csstools/color-helpers/-/color-helpers-6.1.2.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/color-helpers/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/css-calc",
+      "name": "@csstools/css-calc",
+      "version": "3.4.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-iex20d8CHVkyvg6B7UKV7uHnI2Bqo9g+EFfT9E0y+GvTvhZ/DwONJ+9aKb1dlqm0ZiGsL5RXjp0fCoJYnkeDjA==",
+      "source": "https://registry.npmjs.org/@csstools/css-calc/-/css-calc-3.4.3.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/css-calc/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/css-color-parser",
+      "name": "@csstools/css-color-parser",
+      "version": "4.2.6",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-iiPQ3iRWwnJkeEn6RIu6SJPr7hYrLz6XZ9s/QZl+2/LI5KQVjpl2fdmDSZKuD4xP6GMmMPgHFFXg6k1Wkz0Trg==",
+      "source": "https://registry.npmjs.org/@csstools/css-color-parser/-/css-color-parser-4.2.6.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/css-color-parser/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/css-parser-algorithms",
+      "name": "@csstools/css-parser-algorithms",
+      "version": "4.0.2",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-40cSKyMvK+tq4qz6Awrlye2WGuOKt3FwPgtGg6KTfbHOWNw+Rk1rzbAtZnZ6IBhsY491HLRnDXwoyBAijmmILA==",
+      "source": "https://registry.npmjs.org/@csstools/css-parser-algorithms/-/css-parser-algorithms-4.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/css-parser-algorithms/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/css-syntax-patches-for-csstree",
+      "name": "@csstools/css-syntax-patches-for-csstree",
+      "version": "1.1.15",
+      "license": "MIT-0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-J0u7HkVl2nzSlhsiTOp4AmwcUQ3D+mGEEKfBy/7To5/y7F2OHwyLrXfrhR0SMgr4p5Lo+eaMVSeai24zUcBIxA==",
+      "source": "https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.15.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/css-syntax-patches-for-csstree/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@csstools/css-tokenizer",
+      "name": "@csstools/css-tokenizer",
+      "version": "4.0.2",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-OoKoR0f76dCY666JlcbhmVTs2drYj1GUXZTYTcbUgJjh9Nv41aFfZ21bPQTERm5+L5cBDo466NltB2lplS5GBw==",
+      "source": "https://registry.npmjs.org/@csstools/css-tokenizer/-/css-tokenizer-4.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/@csstools/css-tokenizer/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/@dbos-inc/dbos-sdk",
+      "name": "@dbos-inc/dbos-sdk",
+      "version": "5.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-SuoJ8Rk9jU+s7KZ42nAsVsX7dHRymsb0mlnvOJxgPV8uAbaQikRYlVjkVZjSG8jKJM06TMlfDD8OtzjX0C66eg==",
+      "source": "https://registry.npmjs.org/@dbos-inc/dbos-sdk/-/dbos-sdk-5.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@dbos-inc/dbos-sdk/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@exodus/bytes",
+      "name": "@exodus/bytes",
+      "version": "1.16.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-IcpW84uEn3N7ETtNZMlxKhfl6Pec8rUNGOTBtWbK1FKhJxIFAptZyVrvVRVBimAJxJCgc3PxepxkdWWG4DVzfA==",
+      "source": "https://registry.npmjs.org/@exodus/bytes/-/bytes-1.16.0.tgz",
+      "licenseFiles": [
+        "node_modules/@exodus/bytes/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@hono/node-server",
+      "name": "@hono/node-server",
+      "version": "2.1.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==",
+      "source": "https://registry.npmjs.org/@hono/node-server/-/node-server-2.1.5.tgz",
+      "licenseFiles": [
+        "node_modules/@hono/node-server/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@modelcontextprotocol/client",
+      "name": "@modelcontextprotocol/client",
+      "version": "2.4.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-LgrD2OphHuG12vfKFKz6SOnq7bKHQmhGJIAYdD+MZBn2npHEyry6uD8zvktodtl5CQM85MO0anUyD9JwmUmxww==",
+      "source": "https://registry.npmjs.org/@modelcontextprotocol/client/-/client-2.4.0.tgz",
+      "licenseFiles": [
+        "node_modules/@modelcontextprotocol/client/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@modelcontextprotocol/core",
+      "name": "@modelcontextprotocol/core",
+      "version": "2.4.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==",
+      "source": "https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.4.0.tgz",
+      "licenseFiles": [
+        "node_modules/@modelcontextprotocol/core/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@modelcontextprotocol/server",
+      "name": "@modelcontextprotocol/server",
+      "version": "2.4.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-rgR9yxSaAJ+bcsi/XroT/S2AfPiIWloXAnrdfYSCms9ivVju0ishu/wW0J21Ho6+ZOR1r7RyeRbjiRuF87ix5Q==",
+      "source": "https://registry.npmjs.org/@modelcontextprotocol/server/-/server-2.4.0.tgz",
+      "licenseFiles": [
+        "node_modules/@modelcontextprotocol/server/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@openai/agents",
+      "name": "@openai/agents",
+      "version": "0.21.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-NpJ74/dGbpYZiRYF474pCaBpxqh4A8+WHbZmaEZVQpRqieZAVH+MV4fesR9MtRGUZfpW5B91zuHzIilQp2iSxQ==",
+      "source": "https://registry.npmjs.org/@openai/agents/-/agents-0.21.0.tgz",
+      "licenseFiles": [
+        "node_modules/@openai/agents/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@openai/agents-core",
+      "name": "@openai/agents-core",
+      "version": "0.21.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-P2jJhc85xrKpe9GUOHAVfPHqK52my49fD1CI0LnfYEvBUwZxJXQI6lgSwby9nWhvQECveM9OvBUglAXuArsHXw==",
+      "source": "https://registry.npmjs.org/@openai/agents-core/-/agents-core-0.21.0.tgz",
+      "licenseFiles": [
+        "node_modules/@openai/agents-core/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@openai/agents-openai",
+      "name": "@openai/agents-openai",
+      "version": "0.21.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Y1u1ek6FwKx8j+T7gRYcm4kKyN0irqsyZm0XUDZ+g+8s15tu4EhNwNJ92zOHGx7Vjkr2RugWBxTeNspHjw/lQw==",
+      "source": "https://registry.npmjs.org/@openai/agents-openai/-/agents-openai-0.21.0.tgz",
+      "licenseFiles": [
+        "node_modules/@openai/agents-openai/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@openai/agents-realtime",
+      "name": "@openai/agents-realtime",
+      "version": "0.21.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-nI0jGkSdivlXzS7HXAB1EVplaeSyoAvfM2ofHheJDJdshs3UQl3x405nmTflKWye+wQrqemK4uxL06NIhgvjHg==",
+      "source": "https://registry.npmjs.org/@openai/agents-realtime/-/agents-realtime-0.21.0.tgz",
+      "licenseFiles": [
+        "node_modules/@openai/agents-realtime/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@oxc-project/types",
+      "name": "@oxc-project/types",
+      "version": "0.155.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
+      "source": "https://registry.npmjs.org/@oxc-project/types/-/types-0.155.0.tgz",
+      "licenseFiles": [
+        "node_modules/@oxc-project/types/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/primitive",
+      "name": "@radix-ui/primitive",
+      "version": "1.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-KABY+VMIRPJL+Vyzv/335FEhXXD/xDv8BMb1kl48/aXJZMH0LtHCTx5ga5RnxaEP3nZHtmTLf1P9vanmFX46bw==",
+      "source": "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/primitive/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-collection",
+      "name": "@radix-ui/react-collection",
+      "version": "1.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-+yiQzqcc7Sy7/5s0jrMCjpPRFB3538VNrXPWdTLZhE/SCfgEws4aI6lHWN/vvcnyhHndROWBzqmqB4QBrITZ9Q==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-collection/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-compose-refs",
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-+48PbAAbq3didjJxa+OaWY2ZwgAKsNiRGyeHKszblZMQ+kcpd9pAaT11cMkGEie0vsOi3QdeTE6d5Fe3Gn61kA==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.5.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-compose-refs/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-context",
+      "name": "@radix-ui/react-context",
+      "version": "1.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-v5AYEocMISkbJ+1fTXzZpiFv7NRr3D2WiYbLIKf+FkmJ8VkP6d503eV2n34MFussHXY1pcoq3yfJiQH77dc4Mg==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-context/-/react-context-1.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-context/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-direction",
+      "name": "@radix-ui/react-direction",
+      "version": "1.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-FtRA52a/r+LKStFT+neLUm+8vSe7wbzkbQGGeU8ixFiwC8NU14Evoq9ATECqL3eGbcUzJR4fyfA4KkK/q6dfqg==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-direction/-/react-direction-1.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-direction/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-id",
+      "name": "@radix-ui/react-id",
+      "version": "1.1.4",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-TMQp2llA+RYn7JcjnrMnz7wN4pcVttPZnRZo52PLQsoLVKzNlVwUeHmfePgTgRluXFvlD3GD5g5MOVVTJCO0qA==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-id/-/react-id-1.1.4.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-id/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-presence",
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.11",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Z7/atlkab36Z8hm+V8zYc79r0W+tiOB1o0tun1By94JyadkekLQmtEAnBSP9XKXBNQsStoStS4+gX10JpS5akA==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-presence/-/react-presence-1.1.11.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-presence/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-primitive",
+      "name": "@radix-ui/react-primitive",
+      "version": "2.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-HCTSPMNqv55Qk0IX4geJbpyXazmqulcimwuyjxTkKi29v+QZbG2Zho9BnbBq4YS2PF+KlNb2CXoLz66uUmblkg==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-primitive/-/react-primitive-2.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-primitive/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-roving-focus",
+      "name": "@radix-ui/react-roving-focus",
+      "version": "1.2.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-UwraORzVUeEPMclhO1p0vz0qI+TbdDLO9i+FiOqhJyHKwdpCRCck9yVEscUnAMIzCiuNoQa8D4A9bIpOPXGt6Q==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-roving-focus/-/react-roving-focus-1.2.1.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-roving-focus/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-slot",
+      "name": "@radix-ui/react-slot",
+      "version": "1.5.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-tyYd9ddPXAysAbdbD9eYxgwpCSv6f3PncqVSNKQFSR5lcJVLz3cb/pANDoYrLiHBpXv7skortyUgGUWsYuPPFQ==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.5.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-slot/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-tabs",
+      "name": "@radix-ui/react-tabs",
+      "version": "1.2.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-hRoJlode+hg5ZNlR+3tkfkUliIybdTpD5lkAvHQ9yaXseGf7XVO9Ib2GPEIOuaJJbo7YWYbNpDDRfo8Dhf6/xA==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-tabs/-/react-tabs-1.2.1.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-tabs/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-use-callback-ref",
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Y5GBf4NKeADoXI1geiMlMuMoURT3k9MizzzKhGb/m55H94aGigZ01PIpkvsO6lML13BA6XYAXSJ6gza7vTn5nw==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-use-callback-ref/-/react-use-callback-ref-1.1.5.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-use-callback-ref/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-use-controllable-state",
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-TAcBI7bw2ljYCbv4+zuTSd6zICu8pRt6SDN2vJ/Z06K2MXh6I9WYFe/A9ovlFDtR5HVHGm5iDxDoABm/++dbKg==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-use-controllable-state/-/react-use-controllable-state-1.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-use-controllable-state/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-use-effect-event",
+      "name": "@radix-ui/react-use-effect-event",
+      "version": "0.0.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-7cshFL8HGS/7HEiHH+9kL9HBwp2sa9yX18Knwek6KYWmXwM7pegMgta2AXMQKI+rq3JnfSj9x8wYqFMTdG1Jgg==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-use-effect-event/-/react-use-effect-event-0.0.5.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-use-effect-event/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-use-is-hydrated",
+      "name": "@radix-ui/react-use-is-hydrated",
+      "version": "0.1.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-umO/aJ+82CpOnhDZUTbILCQf7kU/g0iv+oGs/Q8jw7IkhWBzaEP4sA268PhFAJTFetbwp3ICc6ktpI4TqtxcIw==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-use-is-hydrated/-/react-use-is-hydrated-0.1.3.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-use-is-hydrated/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@radix-ui/react-use-layout-effect",
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.4",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-K20DkRkUwDnxEYMBPcg3Y6voLkEy5p5QQmszZgLngKKiC7dzBR/aEuK3w1qlx2JWDUNH6FluahYdgR3BP+QbYw==",
+      "source": "https://registry.npmjs.org/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.4.tgz",
+      "licenseFiles": [
+        "node_modules/@radix-ui/react-use-layout-effect/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@rolldown/binding-android-arm-eabi",
+      "name": "@rolldown/binding-android-arm-eabi",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-android-arm64",
+      "name": "@rolldown/binding-android-arm64",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-xD7DdZCrbThKuxNg7ooQmvp07ys4J/pnSEMTG3/OdOWl6daC67m/Q4fL78sRHMxTH/N4fGUbYhcPM0MF5WFHkg==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-darwin-arm64",
+      "name": "@rolldown/binding-darwin-arm64",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-m2WuQ6r0B4OTYxyPpNLtXaMRbRDUbG8YQV2Q3KTdSSK8Th6KHCnC8jVCJt8bvYeSB5WivkkNbc85mKadaSdOxA==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-darwin-x64",
+      "name": "@rolldown/binding-darwin-x64",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-5RtnsHM36nodM9WbMy+zip0LGS/G+y5wro5RHrpOlr4ac24+1zSi9kiV2MP1myZeZ/ifEHfulQcWjnAXzc2C2A==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-freebsd-x64",
+      "name": "@rolldown/binding-freebsd-x64",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-g3l09pyFqhu+135JKkbkwiKGQmwU5hUMUPJ4VdBADvuqR8d33L6H578rh8m7rtxbdp+VmX/+nzI7nvhSZlzpUQ==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "name": "@rolldown/binding-linux-arm-gnueabihf",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-nIe3VugI97nGQtspPxDqA4sXMUpeiocKIP/CqpY/u/vgbT+alX+cVxu1C/oVBPKg4feNTmYovE91v4DgXvXNwQ==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "name": "@rolldown/binding-linux-arm64-gnu",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-iTBjXx+B5QSvgI89lJfmqh4wTh8NabR1YZIIN3hNx4zSG0EVfVqkOvLulNpG4251pbd6/IAmZ/LefVk1Y4rPhw==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm64-musl",
+      "name": "@rolldown/binding-linux-arm64-musl",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-uN26XOnVR7rqQupG3V9oAG2EGGatWjcJHOeDOHUFCh4TBWmP2tHTFoVN13aYbwfm0aHqJAEmcwhAu6sooIjfqQ==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "name": "@rolldown/binding-linux-ppc64-gnu",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-9nWkcdd+H+XhaA3fQIwpHnKIrfx/PQ6rO0pivr78Og07tXlUlctBBJoEYLPfhTmCR/QxEVdn6uPjHV5SymPhdw==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "name": "@rolldown/binding-linux-s390x-gnu",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-Ggh0ciFjLwIusLSLz7LZYEaGdxOAUJXI+Qu5JCbhPJJHEt8vP+IjRATTJheiJsdzzTYgUiHUiw3X1Ea3ZpMBdA==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-x64-gnu",
+      "name": "@rolldown/binding-linux-x64-gnu",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": true,
+      "optional": true,
+      "integrity": "sha512-FHg60rS6DBePAYZ9X9F67x+JObFdmgn6tupA1C/a3B+CufFmTD4mX+e8M75tCiAO3foR/6xwVBI0KQiI7sn/rw==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.15.tgz",
+      "licenseFiles": [
+        "node_modules/rolldown/LICENSE",
+        "node_modules/rolldown/THIRD-PARTY-LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-x64-musl",
+      "name": "@rolldown/binding-linux-x64-musl",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": true,
+      "optional": true,
+      "integrity": "sha512-/cvV/7v5VGz/moiz0XKRj2dE8DzsKyhIu1KpOvJGPjRywg3yscON889UGvAe8zfiJLHup7VLjBduoGWi3HusWQ==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.15.tgz",
+      "licenseFiles": [
+        "node_modules/rolldown/LICENSE",
+        "node_modules/rolldown/THIRD-PARTY-LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@rolldown/binding-openharmony-arm64",
+      "name": "@rolldown/binding-openharmony-arm64",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-MyzC5Hrv/sm+Z7TSGKP/j8001RO2xQm1zOpCNVL4j0cY/VhBZviludA2YFQ7i4lH6ZAXxQm0lcMdBzM+99mE7w==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "name": "@rolldown/binding-win32-arm64-msvc",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-+PgYiS+AH5omy6L45ZLxybasauJaj3M8buoT83D+nzPmCayXlxUV9hydhciCKVyIg0B/v0BtXPDE1uGqNwCPpg==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/binding-win32-x64-msvc",
+      "name": "@rolldown/binding-win32-x64-msvc",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-HFZd2QNQYn1JbIi+Hpd7H+r/lkWxcfIu28nirZ6eCn2LafuvmExMlb/P96Sfx5tf7pPArw39IdhmCF8vmV+NhQ==",
+      "source": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.15.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/@rolldown/pluginutils",
+      "name": "@rolldown/pluginutils",
+      "version": "1.0.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==",
+      "source": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/@rolldown/pluginutils/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@standard-schema/spec",
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==",
+      "source": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
+      "licenseFiles": [
+        "node_modules/@standard-schema/spec/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/jsdom",
+      "name": "@types/jsdom",
+      "version": "30.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-uAHGxujGE0cDaKGdK28zgDotFtNA7MKq5DXl8LrfdxdCI8VHcg15oJz+amHTChPNI5JpgEPQWc2xFdrw3em/nQ==",
+      "source": "https://registry.npmjs.org/@types/jsdom/-/jsdom-30.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/@types/jsdom/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/jsdom/node_modules/undici-types",
+      "name": "undici-types",
+      "version": "8.12.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-EXE4ydL3S76dFb27UFjNVZHTyv/TLdATj/KUe29ptdcg6qXL48J2tZ3126E5kICj5jn781OR+XlVH1N6Mz8jbA==",
+      "source": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.3.tgz",
+      "licenseFiles": [
+        "node_modules/@types/jsdom/node_modules/undici-types/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/node",
+      "name": "@types/node",
+      "version": "24.10.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==",
+      "source": "https://registry.npmjs.org/@types/node/-/node-24.10.1.tgz",
+      "licenseFiles": [
+        "node_modules/@types/node/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/react",
+      "name": "@types/react",
+      "version": "19.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==",
+      "source": "https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@types/react/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/react-dom",
+      "name": "@types/react-dom",
+      "version": "19.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==",
+      "source": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/@types/react-dom/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/tough-cookie",
+      "name": "@types/tough-cookie",
+      "version": "4.0.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==",
+      "source": "https://registry.npmjs.org/@types/tough-cookie/-/tough-cookie-4.0.5.tgz",
+      "licenseFiles": [
+        "node_modules/@types/tough-cookie/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/@types/ws",
+      "name": "@types/ws",
+      "version": "8.18.2",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==",
+      "source": "https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz",
+      "licenseFiles": [
+        "node_modules/@types/ws/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/bidi-js",
+      "name": "bidi-js",
+      "version": "1.1.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==",
+      "source": "https://registry.npmjs.org/bidi-js/-/bidi-js-1.1.0.tgz",
+      "licenseFiles": [
+        "node_modules/bidi-js/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/commander",
+      "name": "commander",
+      "version": "12.1.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==",
+      "source": "https://registry.npmjs.org/commander/-/commander-12.1.0.tgz",
+      "licenseFiles": [
+        "node_modules/commander/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/copy-anything",
+      "name": "copy-anything",
+      "version": "3.0.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==",
+      "source": "https://registry.npmjs.org/copy-anything/-/copy-anything-3.0.5.tgz",
+      "licenseFiles": [
+        "node_modules/copy-anything/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/cross-spawn",
+      "name": "cross-spawn",
+      "version": "7.0.6",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==",
+      "source": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
+      "licenseFiles": [
+        "node_modules/cross-spawn/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/css-tree",
+      "name": "css-tree",
+      "version": "3.2.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==",
+      "source": "https://registry.npmjs.org/css-tree/-/css-tree-3.2.1.tgz",
+      "licenseFiles": [
+        "node_modules/css-tree/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/csstype",
+      "name": "csstype",
+      "version": "3.2.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
+      "source": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+      "licenseFiles": [
+        "node_modules/csstype/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/data-urls",
+      "name": "data-urls",
+      "version": "8.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-JQUCCK+/CAGbGGx618PlFZMXH81Jtj7t73CHv9dd/zVWvxgGT2zLFRjnKb+Ng46GIwcy+f7f88qd4duqllK+WQ==",
+      "source": "https://registry.npmjs.org/data-urls/-/data-urls-8.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/data-urls/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/debug",
+      "name": "debug",
+      "version": "4.4.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
+      "source": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+      "licenseFiles": [
+        "node_modules/debug/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/decimal.js",
+      "name": "decimal.js",
+      "version": "10.6.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg==",
+      "source": "https://registry.npmjs.org/decimal.js/-/decimal.js-10.6.0.tgz",
+      "licenseFiles": [
+        "node_modules/decimal.js/LICENCE.md"
+      ]
+    },
+    {
+      "path": "node_modules/detect-libc",
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==",
+      "source": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz",
+      "licenseFiles": [
+        "node_modules/detect-libc/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/entities",
+      "name": "entities",
+      "version": "8.1.0",
+      "license": "BSD-2-Clause",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==",
+      "source": "https://registry.npmjs.org/entities/-/entities-8.1.0.tgz",
+      "licenseFiles": [
+        "node_modules/entities/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/eventsource",
+      "name": "eventsource",
+      "version": "3.0.7",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==",
+      "source": "https://registry.npmjs.org/eventsource/-/eventsource-3.0.7.tgz",
+      "licenseFiles": [
+        "node_modules/eventsource/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/eventsource-parser",
+      "name": "eventsource-parser",
+      "version": "3.1.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==",
+      "source": "https://registry.npmjs.org/eventsource-parser/-/eventsource-parser-3.1.1.tgz",
+      "licenseFiles": [
+        "node_modules/eventsource-parser/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/fdir",
+      "name": "fdir",
+      "version": "6.5.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
+      "source": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+      "licenseFiles": [
+        "node_modules/fdir/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/fsevents",
+      "name": "fsevents",
+      "version": "2.3.3",
+      "license": "MIT",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
+      "source": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/hono",
+      "name": "hono",
+      "version": "4.13.13",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==",
+      "source": "https://registry.npmjs.org/hono/-/hono-4.13.13.tgz",
+      "licenseFiles": [
+        "node_modules/hono/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/html-encoding-sniffer",
+      "name": "html-encoding-sniffer",
+      "version": "7.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-UikN5yr7xsCDAq87Or5or0PAlD3HJJOKVzM05az588WnpDJ4Ux7a2A53Qi6gofGg2/EtvF/H4hCi/TXfCW4Y6w==",
+      "source": "https://registry.npmjs.org/html-encoding-sniffer/-/html-encoding-sniffer-7.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/html-encoding-sniffer/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/is-potential-custom-element-name",
+      "name": "is-potential-custom-element-name",
+      "version": "1.0.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==",
+      "source": "https://registry.npmjs.org/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/is-potential-custom-element-name/LICENSE-MIT.txt"
+      ]
+    },
+    {
+      "path": "node_modules/is-what",
+      "name": "is-what",
+      "version": "4.1.16",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-ZhMwEosbFJkA0YhFnNDgTM4ZxDRsS6HqTo7qsZM08fehyRYIYa0yHu5R6mgo1n/8MgaPBXiPimPD77baVFYg+A==",
+      "source": "https://registry.npmjs.org/is-what/-/is-what-4.1.16.tgz",
+      "licenseFiles": [
+        "node_modules/is-what/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/isexe",
+      "name": "isexe",
+      "version": "2.0.0",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==",
+      "source": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/isexe/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/jose",
+      "name": "jose",
+      "version": "6.2.13",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-7TIg10ZE1x82YediN+lcrPNvGMKge9yFHQD+Qho/b8y2adfugU3AsvvHfxV0fzyFllT6l9xCjf4RWY9g/Z9PJQ==",
+      "source": "https://registry.npmjs.org/jose/-/jose-6.2.13.tgz",
+      "licenseFiles": [
+        "node_modules/jose/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/jsdom",
+      "name": "jsdom",
+      "version": "30.1.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-hQMUPvRgN7KxsfIytDQji7bimuJeRQa6Qo5+iuiZQk5CafeRxLIA10/cG5YCBFNpD9RO3oqIiN4CO1Y44kxqXg==",
+      "source": "https://registry.npmjs.org/jsdom/-/jsdom-30.1.3.tgz",
+      "licenseFiles": [
+        "node_modules/jsdom/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/lightningcss",
+      "name": "lightningcss",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==",
+      "source": "https://registry.npmjs.org/lightningcss/-/lightningcss-1.33.0.tgz",
+      "licenseFiles": [
+        "node_modules/lightningcss/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/lightningcss-android-arm64",
+      "name": "lightningcss-android-arm64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==",
+      "source": "https://registry.npmjs.org/lightningcss-android-arm64/-/lightningcss-android-arm64-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-darwin-arm64",
+      "name": "lightningcss-darwin-arm64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-Sciaz8eenNTKn9b3t7+xr0ipTp9YxKQY4npwQ3mrRuL0BAVHBLyZxofhaKBAVtzmtRZ/zTyo0/to4B1uWG/Djg==",
+      "source": "https://registry.npmjs.org/lightningcss-darwin-arm64/-/lightningcss-darwin-arm64-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-darwin-x64",
+      "name": "lightningcss-darwin-x64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-Z5UPAxzrjlWNNyGy6i65cJzzvgJ5D3T6wMvs+gWpY9d7qRhANrxqAp6LhxIgZhWEw18RfJTGcRxjuLIBr+m8XQ==",
+      "source": "https://registry.npmjs.org/lightningcss-darwin-x64/-/lightningcss-darwin-x64-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-freebsd-x64",
+      "name": "lightningcss-freebsd-x64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-QQM/Ti/hQajJwCY+RiWuCZ9sdtI/XQk7nDK5vC8kkdwixezOlDgvDx7+RT+QjK6FcFT4MpsuoBnHIo/O3StRRg==",
+      "source": "https://registry.npmjs.org/lightningcss-freebsd-x64/-/lightningcss-freebsd-x64-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm-gnueabihf",
+      "name": "lightningcss-linux-arm-gnueabihf",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-N7FVBe6iS24MlM6R/4RBTxGhQheZGs7tiQ9U32UtF75NzP5Q7xWPRqLBCKxlRQRk3rY1jCIPLzx7WzOhuUIRLQ==",
+      "source": "https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf/-/lightningcss-linux-arm-gnueabihf-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm64-gnu",
+      "name": "lightningcss-linux-arm64-gnu",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-j2v/itmy4HlNxlc6voKXYgBqNi0Ng2LShg4z7GufpEgs05P+2suBVyi9I6YHq5uoVFx9ETin3eCEhLVyXGQnKg==",
+      "source": "https://registry.npmjs.org/lightningcss-linux-arm64-gnu/-/lightningcss-linux-arm64-gnu-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm64-musl",
+      "name": "lightningcss-linux-arm64-musl",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-yiO5ROMuYQgXbC60yjZU5CYSFZGKXL0HFATXt9mHJn1+zW55oCtMI9NfcVhYLMFDL7gV7oBPon/EmMMGg2OvtQ==",
+      "source": "https://registry.npmjs.org/lightningcss-linux-arm64-musl/-/lightningcss-linux-arm64-musl-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-linux-x64-gnu",
+      "name": "lightningcss-linux-x64-gnu",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": true,
+      "optional": true,
+      "integrity": "sha512-ar+Ju7LmcN0Jo4FpL4hpFybwNG9/3A/Br5KW2n2jyODg3MEZXaDYADdemoNS+BDNfMgKvylJLj4S5tyRActuAg==",
+      "source": "https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.33.0.tgz",
+      "licenseFiles": [
+        "node_modules/lightningcss-linux-x64-gnu/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/lightningcss-linux-x64-musl",
+      "name": "lightningcss-linux-x64-musl",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": true,
+      "optional": true,
+      "integrity": "sha512-RYiYbkokw0trfKqqzfF55lginwEPrD3OJDfTuJzFs1MK6iFnDenaz1fqLLtX4ITG3OktJQXOeTaw1awrBAlZPw==",
+      "source": "https://registry.npmjs.org/lightningcss-linux-x64-musl/-/lightningcss-linux-x64-musl-1.33.0.tgz",
+      "licenseFiles": [
+        "node_modules/lightningcss-linux-x64-musl/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/lightningcss-win32-arm64-msvc",
+      "name": "lightningcss-win32-arm64-msvc",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-1K+MPfLSFVpphzpdbfkhlWk6wBrTObBzS2T6db10PNOZgR9GoVsAWzwNyuhUYYbTp23j+4RrncfujZ4uAzXvwA==",
+      "source": "https://registry.npmjs.org/lightningcss-win32-arm64-msvc/-/lightningcss-win32-arm64-msvc-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lightningcss-win32-x64-msvc",
+      "name": "lightningcss-win32-x64-msvc",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "installed": false,
+      "optional": true,
+      "integrity": "sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA==",
+      "source": "https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.33.0.tgz",
+      "licenseFiles": []
+    },
+    {
+      "path": "node_modules/lru-cache",
+      "name": "lru-cache",
+      "version": "11.5.3",
+      "license": "BlueOak-1.0.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==",
+      "source": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
+      "licenseFiles": [
+        "node_modules/lru-cache/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/mdn-data",
+      "name": "mdn-data",
+      "version": "2.27.1",
+      "license": "CC0-1.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==",
+      "source": "https://registry.npmjs.org/mdn-data/-/mdn-data-2.27.1.tgz",
+      "licenseFiles": [
+        "node_modules/mdn-data/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/ms",
+      "name": "ms",
+      "version": "2.1.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "source": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "licenseFiles": [
+        "node_modules/ms/license.md"
+      ]
+    },
+    {
+      "path": "node_modules/nanoid",
+      "name": "nanoid",
+      "version": "3.3.20",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==",
+      "source": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.20.tgz",
+      "licenseFiles": [
+        "node_modules/nanoid/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/openai",
+      "name": "openai",
+      "version": "7.43.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-fBjKaDFG8AVfkGYoIo/E+xNRlNk7nx2nQ9GoQtXfePzPjg4QcT6nejkhXayJnEwSpFGfthOrAPI2KXj5yAqg9A==",
+      "source": "https://registry.npmjs.org/openai/-/openai-7.43.0.tgz",
+      "licenseFiles": [
+        "node_modules/openai/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/parse5",
+      "name": "parse5",
+      "version": "8.0.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==",
+      "source": "https://registry.npmjs.org/parse5/-/parse5-8.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/parse5/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/path-key",
+      "name": "path-key",
+      "version": "3.1.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==",
+      "source": "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz",
+      "licenseFiles": [
+        "node_modules/path-key/license"
+      ]
+    },
+    {
+      "path": "node_modules/pg",
+      "name": "pg",
+      "version": "8.23.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-aL96AHANtWjPLDOLqnhx+ngp9+UK7ETEU8VJrDCGvsSSi/mGLcWYsS6Herg7lmaBJe4uwrfqsa7gTEFaSizDoQ==",
+      "source": "https://registry.npmjs.org/pg/-/pg-8.23.1.tgz",
+      "licenseFiles": [
+        "node_modules/pg/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-cloudflare",
+      "name": "pg-cloudflare",
+      "version": "1.4.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": true,
+      "integrity": "sha512-6PQbsFWZcp9EmJEwy5cGQ2La+AMWpP46lgbb8X+U/XsHIUweYDNCpeuKck5RxL2MdVFi7krbbEi5nX4Zh7JhrQ==",
+      "source": "https://registry.npmjs.org/pg-cloudflare/-/pg-cloudflare-1.4.1.tgz",
+      "licenseFiles": [
+        "node_modules/pg-cloudflare/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-connection-string",
+      "name": "pg-connection-string",
+      "version": "2.14.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-qR3kGNPBLpCNtz0evbKA0Y/MRFXwSSdT+pTJvYp/bXTcReZbvX1kzF0IyTc1QnxqF7AZbOeBhNL8R5mYQZV/MA==",
+      "source": "https://registry.npmjs.org/pg-connection-string/-/pg-connection-string-2.14.1.tgz",
+      "licenseFiles": [
+        "node_modules/pg-connection-string/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-int8",
+      "name": "pg-int8",
+      "version": "1.0.1",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==",
+      "source": "https://registry.npmjs.org/pg-int8/-/pg-int8-1.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/pg-int8/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-pool",
+      "name": "pg-pool",
+      "version": "3.14.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-gKtPkFdQPU3DksooVLi9LsjZxrsBUZIpa+7aVx+LV5pNh0KzP4Zleud2po+ConrxbuXGBJ6Hfer6hdgpIBpBaw==",
+      "source": "https://registry.npmjs.org/pg-pool/-/pg-pool-3.14.0.tgz",
+      "licenseFiles": [
+        "node_modules/pg-pool/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-protocol",
+      "name": "pg-protocol",
+      "version": "1.16.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-p9VOFMiHB/ZbJATetbg+99PxssTVSQRnyuPSQ67mN1+1KBOjZaZ83ZQzltnxPhJwSsC3nwVjJ10DVJlerbFzLg==",
+      "source": "https://registry.npmjs.org/pg-protocol/-/pg-protocol-1.16.1.tgz",
+      "licenseFiles": [
+        "node_modules/pg-protocol/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pg-types",
+      "name": "pg-types",
+      "version": "2.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==",
+      "source": "https://registry.npmjs.org/pg-types/-/pg-types-2.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/pg-types/README.md"
+      ]
+    },
+    {
+      "path": "node_modules/pgpass",
+      "name": "pgpass",
+      "version": "1.0.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==",
+      "source": "https://registry.npmjs.org/pgpass/-/pgpass-1.0.5.tgz",
+      "licenseFiles": [
+        "node_modules/pgpass/README.md"
+      ]
+    },
+    {
+      "path": "node_modules/picocolors",
+      "name": "picocolors",
+      "version": "1.1.1",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+      "source": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+      "licenseFiles": [
+        "node_modules/picocolors/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/picomatch",
+      "name": "picomatch",
+      "version": "4.0.7",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==",
+      "source": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
+      "licenseFiles": [
+        "node_modules/picomatch/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/pkce-challenge",
+      "name": "pkce-challenge",
+      "version": "5.0.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==",
+      "source": "https://registry.npmjs.org/pkce-challenge/-/pkce-challenge-5.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/pkce-challenge/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/playwright-core",
+      "name": "playwright-core",
+      "version": "1.64.1",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==",
+      "source": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.64.1.tgz",
+      "licenseFiles": [
+        "node_modules/playwright-core/LICENSE",
+        "node_modules/playwright-core/NOTICE"
+      ]
+    },
+    {
+      "path": "node_modules/postcss",
+      "name": "postcss",
+      "version": "8.5.31",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==",
+      "source": "https://registry.npmjs.org/postcss/-/postcss-8.5.31.tgz",
+      "licenseFiles": [
+        "node_modules/postcss/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/postgres-array",
+      "name": "postgres-array",
+      "version": "2.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==",
+      "source": "https://registry.npmjs.org/postgres-array/-/postgres-array-2.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/postgres-array/license"
+      ]
+    },
+    {
+      "path": "node_modules/postgres-bytea",
+      "name": "postgres-bytea",
+      "version": "1.0.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==",
+      "source": "https://registry.npmjs.org/postgres-bytea/-/postgres-bytea-1.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/postgres-bytea/license"
+      ]
+    },
+    {
+      "path": "node_modules/postgres-date",
+      "name": "postgres-date",
+      "version": "1.0.7",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==",
+      "source": "https://registry.npmjs.org/postgres-date/-/postgres-date-1.0.7.tgz",
+      "licenseFiles": [
+        "node_modules/postgres-date/license"
+      ]
+    },
+    {
+      "path": "node_modules/postgres-interval",
+      "name": "postgres-interval",
+      "version": "1.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==",
+      "source": "https://registry.npmjs.org/postgres-interval/-/postgres-interval-1.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/postgres-interval/license"
+      ]
+    },
+    {
+      "path": "node_modules/punycode",
+      "name": "punycode",
+      "version": "2.3.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==",
+      "source": "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz",
+      "licenseFiles": [
+        "node_modules/punycode/LICENSE-MIT.txt"
+      ]
+    },
+    {
+      "path": "node_modules/react",
+      "name": "react",
+      "version": "19.3.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+      "source": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+      "licenseFiles": [
+        "node_modules/react/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/react-dom",
+      "name": "react-dom",
+      "version": "19.3.1",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+      "source": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+      "licenseFiles": [
+        "node_modules/react-dom/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/require-from-string",
+      "name": "require-from-string",
+      "version": "2.0.2",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
+      "source": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/require-from-string/license"
+      ]
+    },
+    {
+      "path": "node_modules/rolldown",
+      "name": "rolldown",
+      "version": "1.2.15",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==",
+      "source": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.15.tgz",
+      "licenseFiles": [
+        "node_modules/rolldown/LICENSE",
+        "node_modules/rolldown/THIRD-PARTY-LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/saxes",
+      "name": "saxes",
+      "version": "6.0.0",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==",
+      "source": "https://registry.npmjs.org/saxes/-/saxes-6.0.0.tgz",
+      "licenseFiles": [
+        "licenses/saxes-6.0.0-LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/scheduler",
+      "name": "scheduler",
+      "version": "0.28.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==",
+      "source": "https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz",
+      "licenseFiles": [
+        "node_modules/scheduler/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/serialize-error",
+      "name": "serialize-error",
+      "version": "8.1.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-3NnuWfM6vBYoy5gZFvHiYsVbafvI9vZv/+jlIigFn4oP4zjNPK3LhcY0xSCgeb1a5L8jO71Mit9LlNoi2UfDDQ==",
+      "source": "https://registry.npmjs.org/serialize-error/-/serialize-error-8.1.0.tgz",
+      "licenseFiles": [
+        "node_modules/serialize-error/license"
+      ]
+    },
+    {
+      "path": "node_modules/shebang-command",
+      "name": "shebang-command",
+      "version": "2.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==",
+      "source": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/shebang-command/license"
+      ]
+    },
+    {
+      "path": "node_modules/shebang-regex",
+      "name": "shebang-regex",
+      "version": "3.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==",
+      "source": "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/shebang-regex/license"
+      ]
+    },
+    {
+      "path": "node_modules/source-map-js",
+      "name": "source-map-js",
+      "version": "1.2.2",
+      "license": "BSD-3-Clause",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==",
+      "source": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz",
+      "licenseFiles": [
+        "node_modules/source-map-js/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/split2",
+      "name": "split2",
+      "version": "4.2.0",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==",
+      "source": "https://registry.npmjs.org/split2/-/split2-4.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/split2/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/superjson",
+      "name": "superjson",
+      "version": "1.13.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-mJiVjfd2vokfDxsQPOwJ/PtanO87LhpYY88ubI5dUB1Ab58Txbyje3+jpm+/83R/fevaq/107NNhtYBLuoTrFg==",
+      "source": "https://registry.npmjs.org/superjson/-/superjson-1.13.3.tgz",
+      "licenseFiles": [
+        "node_modules/superjson/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/tinyglobby",
+      "name": "tinyglobby",
+      "version": "0.2.17",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==",
+      "source": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+      "licenseFiles": [
+        "node_modules/tinyglobby/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/tldts",
+      "name": "tldts",
+      "version": "7.4.19",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-48dH6aSpQnpbzDUc4vIQZ1VjB8tkK+e8c1yx05/SZK+rkssgjEOlxDd/yU8/a4vGYQ9vRgJr9dwMq9TJ0b3X2Q==",
+      "source": "https://registry.npmjs.org/tldts/-/tldts-7.4.19.tgz",
+      "licenseFiles": [
+        "node_modules/tldts/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/tldts-core",
+      "name": "tldts-core",
+      "version": "7.4.19",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-goNXV6Ho9TIOfpJZanTd6CKG5DyYgYAL+k+22T0SLh8l6+KHIfBUPFuePuSZv05UttIaaLmI9tb7TmGIdK5AkQ==",
+      "source": "https://registry.npmjs.org/tldts-core/-/tldts-core-7.4.19.tgz",
+      "licenseFiles": [
+        "node_modules/tldts-core/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/tough-cookie",
+      "name": "tough-cookie",
+      "version": "6.0.2",
+      "license": "BSD-3-Clause",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-exgYmnmL/sJpR3upZfXG5PoatXQii55xAiXGXzY+sROLZ/Y+SLcp9PgJNI9Vz37HpQ74WvDcLT8eqm+kV3FzrA==",
+      "source": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/tough-cookie/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/tr46",
+      "name": "tr46",
+      "version": "7.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-BcDSDW+SIGWVOns1Zm6Yg91q9AEj7eaID0QDY9oIqJD1A8dscNwMcl9Sms2DeuWCNov1X0/oXanHGYQBSLwZsg==",
+      "source": "https://registry.npmjs.org/tr46/-/tr46-7.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/tr46/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/type-fest",
+      "name": "type-fest",
+      "version": "0.20.2",
+      "license": "(MIT OR CC0-1.0)",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==",
+      "source": "https://registry.npmjs.org/type-fest/-/type-fest-0.20.2.tgz",
+      "licenseFiles": [
+        "node_modules/type-fest/license"
+      ]
+    },
+    {
+      "path": "node_modules/typescript",
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "source": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+      "licenseFiles": [
+        "node_modules/typescript/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/undici",
+      "name": "undici",
+      "version": "8.12.3",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==",
+      "source": "https://registry.npmjs.org/undici/-/undici-8.12.3.tgz",
+      "licenseFiles": [
+        "node_modules/undici/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/undici-types",
+      "name": "undici-types",
+      "version": "7.16.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==",
+      "source": "https://registry.npmjs.org/undici-types/-/undici-types-7.16.0.tgz",
+      "licenseFiles": [
+        "node_modules/undici-types/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/vite",
+      "name": "vite",
+      "version": "8.3.5",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==",
+      "source": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz",
+      "licenseFiles": [
+        "node_modules/vite/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/w3c-xmlserializer",
+      "name": "w3c-xmlserializer",
+      "version": "6.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==",
+      "source": "https://registry.npmjs.org/w3c-xmlserializer/-/w3c-xmlserializer-6.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/w3c-xmlserializer/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/webidl-conversions",
+      "name": "webidl-conversions",
+      "version": "8.0.1",
+      "license": "BSD-2-Clause",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==",
+      "source": "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-8.0.1.tgz",
+      "licenseFiles": [
+        "node_modules/webidl-conversions/LICENSE.md"
+      ]
+    },
+    {
+      "path": "node_modules/whatwg-mimetype",
+      "name": "whatwg-mimetype",
+      "version": "5.0.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==",
+      "source": "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-5.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/whatwg-mimetype/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/whatwg-url",
+      "name": "whatwg-url",
+      "version": "17.3.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-KwOAJrpf+GTgBvcBQJcP38sMF0DsQKdwtG+TxM2pW44P6E5k0hDbWrDmyuJDIF0Uef0aQq0ZoJs+5oI+k8ddhg==",
+      "source": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-17.3.0.tgz",
+      "licenseFiles": [
+        "node_modules/whatwg-url/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/which",
+      "name": "which",
+      "version": "2.0.2",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
+      "source": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/which/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/ws",
+      "name": "ws",
+      "version": "8.22.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==",
+      "source": "https://registry.npmjs.org/ws/-/ws-8.22.0.tgz",
+      "licenseFiles": [
+        "node_modules/ws/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/xml-name-validator",
+      "name": "xml-name-validator",
+      "version": "5.0.0",
+      "license": "Apache-2.0",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==",
+      "source": "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-5.0.0.tgz",
+      "licenseFiles": [
+        "node_modules/xml-name-validator/LICENSE.txt"
+      ]
+    },
+    {
+      "path": "node_modules/xmlchars",
+      "name": "xmlchars",
+      "version": "2.2.0",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==",
+      "source": "https://registry.npmjs.org/xmlchars/-/xmlchars-2.2.0.tgz",
+      "licenseFiles": [
+        "node_modules/xmlchars/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/xtend",
+      "name": "xtend",
+      "version": "4.0.2",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==",
+      "source": "https://registry.npmjs.org/xtend/-/xtend-4.0.2.tgz",
+      "licenseFiles": [
+        "node_modules/xtend/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/yaml",
+      "name": "yaml",
+      "version": "2.9.1",
+      "license": "ISC",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==",
+      "source": "https://registry.npmjs.org/yaml/-/yaml-2.9.1.tgz",
+      "licenseFiles": [
+        "node_modules/yaml/LICENSE"
+      ]
+    },
+    {
+      "path": "node_modules/zod",
+      "name": "zod",
+      "version": "4.6.7",
+      "license": "MIT",
+      "installed": true,
+      "optional": false,
+      "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+      "source": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+      "licenseFiles": [
+        "node_modules/zod/LICENSE"
+      ]
+    }
+  ],
+  "problems": [],
+  "secretFindings": [],
+  "securityScope": "Narrow source secret heuristic and dependency metadata, not vulnerability or production security certification",
+  "vulnerabilityAudit": "Run npm audit --package-lock-only --json separately against the official registry; an unavailable registry is not pass"
+}

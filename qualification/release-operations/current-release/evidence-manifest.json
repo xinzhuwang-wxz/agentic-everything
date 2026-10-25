@@ -1,0 +1,69 @@
+{
+  "format": "ae-current-release-supply-chain-v1",
+  "recordedAt": "2026-10-25T05:17:43.647494+00:00",
+  "sourceCommit": "4b021ba33915a2a3f84dd708bda965944b7f515f",
+  "sourceTree": "e3b43818ccc6e4d0454c7470a62c1d4bacef97b2",
+  "lockSha256": "762d169e68e916a31eefbf749a8a8173f1e78065b559e03931ea4dc0b80c22fd",
+  "tool": {
+    "path": "scripts/release-audit.mjs",
+    "sha256": "cb79c46d87b1fa2bdb6e0902152f7f4892b307fa2963e439012218c794e23958",
+    "unchanged": true
+  },
+  "toolchain": {
+    "node": "24.19.0",
+    "npm": "11.9.0"
+  },
+  "commands": [
+    {
+      "command": "NODE_OPTIONS=--max-old-space-size=192 node scripts/release-audit.mjs <new outside-checkout evidence directory>",
+      "cwd": "exact assembled AE checkout",
+      "exitCode": 0,
+      "network": "none; official npm sbom reads the fixed lockfile"
+    },
+    {
+      "command": "NODE_OPTIONS=--max-old-space-size=192 npm audit --package-lock-only --json --registry=https://registry.npmjs.org",
+      "cwd": "same exact assembled AE checkout",
+      "exitCode": 0,
+      "network": "read-only advisory request to official npm registry; no install or audit --fix"
+    }
+  ],
+  "results": {
+    "status": "pass",
+    "lockedExternalPackages": 153,
+    "installedExternalPackages": 130,
+    "problems": [],
+    "sourceSecretHeuristicFindings": [],
+    "npmReportedVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "a2aIncluded": true,
+    "a2aVersion": "1.3.0",
+    "a2aLicense": "Apache-2.0"
+  },
+  "changesSinceHistoricalEvidence": {
+    "historicalSourceCommit": "8781169207af766333acd4200e475950e4f3ae2a",
+    "historicalLockSha256": "fa590dad41452eb9a5d021ecc089b4b088dfe4e188a01b21e935313f41a61cf1",
+    "historicalArtifactsPreserved": true,
+    "addedExternalPackagePaths": [
+      "node_modules/@a2a-js/sdk"
+    ],
+    "removedExternalPackagePaths": [],
+    "reason": "The historical npm inventory predates integration of the official A2A SDK; it cannot be presented as the current lockfile inventory."
+  },
+  "filesSha256": {
+    "THIRD_PARTY_LICENSES.txt": "c77271a6de8a47f883ae00d405804d53c95e0b08fccc4398ec6ac3979d45f012",
+    "dependency-audit.json": "dd8ba6b155101962d3e9ece860a4cda91426dd5cf83f0bc88f771dda8d31e1a7",
+    "npm-audit.json": "cbcf3f18b4a64411276e73ad8b146008f6583fd9fef5f0fd57e53f22850e1b28",
+    "npm-audit.stderr.txt": "7125f194612fcff2f454c05d848e7cb71facc1967b4d5017e25b34fdee3ba74f",
+    "sbom.cyclonedx.json": "493ee1e0f97ef494e20e82f28aae7776eb66e0786b4a0f874e0da781c6a026d4"
+  },
+  "warnings": [
+    "npm reports unknown environment config http-proxy; this warning is retained in npm-audit.stderr.txt."
+  ],
+  "scope": "Current exact npm lockfile and actually installed npm license texts, including optional-platform package metadata without redistributing missing binaries. Separately locked Java qualification jars and UI comparison experiments retain their own dependency/license records. No dependency, lockfile, runtime, schema or audit tool changes; no installation, deployment, paid model or credentials used. Zero reported advisories and a narrow secret heuristic are not a security guarantee or legal advice."
+}
