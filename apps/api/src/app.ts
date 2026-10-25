@@ -1,26 +1,31 @@
 import { AdmissionLimitError } from '@ae/operations';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ApprovalDecisionSchema, ConversationContextSchema, type JsonObject, type ConversationContext, type ConversationView, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
+import { ApprovalDecisionSchema, type JsonObject, type ConversationContext, type ConversationView, type BehaviorSelection, type Principal, type AgentRelease, type ApprovalDecision, type CapabilityVersion } from '@ae/contracts';
 import { type RunView } from '@ae/runtime-core';
 import { InMemoryControlPlane, releasedCatalog, type ControlPlanePort } from '@ae/control-plane';
 import { createConfigurationRoutes } from '@ae/control-plane/http';
 import type { Ticket } from '@ae/capabilities';
 import { digest, PolicyError } from '@ae/policy';
 
-const StartSchema = z.strictObject({ input: z.string().trim().min(1).max(16384), context: z.strictObject({ ticketId: z.string().min(1).max(100) }).optional() });
+// Browser page context carries bounded references, never business payloads or authority.
+const ReferenceContextSchema = z.record(z.string().regex(/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/).refine(key => !/^(?:principal|tenantId|applicationId|subjectId|roles|scopes|approval|approvalAuthority)$/i.test(key) && !/(?:password|secret|token|credential|authorization|cookie|apikey)/i.test(key)), z.string().regex(/^[^\s\u0000-\u001f\u007f]{1,200}$/u)).refine(value => Object.keys(value).length <= 16 && JSON.stringify(value).length <= 4096, 'Reference context is too large');
+const StartSchema = z.strictObject({ input: z.string().trim().min(1).max(16384), context: ReferenceContextSchema.optional() });
 class HttpError extends Error { constructor(readonly code: string, readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429) { super(code); } }
 export type ApiRunView = Omit<RunView, 'persistence'> & { persistence: 'in-memory-fixture' | 'postgres-dbos' };
 export interface RuntimePort {
-  start(input: { principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: { ticketId: string } }): ApiRunView | Promise<ApiRunView>;
+  start(input: { principal: Principal; releaseId: string; release?: AgentRelease; input: string; context?: JsonObject }): ApiRunView | Promise<ApiRunView>;
   get(runId: string, principal: Principal): ApiRunView | Promise<ApiRunView>;
   decide(runId: string, principal: Principal, decision: ApprovalDecision): ApiRunView | Promise<ApiRunView>;
   cancel(runId: string, principal: Principal): ApiRunView | Promise<ApiRunView>;
 }
+export interface LegacyTicketReader { behaviorRegistryHash?: string; read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Ticket | Promise<Ticket> }
 export interface ApiOptions {
   runtime: RuntimePort;
   controlPlane?: InMemoryControlPlane | ControlPlanePort;
-  broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host: {behaviorRegistryHash?: string; read(principal: Principal, ticketId: string, behavior?: BehaviorSelection): Ticket | Promise<Ticket>} };
+  broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host?: unknown };
+  /** Optional legacy business read route. false disables compatibility auto-detection. */
+  ticketReader?: LegacyTicketReader | false;
   durability?: 'memory_fixture' | 'postgres_qualified';
   requirePublishedRelease?: boolean;
   /** Optional durable intent ledger supplied only by trusted server composition. */
@@ -87,11 +92,14 @@ export function createApi(options: ApiOptions): Hono {
   if (options.controlPlane) app.route('/api/configuration', createConfigurationRoutes(options.controlPlane, options.resolvePrincipal));
   app.get('/api/meta', async c => { const p = await principal(c.req.raw); return c.json({ mode: 'simulated', simulationKind: 'subagent_api', applicationName: options.applicationName, releaseId: (await options.controlPlane?.activeRelease(p))?.releaseId ?? options.releaseId, durability: options.durability ?? 'memory_fixture', ...(options.conversations && options.startIntent ? {conversationMode:'bounded-v1'} : {}) }); });
   app.get('/api/capabilities', async c => { const p = await principal(c.req.raw); const release = await options.controlPlane?.activeRelease(p); const catalog = await options.broker.catalog(p); return c.json({ capabilities: release ? releasedCatalog(release, p, catalog) : options.requirePublishedRelease ? [] : catalog }); });
-  app.get('/api/tickets/:ticketId', async c => {
+  // Preserve the original helpdesk fixture without requiring any generic host to implement tickets.
+  const legacyHost = 'host' in options.broker ? options.broker.host : undefined;
+  const ticketReader = options.ticketReader === false ? undefined : options.ticketReader ?? (legacyHost && typeof legacyHost === 'object' && 'read' in legacyHost && typeof legacyHost.read === 'function' ? legacyHost as LegacyTicketReader : undefined);
+  if (ticketReader) app.get('/api/tickets/:ticketId', async c => {
     const p = await principal(c.req.raw);
     const release = await options.controlPlane?.activeRelease(p);
-    if (release?.configuration.behavior && options.broker.host.behaviorRegistryHash !== release.configuration.behavior.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
-    try { return c.json({ ticket: await options.broker.host.read(p, c.req.param('ticketId'), release?.configuration.behavior), behaviorReleaseId: release?.releaseId ?? null }); }
+    if (release?.configuration.behavior && ticketReader.behaviorRegistryHash !== release.configuration.behavior.registryHash) throw new PolicyError('HOST_BEHAVIOR_NOT_SUPPORTED');
+    try { return c.json({ ticket: await ticketReader.read(p, c.req.param('ticketId'), release?.configuration.behavior), behaviorReleaseId: release?.releaseId ?? null }); }
     catch (error) { if (error instanceof PolicyError) throw error; throw new HttpError('TICKET_NOT_FOUND', 404); }
   });
   if (options.conversations && options.startIntent) {
@@ -102,13 +110,13 @@ export function createApi(options: ApiOptions): Hono {
       return value;
     };
     app.post('/api/conversations', async c => {
-      const p = await principal(c.req.raw), parsed = z.strictObject({ context: ConversationContextSchema }).safeParse(await body(c.req.raw));
+      const p = await principal(c.req.raw), parsed = z.strictObject({ context: ReferenceContextSchema }).safeParse(await body(c.req.raw));
       if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);
       return c.json(await conversations.create(p, parsed.data.context, intent(c.req.raw)), 201);
     });
     app.get('/api/conversations/:conversationId', async c => c.json(await conversations.get(c.req.param('conversationId'), await principal(c.req.raw))));
     app.post('/api/conversations/:conversationId/runs', async c => {
-      const p = await principal(c.req.raw), parsed = z.strictObject({ input: z.string().trim().min(1).max(16384), context: ConversationContextSchema.optional() }).safeParse(await body(c.req.raw));
+      const p = await principal(c.req.raw), parsed = z.strictObject({ input: z.string().trim().min(1).max(16384), context: ReferenceContextSchema.optional() }).safeParse(await body(c.req.raw));
       if (!parsed.success) throw new HttpError('INVALID_INPUT', 400);
       return c.json(await startIntent({ principal: p, intent: intent(c.req.raw), conversationId: c.req.param('conversationId'), input: parsed.data.input, ...(parsed.data.context ? { context: parsed.data.context } : {}) }), 201);
     });
