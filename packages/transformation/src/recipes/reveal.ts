@@ -8,8 +8,7 @@ export const revealHashes: Readonly<Record<string,string>> = {
   "LICENSE": "b2883e4b610bfa1b4d8fff84c4d4b825cc7d553cbd9fec4777c04068a2859dc0",
   "dist/reveal.js": "aa1bbbf2617b23a623b23612cb3c5bdb63de512e652bf20fcfa832b045d37844",
   "dist/reveal.css": "5c38071afd0e46673eda82211146fbcf4e66b671a8a86f9763e1c3b0a883c271",
-  "dist/reset.css": "39413c3490fdcf826427c26ff4c1ee59ea961a0aa8507c18454e0c6dc96c12d8",
-  "dist/theme/black.css": "c29c9689e8f3b277aa66edc01ed2ef97981a6768b05ad750582eac068d9705c3"
+  "dist/reset.css": "39413c3490fdcf826427c26ff4c1ee59ea961a0aa8507c18454e0c6dc96c12d8"
 };
 export const revealRecipe={
  ref:{id:'reveal-local',version:'1.0.0'},manifest:'package.json',inputs:Object.keys(revealHashes),outputs:Object.keys(revealAssets),businessPath:'index.html',
