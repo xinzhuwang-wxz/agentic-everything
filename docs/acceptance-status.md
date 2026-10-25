@@ -41,9 +41,11 @@ This is an execution checklist for the existing plan, not a fourth milestone, a 
 
 ### M1: finish the integrated product journey
 
-- [ ] Connect the qualified conversation backend to the real host assistant. Verify two turns, ordered history after reload/restart, current identity/context changes and interrupted-run recovery, without replaying historical approvals or writes. The backend report does not qualify the still-one-shot UI.
-- [ ] Close the remaining applicable negative matrix, especially disconnect/in-flight cancellation and actual delivery timeout/cleanup-failure boundaries. Existing joined release, business OFF/ON and rollback evidence is not reset merely because this checklist exists.
-- [ ] Freeze one assembled candidate and bind the lifecycle, original baseline, behavior comparison, host UI, authority, release and recovery receipts to it. Reconcile superseded status summaries without erasing earlier failures or limitations.
+- [x] Connect the qualified conversation backend to the real host assistant. Verify two turns, ordered history after reload/restart, current identity/context changes and interrupted-run recovery, without replaying historical approvals or writes. The backend report does not qualify the still-one-shot UI.
+- [x] Close the remaining applicable negative matrix, especially disconnect/in-flight cancellation and actual delivery timeout/cleanup-failure boundaries. Existing joined release, business OFF/ON and rollback evidence is not reset merely because this checklist exists.
+- [x] Freeze one assembled candidate and bind the lifecycle, original baseline, behavior comparison, host UI, authority, release and recovery receipts to it. Reconcile superseded status summaries without erasing earlier failures or limitations.
+
+M1 evidence is frozen on assembled runtime 55faf91: full strict build and 250 tests passed; five correlation and six conversation browser groups plus the full joined-release HTTP/browser matrix passed with source/build hashes unchanged. The final negative cases in `qualification/m1-negative/` execute real owned child-process failures and a PostgreSQL commit/HTTP disconnect/cancel/reconcile sequence. Later Java-only additions do not replace or broaden that evidence. A subsequent runtime or migration change requires its affected-input integration checks, not reopening this milestone for new features.
 
 ### M2: complete cross-stack adaptation and developer beta
 
