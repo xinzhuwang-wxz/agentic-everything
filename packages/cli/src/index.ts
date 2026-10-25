@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { doctorInstallation, installFixedSource, uninstallFixedSource, inspectAeSchema, migrateAeSchema, type SqlPool } from '@ae/operations';
 import { assessProject, proposePlan, approvePlan, previewPatch, applyApprovedPlan, applyApprovedPlanWithBaseline, verifyAdaptation, revertAdaptation, createDelivery, checkDelivery, digest, type AppliedTransformation } from '@ae/transformation';
 import type { AdaptationPlan, ProjectAssessment, VerificationReport } from '@ae/contracts';
 
@@ -8,7 +10,7 @@ function option(name: string): string { const position = args.indexOf('--' + nam
 function json<T>(path: string): T { return JSON.parse(readFileSync(path, 'utf8')) as T; }
 function output(value: unknown): void { const text = JSON.stringify(value, null, 2) + '\n'; const index = args.indexOf('--out'); if (index >= 0) writeFileSync(option('out'), text, { flag: 'wx' }); else process.stdout.write(text); }
 function verificationExit(report: VerificationReport): void { process.exitCode = report.checks.some(check => check.status === 'fail') ? 1 : report.checks.some(check => check.status !== 'pass') ? 2 : 0; }
-const options: Record<string, string[]> = { assess: ['repo','out'], plan: ['assessment','verification-profile','out'], approve: ['plan','plan-hash','approver','authorization-ref','out'], preview: ['repo','plan','assessment','out'], apply: ['repo','worktree','assessment','plan','approval','baseline-out','out'], verify: ['patch','out'], revert: ['patch','out'], deliver: ['repo','assessment','plan','approval','patch','out-dir'], 'delivery-check': ['bundle','out'] };
+const options: Record<string, string[]> = { install: ['source','commit','tree','destination','cache','out'], upgrade: ['source','commit','tree','destination','cache','previous','out'], doctor: ['installation','out'], uninstall: ['installation','commit','out'], 'schema-check':['out'], 'schema-apply':['out'], assess: ['repo','out'], plan: ['assessment','verification-profile','out'], approve: ['plan','plan-hash','approver','authorization-ref','out'], preview: ['repo','plan','assessment','out'], apply: ['repo','worktree','assessment','plan','approval','baseline-out','out'], verify: ['patch','out'], revert: ['patch','out'], deliver: ['repo','assessment','plan','approval','patch','out-dir'], 'delivery-check': ['bundle','out'] };
 try {
   if (command && options[command]) {
     const seen = new Set<string>();
@@ -19,6 +21,14 @@ try {
     }
   }
   switch (command) {
+    case 'install': case 'upgrade': output(installFixedSource({source:option('source'),commit:option('commit'),tree:option('tree'),destination:option('destination'),cache:option('cache'),...(command==='upgrade'?{previous:option('previous')}:{})})); break;
+    case 'doctor': {const result=doctorInstallation(option('installation'));output(result);process.exitCode=result.integrity&&result.nodeCompatible?0:2;break;}
+    case 'uninstall': output(uninstallFixedSource(option('installation'),option('commit')));break;
+    case 'schema-check': case 'schema-apply': {
+      if(!process.env.AE_DATABASE_URL)throw new Error('Set AE_DATABASE_URL for the explicitly authorized AE database');
+      const {Pool}=createRequire(import.meta.url)('pg') as {Pool:new(options:{connectionString:string;max:number})=>SqlPool&{end():Promise<void>}};
+      const pool=new Pool({connectionString:process.env.AE_DATABASE_URL,max:2});try{output(await(command==='schema-check'?inspectAeSchema(pool):migrateAeSchema(pool)));}finally{await pool.end();}break;
+    }
     case 'assess': output(assessProject(option('repo'))); break;
     case 'plan': { const profile = args.includes('--verification-profile') ? option('verification-profile') : undefined; if (profile !== undefined && profile !== 'react-helpdesk-synthetic-v1' && profile !== 'python-inventory-synthetic-v1') throw new Error('Unsupported verification profile'); const plan = proposePlan(json<ProjectAssessment>(option('assessment')), profile ? { verificationProfile: profile } : undefined); output({ plan, planHash: digest(plan) }); break; }
     case 'approve': { const { plan } = json<{plan: AdaptationPlan}>(option('plan')); if (option('plan-hash') !== digest(plan)) throw new Error('Explicit approved plan hash does not match'); output(approvePlan(plan, { approverId: option('approver'), authorizationRef: option('authorization-ref') })); break; }
@@ -33,6 +43,6 @@ try {
       const result = await checkDelivery(option('bundle')); output(result); process.exitCode = !result.valid || result.manifest?.status === 'failed' ? 1 : result.manifest?.status === 'complete' ? 0 : 2; break;
     }
     case 'revert': revertAdaptation(json<AppliedTransformation>(option('patch'))); output({ status: 'reverted', note: 'Only patch-owned files restored; isolated worktree retained.' }); break;
-    default: throw new Error('Usage: ae assess|plan|approve|preview|apply|verify|deliver|delivery-check|revert. See skills/ae-adapt/SKILL.md.');
+    default: throw new Error('Usage: ae assess|plan|approve|preview|apply|verify|deliver|delivery-check|revert|install|upgrade|doctor|uninstall|schema-check|schema-apply. See skills/ae-adapt/SKILL.md.');
   }
 } catch (error) { process.stderr.write((error instanceof Error ? error.message : String(error)) + '\n'); process.exitCode = 1; }

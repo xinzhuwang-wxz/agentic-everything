@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { ConversationRunBinding, AgentRelease, Principal, RunStatus, RunEvent, ToolResult, ApprovalDecision, JsonObject } from '@ae/contracts';
 import { PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { verifyRelease } from '@ae/control-plane';
-import { conversationMigration } from './conversations.js';
+import { migrateAeSchema } from '@ae/operations';
 import type { PreparedTool } from '@ae/capabilities';
 export interface Queryable { query(sql: string, values?: unknown[]): Promise<{ rows: Record<string, any>[]; rowCount: number | null }> }
 interface Client extends Queryable { release(): void }
@@ -12,15 +12,10 @@ const PgPool = (createRequire(import.meta.url)('pg') as { Pool: new(options: { c
 export interface PersistentRunView { runId: string; releaseId?: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'postgres-dbos'; modelMode: 'configured-model-port' }
 export interface StoredRun { conversation?: ConversationRunBinding; view: PersistentRunView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: string; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
 // AE business ledger, never a scheduler. DBOS owns all execution/recovery.
-export const migration = `
-CREATE TABLE IF NOT EXISTS ae_runs_v1 (id text PRIMARY KEY, body jsonb NOT NULL);
-CREATE TABLE IF NOT EXISTS ae_approvals_v1 (id text PRIMARY KEY, run_id text NOT NULL REFERENCES ae_runs_v1(id), view jsonb NOT NULL, state text NOT NULL, decision jsonb);
-CREATE TABLE IF NOT EXISTS ae_operations_v1 (id text PRIMARY KEY, run_id text NOT NULL REFERENCES ae_runs_v1(id), request_hash text NOT NULL, prepared jsonb NOT NULL, result jsonb);
-`;
 export class PersistentStore {
   readonly pool: Pool;
   constructor(databaseUrl: string, private readonly expectedPolicyVersion = 'tickets-policy-v1') { if (!expectedPolicyVersion.trim()) throw new PolicyError('POLICY_VERSION_REQUIRED'); this.pool = new PgPool({ connectionString: databaseUrl }); }
-  async migrate(): Promise<void> { await this.pool.query(migration + conversationMigration); }
+  async migrate(): Promise<void> { await migrateAeSchema(this.pool); }
   async close(): Promise<void> { await this.pool.end(); }
   async transaction<T>(fn: (client: Queryable) => Promise<T>): Promise<T> { const c = await this.pool.connect(); try { await c.query('BEGIN'); const result = await fn(c); await c.query('COMMIT'); return result; } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); } }
   async load(id: string, principal?: Principal, client: Queryable = this.pool, lock = false): Promise<StoredRun> {

@@ -1,0 +1,14 @@
+# Release operations
+
+This package is a small owner for AE's existing PostgreSQL tables and local fixed-source distribution. It is not another scheduler, ORM, general migration framework or hosted deployment service.
+
+- `inspectAeSchema` uses a read-only transaction. It checks the fixed migration history, exact supported column/constraint contract and catalog fingerprint. Unknown history or drift fails closed.
+- `migrateAeSchema` uses the already-pinned `pg@8.23.1` connection with PostgreSQL transactional DDL and a transaction-scoped advisory lock. Runtime, control-plane and API initialization share it. Legacy rows are adopted without inventing authority, including nullable old API intent tokens. The second additive change marks expired conversation projections physically removed. No down migration runs.
+- `ConversationRetention` is a trusted server/operator port with current `agentic:retention` authority, exact tenant/application/subject scope, past cutoff and a maximum of 100 candidate rows. Preview is read-only; apply binds that selection and rechecks current rights before commit. Unfinished/unknown/missing runs block projection removal. Expired ID/scope tombstones prevent recreation. Run/approval/operation/intent/DBOS records are explicitly retained; this is not full personal-data erasure.
+- Fixed source installation pins a complete Git commit and tree, rejects dirty/symlink/host destinations, exports regular tracked blobs, uses official npm's exact lockfile offline cache with lifecycle scripts disabled, and performs the reviewed project build. Upgrade installs beside the old copy without switching activation. Doctor and uninstall compare every installed file/link against the receipt; any local addition/edit blocks removal. No host or database is removed.
+
+## Reuse decision
+
+The installed DBOS 5.3.0 `cli/migrate` seam invokes arbitrary shell commands before its own system-database setup. Its internal migration runner owns `dbos_migrations` and DBOS cross-language schema versions, not AE business tables. Reusing those internals would conflate ownership or depend on private APIs. Adding a second generic migration engine would duplicate pg and introduce an additional dependency for two fixed additive steps. AE therefore reuses the existing pg driver and PostgreSQL's actual transaction/advisory-lock/catalog mechanisms, with only AE's fixed SQL/checksum/adoption wrapper. Qualification runs real concurrent SQL, failure rollback, legacy recovery and dump/restore; static reading alone is not the evidence.
+
+Distribution reuses Git object/tree integrity, npm 11 lockfile installation/SBOM, Node file APIs, PostgreSQL's own pg_dump/pg_restore and existing control-plane Zod/permission/CAS validation. No shell installer fetched from a floating URL and no new external library is introduced.

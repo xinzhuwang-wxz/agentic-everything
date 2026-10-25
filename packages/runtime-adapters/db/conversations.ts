@@ -4,12 +4,6 @@ import { digest, PolicyError, samePrincipal } from '@ae/policy';
 import type { PersistentStore, Queryable, StoredRun } from './store.js';
 import type { PersistentToolBroker } from './broker.js';
 
-export const conversationMigration = `
-CREATE TABLE IF NOT EXISTS ae_conversations_v1 (id text PRIMARY KEY, principal jsonb NOT NULL, context jsonb NOT NULL, authority_hash text NOT NULL, created_at timestamptz NOT NULL, expires_at timestamptz NOT NULL);
-CREATE TABLE IF NOT EXISTS ae_conversation_turns_v1 (conversation_id text NOT NULL REFERENCES ae_conversations_v1(id), turn integer NOT NULL, run_id text UNIQUE NOT NULL, release_id text NOT NULL, input text NOT NULL, output text, created_at timestamptz NOT NULL, completed_at timestamptz, PRIMARY KEY(conversation_id,turn));
-ALTER TABLE ae_conversation_turns_v1 ADD COLUMN IF NOT EXISTS client_intent_id text;
-CREATE UNIQUE INDEX IF NOT EXISTS ae_conversation_turns_client_intent_v1 ON ae_conversation_turns_v1(conversation_id,client_intent_id) WHERE client_intent_id IS NOT NULL;
-`;
 interface ConversationRow { id: string; principal: Principal; context: ConversationContext; authority_hash: string; created_at: Date; expires_at: Date }
 const terminal = new Set<RunStatus>(['succeeded', 'failed', 'rejected', 'cancelled']);
 const maxBytes = 128 * 1024;

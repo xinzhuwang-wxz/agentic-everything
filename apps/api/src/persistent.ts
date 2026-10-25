@@ -28,7 +28,6 @@ export async function createPersistentApi(options: PersistentApiOptions) {
   const runtime = new PersistentRuntime({databaseUrl:options.databaseUrl,host:options.host,model:options.model,...(options.fault?{fault:options.fault}:{})});
   await controlPlane.initialize();
   await runtime.launch();
-  await runtime.store.pool.query('CREATE SCHEMA IF NOT EXISTS ae_api; CREATE TABLE IF NOT EXISTS ae_api.intents (intent_key text PRIMARY KEY, intent_token text NOT NULL, input_hash text NOT NULL, run_id text UNIQUE NOT NULL, start_hash text NOT NULL, start jsonb NOT NULL); ALTER TABLE ae_api.intents ADD COLUMN IF NOT EXISTS intent_token text');
   // One bounded startup reconciliation closes the commit-before-workflow-submission crash window.
   // This only resubmits fixed IDs to DBOS, never dispatches tools or owns a scheduling loop.
   let closing=false;let closePromise:Promise<void>|undefined;

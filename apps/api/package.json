@@ -1,1 +1,9 @@
-{"name":"@ae/api","version":"0.1.0","private":true,"type":"module"}
+{
+  "name": "@ae/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@ae/operations": "0.1.0"
+  }
+}

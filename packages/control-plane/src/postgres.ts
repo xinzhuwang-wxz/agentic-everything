@@ -1,3 +1,4 @@
+import { migrateAeSchema } from '@ae/operations';
 import { checkedBehaviorCatalog, validateBehaviorSelection } from './behavior.js';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -20,10 +21,7 @@ export class PostgresControlPlane implements ControlPlanePort {
     if (new Set(this.registry.map(c => c.capabilityId)).size !== this.registry.length) throw new PolicyError('DUPLICATE_CAPABILITY');
   }
   async initialize(): Promise<void> {
-    await this.pool.query(`CREATE SCHEMA IF NOT EXISTS ae_control;
-      CREATE TABLE IF NOT EXISTS ae_control.drafts (tenant_id text NOT NULL, application_id text NOT NULL, draft_id text NOT NULL, revision integer NOT NULL CHECK(revision>0), document jsonb NOT NULL, PRIMARY KEY(tenant_id,application_id,draft_id));
-      CREATE TABLE IF NOT EXISTS ae_control.releases (tenant_id text NOT NULL, application_id text NOT NULL, release_id text NOT NULL, draft_id text NOT NULL, draft_revision integer NOT NULL CHECK(draft_revision>0), document jsonb NOT NULL, PRIMARY KEY(tenant_id,application_id,release_id), UNIQUE(tenant_id,application_id,draft_id,draft_revision));
-      CREATE TABLE IF NOT EXISTS ae_control.active (tenant_id text NOT NULL, application_id text NOT NULL, release_id text NOT NULL, PRIMARY KEY(tenant_id,application_id), FOREIGN KEY(tenant_id,application_id,release_id) REFERENCES ae_control.releases(tenant_id,application_id,release_id));`);
+    await migrateAeSchema(this.pool);
   }
   async close(): Promise<void> { await this.pool.end(); }
   private current(input: Principal): Principal {

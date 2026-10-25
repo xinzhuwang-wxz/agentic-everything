@@ -82,3 +82,5 @@ export interface ControlPlanePort {
 export function asAsyncControlPlane(memory: InMemoryControlPlane): ControlPlanePort {
   return { state: async p => memory.state(p), save: async (p, input, id, revision) => memory.save(p, input, id, revision), validate: async (p, id, revision) => memory.validate(p, id, revision), publish: async (p, id, revision) => memory.publish(p, id, revision), activeRelease: async p => memory.activeRelease(p) };
 }
+
+export { ConfigurationTransfer, type ConfigurationImportPreview } from './transfer.js';
