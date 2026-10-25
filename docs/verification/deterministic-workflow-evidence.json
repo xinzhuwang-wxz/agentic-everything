@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1",
+  "qualifiedAt": "2026-10-25T05:07:54Z",
+  "baseRevision": "7313ce040a1527059119cd0363e7a571ab33a6ee",
+  "status": "PASS",
+  "scope": "Finite definitions on DBOS 5.3.0 / PostgreSQL 17.11 with existing AE approval and host receipt protocol; no paid model, production or parallel-engine claim.",
+  "versions": {
+    "dbos": "5.3.0",
+    "postgresql": "17.11",
+    "pg": "8.23.1"
+  },
+  "gates": {
+    "fullStrictBuild": {
+      "status": "PASS",
+      "command": "NODE_OPTIONS=--max-old-space-size=576 npm run build"
+    },
+    "focusedCompiledTests": {
+      "status": "PASS",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "newWorkflowTests": 8,
+      "existingHostBoundaryTests": 6,
+      "command": "NODE_OPTIONS=--max-old-space-size=256 node --test --test-concurrency=1 dist/packages/runtime-adapters/db/workflows/*.test.js dist/packages/runtime-adapters/db/host-boundary.test.js"
+    },
+    "sourceHygiene": {
+      "status": "PASS",
+      "commands": [
+        "node scripts/lint.mjs",
+        "git diff --check"
+      ]
+    },
+    "postgresqlFaultMatrix": {
+      "status": "PASS",
+      "command": "bash tests/workflows/run-postgres.sh /path/to/official/postgresql/17/bin 55472",
+      "prefix": "b0747c6f-a38e-4968-93e0-9a99557eaf47",
+      "cases": [
+        "pinned-definition-and-exact-approval-survive-sigkill",
+        "new-version-changes-new-runs-only-and-false-branch-skips-write",
+        "current-write-rights-revoked-before-approved-resume",
+        "target-version-change-invalidates-exact-approval",
+        "cancel-and-reject-survive-restart-without-revival",
+        "legacy-and-deterministic-runtime-pins-never-cross-interpret",
+        "persisted-definition-hash-tampering-fails-closed",
+        "retry-once",
+        "retry-exhaust",
+        "retry-crash",
+        "after-reservation",
+        "after-host-write",
+        "after-receipt",
+        "lost-ack",
+        "current-read-authority-check-outside-dbos-checkpoint"
+      ],
+      "freshWorkerProcesses": 16,
+      "modelCalls": 0,
+      "ownedPostgresStopped": true
+    }
+  },
+  "diagnostics": [
+    "Initial mode union widened the legacy model RuntimePort type. Corrected by preserving PersistentRunView, adding a shared stored-ledger view and rejecting non-model legacy API reads.",
+    "Full compiler attempts at 384 and 512 MiB reached V8 heap limits; 640 and 768 MiB attempts were externally killed with exit 137. A scoped strict compile passed, followed by the unchanged full build at 576 MiB.",
+    "The known pg concurrent-query deprecation warning remains visible; this is not warning-free distributed-load qualification."
+  ],
+  "notClaimed": [
+    "parallel workflows",
+    "workflow canvas",
+    "arbitrary code evaluation",
+    "automatic write retry",
+    "multi-write transactions",
+    "production host authorization",
+    "database failover or production deployment",
+    "aggregate tests for the final assembled repository"
+  ]
+}

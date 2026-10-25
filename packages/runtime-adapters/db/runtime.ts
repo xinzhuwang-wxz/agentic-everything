@@ -51,8 +51,8 @@ export class PersistentRuntime<Host extends DurableHost = DurableTicketHost> {
     await (await DBOS.startWorkflow(this.workflow, { workflowID: this.workflowId(runId, 'initial') })({ runId, phase: 'initial', start: structuredClone(input) })).getResult();
     return this.get(runId, input.principal);
   }
-  async get(runId: string, principal: Principal): Promise<PersistentRunView> { const run = await this.store.load(runId, principal); await this.assertReadable(run, principal); return run.view; }
-  async list(principal: Principal): Promise<PersistentRunView[]> { await this.broker.current(principal); const rows = await this.store.pool.query('SELECT body FROM ae_runs_v1 WHERE body->\'principal\'->>\'tenantId\'=$1 AND body->\'principal\'->>\'applicationId\'=$2 AND body->\'principal\'->>\'subjectId\'=$3', [principal.tenantId, principal.applicationId, principal.subjectId]); return Promise.all(rows.rows.map(async row => { const run = await this.store.load((row.body as StoredRun).view.runId, principal); await this.assertReadable(run, principal); return run.view; })); }
+  async get(runId: string, principal: Principal): Promise<PersistentRunView> { const run = await this.store.load(runId, principal); if (run.view.modelMode !== 'configured-model-port') throw new PolicyError('RUN_VERSION_UNSUPPORTED'); await this.assertReadable(run, principal); return { ...run.view, modelMode: 'configured-model-port' }; }
+  async list(principal: Principal): Promise<PersistentRunView[]> { await this.broker.current(principal); const rows = await this.store.pool.query('SELECT body FROM ae_runs_v1 WHERE body->\'principal\'->>\'tenantId\'=$1 AND body->\'principal\'->>\'applicationId\'=$2 AND body->\'principal\'->>\'subjectId\'=$3', [principal.tenantId, principal.applicationId, principal.subjectId]); return Promise.all(rows.rows.map(row => this.get((row.body as StoredRun).view.runId, principal))); }
   async decide(runId: string, principal: Principal, decision: ApprovalDecision): Promise<PersistentRunView> {
     await this.get(runId, principal);
     await this.store.validateDecision(runId, principal, decision);

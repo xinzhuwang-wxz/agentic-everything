@@ -11,6 +11,10 @@
     "./persistent": {
       "types": "./db/runtime.ts",
       "default": "./dist/db/runtime.js"
+    },
+    "./workflows": {
+      "types": "./db/workflows/index.ts",
+      "default": "./dist/db/workflows/index.js"
     }
   },
   "dependencies": {

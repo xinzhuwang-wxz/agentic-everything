@@ -10,11 +10,12 @@ interface Client extends Queryable { release(): void }
 interface Pool extends Queryable { connect(): Promise<Client>; end(): Promise<void> }
 const PgPool = (createRequire(import.meta.url)('pg') as { Pool: new(options: { connectionString: string }) => Pool }).Pool;
 export interface PersistentRunView { runId: string; releaseId?: string; status: RunStatus; events: RunEvent[]; approval?: ApprovalView; message?: string; receipts: ToolResult[]; persistence: 'postgres-dbos'; modelMode: 'configured-model-port' }
-export interface StoredRun { conversation?: ConversationRunBinding; view: PersistentRunView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1'; policy: string; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
+export type PersistentLedgerView = Omit<PersistentRunView, 'modelMode'> & { modelMode: 'configured-model-port' | 'deterministic-workflow' };
+export interface StoredRun { conversation?: ConversationRunBinding; view: PersistentLedgerView; principal: Principal; releaseId: string; release?: AgentRelease; input: string; pins: { sdk: '0.21.0'; workflow: 'ae-v1' | 'ae-deterministic-v1'; policy: string; capability: '1'; releaseHash?: string }; snapshot?: string; pending?: PreparedTool; cancelled: boolean; phase: string }
 // AE business ledger, never a scheduler. DBOS owns all execution/recovery.
 export class PersistentStore {
   readonly pool: Pool;
-  constructor(databaseUrl: string, private readonly expectedPolicyVersion = 'tickets-policy-v1') { if (!expectedPolicyVersion.trim()) throw new PolicyError('POLICY_VERSION_REQUIRED'); this.pool = new PgPool({ connectionString: databaseUrl }); }
+  constructor(databaseUrl: string, private readonly expectedPolicyVersion = 'tickets-policy-v1', private readonly expectedWorkflowVersion: StoredRun['pins']['workflow'] = 'ae-v1') { if (!expectedPolicyVersion.trim()) throw new PolicyError('POLICY_VERSION_REQUIRED'); this.pool = new PgPool({ connectionString: databaseUrl }); }
   async migrate(): Promise<void> { await migrateAeSchema(this.pool); }
   async close(): Promise<void> { await this.pool.end(); }
   async transaction<T>(fn: (client: Queryable) => Promise<T>): Promise<T> { const c = await this.pool.connect(); try { await c.query('BEGIN'); const result = await fn(c); await c.query('COMMIT'); return result; } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); } }
@@ -22,7 +23,7 @@ export class PersistentStore {
     const result = await client.query(`SELECT body FROM ae_runs_v1 WHERE id=$1${lock ? ' FOR UPDATE' : ''}`, [id]);
     const run = result.rows[0]?.body as StoredRun | undefined;
     if (!run || (principal && !samePrincipal(run.principal, principal))) throw new PolicyError('RUN_NOT_FOUND');
-    if (run.pins.sdk !== '0.21.0' || run.pins.workflow !== 'ae-v1' || run.pins.policy !== this.expectedPolicyVersion || run.pins.capability !== '1') throw new PolicyError('RUN_VERSION_UNSUPPORTED');
+    if (run.pins.sdk !== '0.21.0' || run.pins.workflow !== this.expectedWorkflowVersion || run.pins.policy !== this.expectedPolicyVersion || run.pins.capability !== '1') throw new PolicyError('RUN_VERSION_UNSUPPORTED');
     if (run.release !== undefined || run.pins.releaseHash !== undefined || /^release-[a-f0-9]{64}$/.test(run.releaseId)) {
       if (!run.release) throw new PolicyError('RELEASE_BINDING_DENIED');
       verifyRelease(run.release);
