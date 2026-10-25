@@ -516,7 +516,7 @@ export function runLinkdingTests(directory:string,interpreter:string,deadlineAt:
  const files=candidate==='native'?['ae_linkding/tests.py']:candidate?[...linkdingTestFiles,'ae_linkding/tests.py']:linkdingTestFiles;
  const script='import os,sys,socket; sys.path.insert(0,sys.argv[1]); os.chdir(sys.argv[1]); os.environ["DJANGO_SETTINGS_MODULE"]="bookmarks.settings.dev"; os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"]="1"\ndef deny(*args,**kwargs): raise RuntimeError("Profile denies outbound network")\nsocket.socket.connect=deny; socket.create_connection=deny\nimport pytest; raise SystemExit(pytest.main(["-q","-p","no:cacheprovider","-p","pytest_django.plugin",*sys.argv[2:]]))';
  const child=spawnSync(interpreter,['-I','-B','-c',script,directory,...files],{encoding:'utf8',timeout:Math.min(100000,linkdingBudget(deadlineAt)),killSignal:'SIGKILL',maxBuffer:1024*1024,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTEST_DISABLE_PLUGIN_AUTOLOAD:'1',AE_ROOT:aeRoot(),AE_PYTHON:interpreter,AE_NODE:process.execPath}});
- const rawLog=child.stdout+'\n'+child.stderr;const counts=[...rawLog.matchAll(/(?:^|\n)(?:=+ )?(\d+) passed(?:, \d+ warnings?)? in /g)];const count=Number(counts.at(-1)?.[1]);
+ const rawLog=child.stdout+'\n'+child.stderr;const counts=[...rawLog.matchAll(/(?:^|\n)(?:=+ )?(\d+) passed(?:, \d+ (?:warnings?|subtests passed))* in /g)];const count=Number(counts.at(-1)?.[1]);
  if(child.error||child.status!==0||child.signal||(!candidate&&count!==356)||(candidate===true&&count!==376)||(candidate==='native'&&count!==20)||/\b(?:FAILED|ERRORS)\b/.test(rawLog))throw Error('Linkding fixed local tests failed: '+rawLog.slice(-4000));
  return {exitCode:0,count,failed:0,rawLog,files,network:'denied'};
 }
