@@ -9,7 +9,7 @@ import type {FixtureDeliveryInput,FixtureDeliveryResult,FixtureDeliveryEvidence}
 import {aeRoot,hash} from './inventory-baseline.js';
 import {KANBOARD_FILES} from './recipes/kanboard.js';
 import {assertKanboardBaseline,assertKanboardObservation,assertTrustedKanboardDelivery,kanboardProfile,kanboardCommit,kanboardGitTree,kanboardSourceHash,kanboardCandidateHash,kanboardObservation,kanboardProvenance} from './kanboard-baseline.js';
-import {kanboardPhp,kanboardToolchain,runKanboardProbe,assertKanboardRuntime,assertKanboardPng,assertKanboardProcess} from './kanboard-process.js';
+import {kanboardPhp,kanboardToolchain,runKanboardProbe,assertKanboardRuntime,assertKanboardPng,assertKanboardProcess,type KanboardProbe} from './kanboard-process.js';
 export const kanboardGates=['host-compilation','host-business-tests','black-box-business-differential','authenticated-runtime','browser-acceptance','fixture-process-completion'];
 const files={report:'report.json',baseline:'baseline.json',differential:'differential.json',originalBuild:'original-build.json',candidateBuild:'candidate-build.json',runtime:'runtime.json',browser:'browser.json'};
 const phpunit='/tmp/kanboard-php-runtime/phpunit.phar';
@@ -41,17 +41,18 @@ export async function runKanboardDelivery(input:FixtureDeliveryInput):Promise<Fi
  const checks:VerificationReport['checks']=kanboardGates.map(name=>({name,status:'not-run',expected:'Observed exact pinned Kanboard host/runtime/browser qualification',actual:'Not executed',evidence:[]}));
  const save=(key:keyof typeof files,value:unknown)=>{evidence[key]=value;const file=join(out,files[key]);writeFileSync(file,JSON.stringify(value,null,2)+'\n',{flag:'wx'});artifacts[key]=file;};
  const complete=(name:string,keys:(keyof typeof files)[],actual:string)=>{const c=checks.find(c=>c.name===name)!;c.status='pass';c.actual=actual;c.evidence=keys.map(key=>({path:'evidence/'+files[key],sha256:hash(readFileSync(artifacts[key]!)),note:'Actual pinned upstream Kanboard execution; synthetic local data only'}));};
- let failure:string|undefined;
+ let failure:string|undefined;let parityEvidence:KanboardProbe|undefined;
  try{
   const baseline=await assertKanboardBaseline(input.preApplyBaseline.archive,{sourceRoot:input.sourceRoot,sourceVersion:input.preApplyBaseline.baseCommit});save('baseline',baseline);
   save('originalBuild',build(input.sourceRoot,false,deadline,work));save('candidateBuild',build(input.candidateRoot,true,deadline,work));complete('host-compilation',['originalBuild','candidateBuild'],'PHP original/generated syntax and generated JavaScript parse passed');complete('host-business-tests',['baseline'],'Pinned original native task browser journey passed; scoped upstream suites 53 tests/475 assertions each are retained in the compilation reports, not inferred as a full suite');
-  const parity=await runKanboardProbe(input.candidateRoot,'original',deadline);const originalReference=(baseline.manifest.cases[0]!.observation.receipt as Record<string,unknown>).originalScreenshot;
+  const parity=await runKanboardProbe(input.candidateRoot,'original',deadline);parityEvidence=parity;const originalReference=(baseline.manifest.cases[0]!.observation.receipt as Record<string,unknown>).originalScreenshot;
   const differential=await compareBaseline({baseline,adapter:{safety:'isolated-seeded-fixture',async execute(){return kanboardObservation(parity,originalReference);}},provenance:kanboardProvenance(trust.candidateTreeHash),configuration:{baselineHash:baseline.hash,candidateCodeHash:trust.candidateTreeHash,registryHash:improvementRegistryHash([]),enabled:[]},improvements:[]});save('differential',differential);assert.equal(differential.passed,true);complete('black-box-business-differential',['differential'],'Real original and candidate native task journey agree on task state and authority/CSRF responses; original screenshot is immutable evidence reference, not pixel parity');
   const runtime=await runKanboardProbe(input.candidateRoot,'runtime',deadline);assertKanboardRuntime(runtime);save('runtime',runtime);save('browser',{profile:kanboardProfile,parity,runtime});complete('authenticated-runtime',['runtime'],'Actual GovernedRuntime/ToolBroker and native PHP host passed approval,role,CSRF,stale,replay,lost-response and restart fail-closed checks');complete('browser-acceptance',['browser'],'Real browser original controls and assistant flows, screenshots,drag,close focus and narrow viewport passed');
   assertTrustedKanboardDelivery(input);if(Date.now()>deadline)throw Error('Kanboard total deadline exceeded');
  }catch(error){failure=error instanceof Error?error.message:String(error);const c=checks.find(c=>c.status==='not-run');if(c){c.status='fail';c.actual=failure;}}
  let cleanup='complete';try{rmSync(work,{recursive:true,force:true});}catch{cleanup='failed';}
  const terminal=checks.find(c=>c.name==='fixture-process-completion')!;terminal.status=!failure&&cleanup==='complete'?'pass':'fail';terminal.actual=terminal.status==='pass'?'All owned browser,PHP,Node and test processes exited; loopback ports closed; temporary data removed':failure??'Cleanup failed';
+ if(!Object.hasOwn(evidence,'browser')&&parityEvidence)save('browser',{profile:kanboardProfile,parity:parityEvidence,runtime:null});
  for(const key of Object.keys(files)as(keyof typeof files)[])if(key!=='report'&&!Object.hasOwn(evidence,key))save(key,null);
  const report={profile:kanboardProfile,status:checks.every(c=>c.status==='pass')?'pass':'fail',trust,provenance:{sourceVersion:kanboardCommit,...toolchain()},checks,cleanup:{status:cleanup},process:{completed:!failure,noOutstandingChildren:!failure},...(failure?{failure}:{})};save('report',report);return{status:report.status==='pass'?'pass':'fail',reportPath:artifacts.report!,artifacts,checks};
 }
