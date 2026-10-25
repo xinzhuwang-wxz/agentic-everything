@@ -75,6 +75,15 @@ export function doctorInstallation(directory:string){
   // The receipt is editable local state, not a signature or independent publisher authentication.
   return {status:unchanged?'ready':'modified',version:pkg.version,commit:receipt.commit,tree:receipt.tree,sourceHash:receipt.sourceHash,lockHash:receipt.lockHash,node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])===24,schema,inspectorCompatibility:AE_COMPATIBILITY,metadataConsistent,integrity:unchanged,productionQualified:false};
 }
+function inspectPreviousInstallation(directory:string):unknown{
+  // The fixed doctor runs to completion in a short-lived process, releasing receipt/inventory
+  // allocations before npm/build. Paths are arguments, never interpolated code or shell text.
+  const code="const { doctorInstallation } = await import(process.argv[1]); process.stdout.write(JSON.stringify(doctorInstallation(process.argv[2])));";
+  return JSON.parse(execFileSync(process.execPath,['--max-old-space-size=256','--input-type=module','--eval',code,import.meta.url,directory],{
+    encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:180000,maxBuffer:64*1024,
+    env:{PATH:process.env.PATH??'/usr/bin:/bin',...(process.env.HOME===undefined?{}:{HOME:process.env.HOME}),TZ:'UTC'},
+  }));
+}
 /** Explicit local source installation. No floating branch, network, global install, host patch or service start. */
 export function installFixedSource(input:{source:string;commit:string;tree:string;destination:string;cache:string;previous?:string}){
   const source=safePath(input.source,true),destination=safePath(input.destination),cache=realpathSync(input.cache);
@@ -84,7 +93,7 @@ export function installFixedSource(input:{source:string;commit:string;tree:strin
   if(git(source,['config','--name-only','--list']).split('\n').some(name=>/^filter\./i.test(name)))throw new Error('SOURCE_GIT_FILTERS_REQUIRE_REVIEW');
   if(git(source,['rev-parse','--show-toplevel'])!==source||git(source,['status','--porcelain','--untracked-files=all']))throw new Error('SOURCE_MUST_BE_CLEAN_GIT_ROOT');
   if(git(source,['rev-parse',`${input.commit}^{commit}`])!==input.commit||git(source,['rev-parse',`${input.commit}^{tree}`])!==input.tree)throw new Error('SOURCE_PIN_MISMATCH');
-  if(input.previous){const previous=doctorInstallation(input.previous);if(!previous.integrity)throw new Error('UPGRADE_PREVIOUS_MODIFIED');}
+  if(input.previous){const previous=inspectPreviousInstallation(input.previous);if(!record(previous)||previous.integrity!==true)throw new Error('UPGRADE_PREVIOUS_MODIFIED');}
   // Refuse installing into an existing host repository, even if the final directory does not exist.
   try{execFileSync('git',safeGit(dirname(destination),['rev-parse','--show-toplevel']),{stdio:'pipe',timeout:15000});throw new Error('INSTALL_INSIDE_HOST_DENIED');}catch(error){if(error instanceof Error&&error.message==='INSTALL_INSIDE_HOST_DENIED')throw error;}
   const listing=execFileSync('git',safeGit(source,['ls-tree','-rz','--full-tree',input.commit]),{encoding:'utf8',timeout:15000,maxBuffer:32*1024*1024}).split('\0').filter(Boolean);

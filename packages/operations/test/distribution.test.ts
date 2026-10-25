@@ -81,3 +81,28 @@ test('doctor hashes full multi-chunk files and detects boundary, final-byte and 
     writeFileSync(join(root,'payload.bin'),payload);assert.equal(doctorInstallation(root).integrity,true);
   }finally{rmSync(root,{recursive:true});}
 });
+
+test('upgrade validates previous integrity in its isolated doctor before any destination writes',()=>{
+  const directory=mkdtempSync(join(tmpdir(),'ae-upgrade-doctor-'));
+  try{
+    const source=join(directory,'source'),cache=join(directory,'cache'),host=join(directory,'host'),previous=join(directory,"previous 'literal; path"),destination=join(host,'installation');
+    for(const path of [source,cache,host,previous])mkdirSync(path);
+    const git=(root:string,args:string[])=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',root,...args],{encoding:'utf8'}).trim();
+    git(source,['init','-q']);git(host,['init','-q']);
+    writeFileSync(join(source,'package.json'),'{"version":"0.1.0"}\n');writeFileSync(join(source,'package-lock.json'),'{}\n');
+    git(source,['add','.']);git(source,['-c','user.name=AE Fixture','-c','user.email=fixture@example.invalid','commit','-qm','synthetic upgrade doctor fixture']);
+    const commit=git(source,['rev-parse','HEAD']),tree=git(source,['rev-parse','HEAD^{tree}']);
+    for(const file of ['package.json','package-lock.json'])writeFileSync(join(previous,file),readFileSync(join(source,file)));
+    const receipt={format:'ae-source-install-v1',version:'0.1.0',commit,tree,sourceHash:'c'.repeat(64),lockHash:hash(readFileSync(join(previous,'package-lock.json'))),schema:0,node:process.versions.node,npm:'11.9.0',files:['package-lock.json','package.json'].map(path=>({path,type:'file',mode:statSync(join(previous,path)).mode&0o777,hash:hash(readFileSync(join(previous,path)))}))};
+    const receiptPath=join(previous,'.ae-installation.json');writeFileSync(receiptPath,JSON.stringify(receipt));
+    const install=()=>installFixedSource({source,destination,cache,commit,tree,previous});
+    // A valid, literally named previous directory passes doctor and reaches the unchanged host guard.
+    assert.throws(install,/INSTALL_INSIDE_HOST_DENIED/);assert.equal(existsSync(destination),false);
+    writeFileSync(join(previous,'package.json'),'{"version":"0.2.0"}\n');
+    assert.throws(install,/UPGRADE_PREVIOUS_MODIFIED/);assert.equal(existsSync(destination),false);
+    writeFileSync(join(previous,'package.json'),readFileSync(join(source,'package.json')));
+    writeFileSync(receiptPath,JSON.stringify({...receipt,files:[...receipt.files,receipt.files[0]]}));
+    assert.throws(install,/INVALID_INSTALL_RECEIPT/);assert.equal(existsSync(destination),false);
+    assert.equal(existsSync(join(previous,'package.json')),true);
+  }finally{rmSync(directory,{recursive:true});}
+});
