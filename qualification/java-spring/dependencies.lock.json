@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "registry": "https://repo.maven.apache.org/maven2/",
+  "artifacts": [
+    {
+      "group": "org.springframework",
+      "artifact": "spring-context",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-context/6.2.19/spring-context-6.2.19.jar",
+      "sha256": "ead4b645f94a7f665f00093eaafde634e97b34524294de653b51e43e0b3fc4a4",
+      "publishedSha1": "e218e4c4ecad1e821905628b2c4ce8561d937baa",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "org.springframework",
+      "artifact": "spring-aop",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-aop/6.2.19/spring-aop-6.2.19.jar",
+      "sha256": "a11b93539d80b02caf76171db2da96df39abebbfef49a2fadd6dda0779f2e20b",
+      "publishedSha1": "86a538bb7b2be38a0afc4ef049784def10a86c62",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "org.springframework",
+      "artifact": "spring-beans",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-beans/6.2.19/spring-beans-6.2.19.jar",
+      "sha256": "846dc8f30a639a36eb551ee99a30469be4d11bd285ca9daf164d98321571b404",
+      "publishedSha1": "6d6b4774db3b036df46be6332d93b09d70e5c147",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "org.springframework",
+      "artifact": "spring-core",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-core/6.2.19/spring-core-6.2.19.jar",
+      "sha256": "52146689e71a911c92bac26677d73c692512a739893a57710cc233591756bff6",
+      "publishedSha1": "691459d4644894dae8e5c2d9550a4cfb8302f62f",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "org.springframework",
+      "artifact": "spring-expression",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-expression/6.2.19/spring-expression-6.2.19.jar",
+      "sha256": "d710a44417d890353895b341a722d7d08199e2b7da52f0a11c0e92571e1d6e19",
+      "publishedSha1": "c7202d23797fa778c5ed55e502ac1a9f0d34012a",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "org.springframework",
+      "artifact": "spring-jcl",
+      "version": "6.2.19",
+      "url": "https://repo.maven.apache.org/maven2/org/springframework/spring-jcl/6.2.19/spring-jcl-6.2.19.jar",
+      "sha256": "9994478bcea1423b8892d4eb0db942c94da0090167c3c684050c1eaef04491d0",
+      "publishedSha1": "39b9c7d631961f3649511b08ef167420b086184b",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "io.micrometer",
+      "artifact": "micrometer-observation",
+      "version": "1.15.12",
+      "url": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.15.12/micrometer-observation-1.15.12.jar",
+      "sha256": "54483e68ed44af1bb0c36d1df2235d36f233e459d52f5a3be3e69813827a6300",
+      "publishedSha1": "1d96fcaec8d2516236dfcb9914108e14bfd02238",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "io.micrometer",
+      "artifact": "micrometer-commons",
+      "version": "1.15.12",
+      "url": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.15.12/micrometer-commons-1.15.12.jar",
+      "sha256": "4b779cf7acb0534bb1f8e964f25200037ecb3944368f859a630fa637d6d5d7c0",
+      "publishedSha1": "eb539638d48571fa6ce4ea3eb8417cab37a63438",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-core",
+      "version": "2.20.1",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.20.1/jackson-core-2.20.1.jar",
+      "sha256": "ffab4d957daa2796cf24cb66d0b78a7090f1bcbe17c3a4578f09affaaf137089",
+      "publishedSha1": "5734323adfece72111769b0ae38a6cf803e3d178",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-databind",
+      "version": "2.20.1",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.20.1/jackson-databind-2.20.1.jar",
+      "sha256": "34bbeb4526fff4f8565b12106bf85a6afcbae858966d489b54214ac46b2e26e8",
+      "publishedSha1": "9586a7fe0e1775de0e54237fa6a2c8455c93ac06",
+      "license": "Apache-2.0"
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-annotations",
+      "version": "2.20",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.20/jackson-annotations-2.20.jar",
+      "sha256": "959a2ffb2d591436f51f183c6a521fc89347912f711bf0cae008cdf045d95319",
+      "publishedSha1": "6a5e7291ea3f2b590a7ce400adb7b3aea4d7e12c",
+      "license": "Apache-2.0"
+    }
+  ]
+}

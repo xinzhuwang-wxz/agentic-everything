@@ -51,3 +51,23 @@ Official sources:
 - https://ts.sdk.modelcontextprotocol.io/v2/
 - https://www.npmjs.com/package/@modelcontextprotocol/server
 - https://www.npmjs.com/package/@modelcontextprotocol/client
+
+## Separate authenticated host HTTP adapter
+
+`createAuthenticatedHostMcp` composes a reviewed `TrustedCapabilityHost` with the
+same official SDK's stateless HTTP handler. It does not change the filesystem-only
+stdio tools above. Server composition supplies one exact `/mcp` endpoint and a
+current token-to-principal resolver; model arguments supply neither. Only readable
+host capabilities are exposed, with live identity/scope/resource checks on each
+request and invocation. No write/approval endpoint is added to MCP.
+
+For an official SDK client, pass `createOriginBoundMcpFetch(endpoint, tokenResolver)`
+as its transport's fetch. This bounded policy denies all redirects and any other
+origin/path before sending a bearer token. No OAuth discovery or persisted token
+store is provided. Use production identity only through a separately reviewed
+host-owned resolver, never this qualification's synthetic identity map.
+
+Actual loopback tests qualify the 2025-11-25 stateless Streamable HTTP subset using
+official client/server 2.4.0, including a real Java/Spring Core business read.
+[Security, recovery evidence and exact exclusions](../../docs/verification/java-spring-remote-mcp.md).
+The remote adapter is not public deployment or OAuth/IAM qualification.

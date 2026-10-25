@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { PatchArtifactSchema, Sha256 } from '@ae/contracts';
 import { assessProject, proposePlan, previewPatch, verifyAdaptation, installedRecipeDescriptors, digest } from '@ae/transformation';
 
+export { createAuthenticatedHostMcp, createOriginBoundMcpFetch } from './remote.js';
+
 const recipes = installedRecipeDescriptors();
 if (!recipes.length) throw new Error('No MCP recipes are installed');
 const recipeInput = z.strictObject({ recipeId: z.enum(recipes.map(recipe => recipe.ref.id) as [string, ...string[]]) });

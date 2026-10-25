@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "status": "pass",
+  "runtime": "official-agents-sdk-memory",
+  "modelMode": "simulated",
+  "spring": "6.2.19",
+  "java": "21",
+  "transport": "jdk.httpserver",
+  "scope": "Spring Core host adapter and authenticated loopback MCP contract fixture",
+  "originalBusinessSha256": "44092c24a852837459a9ab9a23c93b2539dac4e9b7e54f38d2b3bfd400ecb28d",
+  "assertions": [
+    "real-spring-core-managed-host-bean",
+    "existing-java-business-read",
+    "official-agents-sdk-read-before-proposal",
+    "no-write-before-approval",
+    "one-approved-host-mutation",
+    "duplicate-approval-denied",
+    "host-idempotency-exact-receipt",
+    "operation-argument-conflict-denied",
+    "read-only-catalog",
+    "cross-tenant-denied",
+    "argument-scope-escalation-denied",
+    "token-identity-mismatch-denied",
+    "wrong-host-token-denied",
+    "missing-host-receipt-remains-unknown",
+    "current-host-scope-revoked-before-execution-and-receipt-query",
+    "cancel-before-dispatch-zero-mutation",
+    "shared-durable-host-planning-contract-no-postgres-claim",
+    "actual-http-response-drop-after-host-commit-is-unknown",
+    "java-host-restart-receipt-reconciliation",
+    "no-redispatch-after-unknown",
+    "actual-official-mcp-http-java-read",
+    "remote-current-host-scope-revocation",
+    "remote-bearer-revocation",
+    "java-business-source-unchanged",
+    "owned-java-and-http-processes-closed"
+  ],
+  "finalStock": {
+    "available": 7,
+    "version": 3
+  },
+  "mutations": 2,
+  "elapsedWithinBudget": true,
+  "excluded": [
+    "Spring Boot/MVC",
+    "automatic Java recipe",
+    "production IAM/OAuth/TLS",
+    "real provider inference",
+    "Java-specific DBOS/PostgreSQL execution",
+    "power-loss durability"
+  ],
+  "qualifiedAt": "2026-10-25T03:06:41.060495+00:00",
+  "basisCommit": "5e85770",
+  "mcp": {
+    "sdk": "2.4.0",
+    "observedProtocolHeader": "2025-11-25",
+    "transport": "stateless-streamable-http",
+    "focusedTests": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "verification": {
+    "strictTypeScriptBuild": "pass",
+    "javaCompilation": "pass",
+    "sourceHygiene": "pass"
+  },
+  "sourceSha256": {
+    "packages/capabilities/src/java-spring-inventory.ts": "acdfa8e4b370f96ca24cd93bbcd8458d23ba0895eebc47c9054d0d465801aea6",
+    "packages/mcp-server/src/remote.ts": "7af57c4d1eb4c700c9a493f71c575cbf836c119f19f6dff25b306cafc903f6f3",
+    "packages/mcp-server/test/remote.test.ts": "c80e205ea192173a0f8fc5b483465b1389a2bd25c1209add0c107679f8f636a0",
+    "fixtures/java-spring-host/Inventory.java": "44092c24a852837459a9ab9a23c93b2539dac4e9b7e54f38d2b3bfd400ecb28d",
+    "fixtures/java-spring-host/AeHost.java": "c8e5529ad0de45381bdc3e0bd870ba9e06164a0898b8112b05ba13b7ce9fe002",
+    "qualification/java-spring/Compile.java": "5dda7696d8a2f21a91c924f1752a987582771574bf85a3da021552aa40d7c3df",
+    "qualification/java-spring/prepare.mjs": "ead87ac99bc14f186b04ebc10fcab415d1393f9bdd86dd7021e6c717a1299a10",
+    "qualification/java-spring/qualify.mjs": "ad03d0c5f4415df53a4ae1a31d615e4e4cb10203f52df9bc78e5de915a0e3152",
+    "qualification/java-spring/dependencies.lock.json": "98e5d670207fdd2c5846afa693a1d7bec5ad96f6e96f236660ea48b1a2b1a60b"
+  }
+}

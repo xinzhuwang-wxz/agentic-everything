@@ -220,3 +220,4 @@ export class ToolBroker<Host extends TrustedCapabilityHost = AuthorizedTicketHos
 }
 
 export * from "./python-inventory.js";
+export * from "./java-spring-inventory.js";
