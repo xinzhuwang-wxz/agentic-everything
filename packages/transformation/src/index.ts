@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { installedRecipes, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { requirePreparedBaseline } from './pre-apply.js';
 import { matchesProfileAssessment, verificationAuthorization } from './profiles.js';
+import { assertMaterializableTrackedTree } from './source-materialization.js';
 import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type ArchivedBaseline, type VerificationReport } from '@ae/contracts';
 
 const GENERIC_MANIFESTS = ['package.json', 'pom.xml', 'pyproject.toml', 'go.mod', 'Cargo.toml'];
@@ -108,7 +109,11 @@ export function applyApprovedPlan(input: { sourceRoot: string; destination: stri
   if (parent !== dirname(destination) || destination === root || destination.startsWith(root + '/')) throw new Error('Unsafe isolation destination');
   const changes = previewPatch(root, plan, assessment);
   const trackedEntries = git(root, ['ls-tree', '-rz', '--full-tree', plan.baseCommit]).split('\0');
-  if (trackedEntries.some(entry => entry.startsWith('120000 ') || /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.aws|\.npmrc|\.pypirc|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?|id_(?:rsa|ed25519)|[^/]*\.(?:pem|key|p12))(?:\/|$)/i.test(entry.split('\t')[1] ?? ''))) throw new Error('Tracked symlinks or secret files cannot enter the isolated worktree');
+  assertMaterializableTrackedTree(trackedEntries, oid => {
+    // Bound object size before reading; Git object IDs come only from the approved tree.
+    if (Number(git(root, ['cat-file', '-s', oid])) > 4096) throw Error('Tracked symlinks or secret files cannot enter the isolated worktree');
+    return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-C', root, 'cat-file', 'blob', oid], { timeout: 15000, maxBuffer: 4096 });
+  });
   const archived = plan.verificationAuthorization ? requirePreparedBaseline(input.preApplyBaseline, assessment, plan, approval, true) : undefined;
   git(root, ['worktree', 'add', '--detach', destination, plan.baseCommit]);
   for (const change of changes) { const target = safePath(destination, change.path); mkdirSync(dirname(target), { recursive: true }); writeFileSync(target, change.after, { flag: change.before === null ? 'wx' : 'w' }); }

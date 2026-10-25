@@ -94,6 +94,62 @@ test('tracked credentials never enter the isolated worktree', () => {
   assert.equal(existsSync(f.destination), false);
 });
 
+const publicEnvSample = () => readFileSync(resolve('packages/transformation/test/fixtures/public-env/linkding.env.sample.txt'), 'utf8');
+function commitMaterializationFixture(f: ReturnType<typeof setup>, path: string, contents: string, executable = false) {
+  mkdirSync(join(f.source, path, '..'), { recursive: true });
+  writeFileSync(join(f.source, path), contents);
+  f.git('add', '--', path);
+  if (executable) f.git('update-index', '--chmod=+x', '--', path);
+  f.git('commit', '-m', 'Synthetic tracked materialization fixture');
+  const assessment = assessProject(f.source); const plan = proposePlan(assessment);
+  const approval = approvePlan(plan, { approverId: 'user', authorizationRef: 'approved-test-fixture' });
+  return { ...f, assessment, plan, approval, sourceRoot: f.source };
+}
+test('reviewed public environment sample is preserved from the approved Git blob, never a dirty local value', () => {
+  const f = setup(); const sample = publicEnvSample();
+  const input = commitMaterializationFixture(f, '.env.sample', sample);
+  // The approved tree contains only the reviewed public template. A private local
+  // edit is neither read into assessment evidence nor copied into the candidate.
+  writeFileSync(join(f.source, '.env.sample'), 'TEST_PASSWORD=synthetic-private-local-value\n');
+  const applied = applyApprovedPlan(input);
+  assert.equal(readFileSync(join(f.destination, '.env.sample'), 'utf8'), sample);
+  assert.equal(readFileSync(join(f.source, '.env.sample'), 'utf8'), 'TEST_PASSWORD=synthetic-private-local-value\n');
+  assert.equal(input.assessment.evidence.some(item => item.path === '.env.sample'), false);
+  assert.equal(applied.patch.changes.some(item => item.path === '.env.sample'), false);
+  revertAdaptation(applied);
+  assert.equal(readFileSync(join(f.destination, '.env.sample'), 'utf8'), sample);
+});
+test('sample suffix does not permit populated, altered, oversized, executable or nested secret files', () => {
+  const sample = publicEnvSample();
+  const cases: [string, string, boolean?][] = [
+    ['.env.sample', sample.replace('LD_DB_PASSWORD=', 'LD_DB_PASSWORD=synthetic-test-password')],
+    ['.env.sample', sample + '# unreviewed drift\n'],
+    ['.env.sample', 'x'.repeat(4097)],
+    ['.env.sample', sample, true],
+    ['.env', sample],
+    ['.env.production', sample],
+    ['.env.example', sample],
+    ['.env.SAMPLE', sample],
+    ['nested/.env.sample', sample],
+    ['.ssh/.env.sample', sample],
+    ['.env.sample/child.txt', sample],
+  ];
+  for (const [path, contents, executable] of cases) {
+    const f = setup(); const input = commitMaterializationFixture(f, path, contents, executable);
+    assert.throws(() => applyApprovedPlan(input), /secret files/, path);
+    assert.equal(existsSync(f.destination), false, path);
+  }
+});
+test('reviewed public environment sample cannot be carried through a symlink', () => {
+  const f = setup(); writeFileSync(join(f.source, 'public-template.txt'), publicEnvSample());
+  symlinkSync('public-template.txt', join(f.source, '.env.sample'));
+  f.git('add', '.'); f.git('commit', '-m', 'Synthetic sample symlink');
+  const assessment = assessProject(f.source); const plan = proposePlan(assessment);
+  const approval = approvePlan(plan, { approverId: 'user', authorizationRef: 'approved-test-fixture' });
+  assert.throws(() => applyApprovedPlan({ ...f, sourceRoot: f.source, assessment, plan, approval }), /symlinks/);
+  assert.equal(existsSync(f.destination), false);
+});
+
 test('baseline and transformed host both build as real browser applications', async () => {
   const f = setup();
   // Trusted local fixture only: this test is not part of the static customer-code verifier.
