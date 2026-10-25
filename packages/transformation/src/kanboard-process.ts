@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -52,15 +52,22 @@ export interface KanboardProbe {kind:string;before?:Record<string,unknown>;after
 export function assertKanboardPng(value:unknown) {
  const item=value as {name:string;sha256:string;pngBase64:string};assert.deepEqual(Object.keys(item).sort(),['name','pngBase64','sha256']);assert.ok(['before.png','after.png','approval.png','narrow.png'].includes(item.name));assert.match(item.sha256,/^[a-f0-9]{64}$/);assert.ok(typeof item.pngBase64==='string'&&item.pngBase64.length<350000);const bytes=Buffer.from(item.pngBase64,'base64');assert.equal(bytes.toString('base64'),item.pngBase64);assert.ok(bytes.length>=45);assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');assert.equal(bytes.subarray(12,16).toString(),'IHDR');assert.equal(bytes.subarray(-8,-4).toString(),'IEND');assert.equal(hash(bytes),item.sha256);assert.ok(bytes.readUInt32BE(16)<=1365&&bytes.readUInt32BE(20)<=900);
 }
-export function runKanboardProbe(root:string,mode:'original'|'runtime',deadlineAt:number):KanboardProbe {
+export async function runKanboardProbe(root:string,mode:'original'|'runtime',deadlineAt:number):Promise<KanboardProbe> {
  kanboardToolchain();const work=mkdtempSync(join(tmpdir(),'ae-kanboard-probe-')),script=join(work,'probe.cjs');writeFileSync(script,PROBE);
  try {
   const remaining=deadlineAt-Date.now();if(remaining<=0)throw Error('Kanboard verification budget exhausted');
-  const child=spawnSync(process.execPath,['--max-old-space-size=512',script,root,join(work,'state'),mode,aeRoot()],{encoding:'utf8',timeout:Math.min(110000,remaining),killSignal:'SIGKILL',maxBuffer:2*1024*1024,detached:true,env:{PATH:'/usr/bin:/bin',HOME:work,TMPDIR:work,LANG:'C.UTF-8',TZ:'UTC'}});
+  const child=spawn(process.execPath,['--max-old-space-size=512',script,root,join(work,'state'),mode,aeRoot()],{detached:true,stdio:['ignore','pipe','pipe'],env:{PATH:'/usr/bin:/bin',HOME:work,TMPDIR:work,LANG:'C.UTF-8',TZ:'UTC'}});
+  let stdout='',stderr='',timedOut=false,overflow=false,launchError:Error|undefined;
+  const killGroup=()=>{if(child.pid){try{process.kill(-child.pid,'SIGKILL');}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}}};
+  const timeout=setTimeout(()=>{timedOut=true;killGroup();},Math.min(110000,remaining));
+  child.stdout.on('data',(data:Buffer)=>{stdout+=data.toString();if(Buffer.byteLength(stdout)>2*1024*1024){overflow=true;killGroup();}});
+  child.stderr.on('data',(data:Buffer)=>{stderr+=data.toString();if(Buffer.byteLength(stderr)>2*1024*1024){overflow=true;killGroup();}});
+  child.once('error',error=>{launchError=error;});
+  const outcome=await new Promise<{code:number|null;signal:NodeJS.Signals|null}>(resolve=>child.once('close',(code,signal)=>resolve({code,signal})));clearTimeout(timeout);
   let alive=false;if(child.pid){try{process.kill(-child.pid,0);alive=true;}catch(error){if((error as NodeJS.ErrnoException).code!=='ESRCH')throw error;}}
-  if(alive){try{process.kill(-child.pid!,'SIGKILL');}catch{}}
-  if(child.error||child.status!==0||child.signal||alive||Date.now()>deadlineAt)throw Error('Kanboard probe failed or left owned processes: '+(child.stderr||child.error?.message||child.signal||'process group'));
-  const value=JSON.parse(child.stdout) as Omit<KanboardProbe,'screenshots'> & {screenshots:string[]};
+  if(alive)killGroup();
+  if(launchError||outcome.code!==0||outcome.signal||alive||timedOut||overflow||Date.now()>deadlineAt)throw Error('Kanboard probe failed or left owned processes: '+(stderr||launchError?.message||outcome.signal||'process group/deadline'));
+  const value=JSON.parse(stdout) as Omit<KanboardProbe,'screenshots'> & {screenshots:string[]};
   const screenshots=value.screenshots.map(name=>{assert.ok(['before.png','after.png','approval.png','narrow.png'].includes(name));const bytes=readFileSync(join(work,'state',name));const image={name,sha256:hash(bytes),pngBase64:bytes.toString('base64')};assertKanboardPng(image);return image;});
   assert.equal(value.process.allOwnedExited,true);assert.ok(value.process.exits.length>=1);assert.ok(value.process.exits.every(exit=>(exit.code===0&&exit.signal===null)||(exit.code===null&&exit.signal==='SIGTERM')));
   return {...value,screenshots};
