@@ -91,6 +91,25 @@ The synthetic qualification restores the complete fixture host ledger in the sam
 
 Conversation access expires after the existing 24-hour bound. Expiry alone does not remove data. `ConversationRetention` is a trusted operator port, not a browser/model tool. It requires live `agentic:retention` authority for the exact tenant/application/subject, a past cutoff, and at most 100 candidate conversations. Preview returns the bounded selection and its hash; apply binds that hash and rechecks rights before commit.
 
+Selections use stable `(expires_at,id)` keyset pages, preserving microsecond precision. An opaque cursor binds the current scope, cutoff and page limit; malformed or mismatched cursors fail closed. `nextCursor` advances even when all 100 candidates are blocked. Blocked diagnostics describe only the selected page, never an exhaustive inventory. Apply locks and rechecks referenced run statuses; changed payload/status or revoked authority rejects the old plan. Do not silently restart from page one after a bounded budget is exhausted.
+
+The trusted operator helper actually drains up to an explicit 1–10 page preview budget. Review its plans before applying each unchanged page. Retain the returned continuation cursor if more pages remain; start a later sweep from the beginning to reconsider previously blocked runs. This example is exercised by the retention PostgreSQL fixture, not exposed as a browser/model tool:
+
+```ts
+const plans = await previewRetentionBatches(retention, principal, {
+  cutoff: reviewedPastCutoff, limit: 100, maxBatches: 3,
+  ...(savedCursor ? { cursor: savedCursor } : {}),
+});
+// After the operator has reviewed and authorized this bounded set of plans:
+for (const page of plans.pages) {
+  await retention.run(principal, {
+    ...page.request, apply: true,
+    expectedSelectionHash: page.preview.selectionHash,
+  });
+}
+// Persist plans.nextCursor with the same scope, cutoff and limit for the next budget.
+```
+
 Only expired, terminal conversation projections are eligible. Missing, pending, manual-review, reconciling and unknown runs remain blocked. Physical deletion removes turn text and context; a minimal expired ID/scope/expiry tombstone remains to prevent replay/recreation. Run/approval/operation ledgers, API intents, DBOS checkpoints, backups and host data remain intact. This is projection retention, not whole-account erasure or a claim that all copies of text were deleted. A separately approved audit/backups/legal retention policy is required before any real-data use; no full-ledger deletion endpoint is shipped.
 
 ## Key rotation procedure and security review

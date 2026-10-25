@@ -1,0 +1,67 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import pg from 'pg';
+import { ConversationRetention, previewRetentionBatches, migrateAeSchema } from '../../dist/packages/operations/src/index.js';
+import { validateDatabaseUrl } from '../persistence/host.mjs';
+const [url,directory]=process.argv.slice(2);validateDatabaseUrl(url);
+const pool=new pg.Pool({connectionString:url}),tests=[];
+const record=name=>{tests.push({name,status:'pass'});console.log(`PASS ${name}`);};
+const p={tenantId:'retention-fixture',applicationId:'retention-fixture',subjectId:'operator',roles:['agentic:retention'],scopes:[]};
+const cutoff='2026-01-02T00:00:00.000Z',expiry='2026-01-01T00:00:00.123456Z';
+const rows=async(sql,values)=>(await pool.query(sql,values)).rows;
+let selected=[],payloadQueries=0;
+const measured={async connect(){const c=await pool.connect();return {release:()=>c.release(),async query(sql,values){const result=await c.query(sql,values);if(sql.startsWith('SELECT id,expires_at,'))selected.push(result.rows.length);if(sql.startsWith('SELECT t.*'))payloadQueries++;return result;}};}};
+const retention=new ConversationRetention(measured,current=>current);
+async function seed(id,status,principal=p){
+  await pool.query('INSERT INTO ae_runs_v1(id,body) VALUES($1,$2)',[`run-${id}`,{view:{status},principal}]);
+  await pool.query('INSERT INTO ae_conversations_v1(id,principal,context,authority_hash,created_at,expires_at) VALUES($1,$2,$3,$4,$5,$6)',[id,principal,{text:'owned synthetic inert text'},'fixture',expiry,expiry]);
+  await pool.query('INSERT INTO ae_conversation_turns_v1(conversation_id,turn,run_id,release_id,input,output,created_at) VALUES($1,1,$2,$3,$4,$5,$6)',[id,`run-${id}`,'fixture','owned synthetic input','owned synthetic output',expiry]);
+}
+try{
+  await migrateAeSchema(pool);
+  for(let i=0;i<101;i++)await seed(`blocked-${String(i).padStart(3,'0')}`,i%2?'awaiting-approval':'outcome-unknown');
+  await seed('later-eligible','succeeded');await seed('foreign-eligible','succeeded',{...p,tenantId:'foreign'});
+  const bounded=await previewRetentionBatches(retention,p,{cutoff,limit:100,maxBatches:1});
+  assert.equal(bounded.pages.length,1);assert.equal(bounded.pages[0].preview.blocked.length,100);assert.equal(bounded.pages[0].preview.eligible.length,0);assert.equal(bounded.pages[0].preview.blockedScope,'selected-page-only');assert.ok(bounded.nextCursor);
+  assert.deepEqual(selected,[100]);assert.equal(payloadQueries,100);
+  assert.match(JSON.parse(Buffer.from(bounded.nextCursor,'base64url').toString()).expiresAt,/\.123456Z$/);
+  selected=[];payloadQueries=0;
+  const rest=await previewRetentionBatches(retention,p,{cutoff,limit:100,maxBatches:1,cursor:bounded.nextCursor});
+  assert.equal(rest.pages.length,1);assert.equal(rest.nextCursor,null);assert.deepEqual(rest.pages[0].preview.eligible,['later-eligible']);assert.equal(rest.pages[0].preview.blocked.length,1);assert.deepEqual(selected,[2]);assert.equal(payloadQueries,2);
+  const page=rest.pages[0];
+  const replay=await retention.run(p,page.request);assert.equal(replay.selectionHash,page.preview.selectionHash);
+  for(const request of [{...page.request,cutoff:'2026-01-03T00:00:00.000Z'},{...page.request,limit:99},{...page.request,cursor:'not-a-cursor'}])await assert.rejects(retention.run(p,request),/INVALID_RETENTION_CURSOR/);
+  await assert.rejects(retention.run({...p,subjectId:'other'},page.request),/INVALID_RETENTION_CURSOR/);
+  record('bounded-keyset-pages-pass-101-blocked-rows-with-exact-microsecond-order-scope-and-budget');
+  await pool.query("UPDATE ae_conversations_v1 SET context='{}' WHERE id='later-eligible'");
+  await assert.rejects(retention.run(p,{...page.request,apply:true,expectedSelectionHash:page.preview.selectionHash}),/RETENTION_SELECTION_CHANGED/);
+  await pool.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"outcome-unknown\"') WHERE id='run-later-eligible'");
+  await assert.rejects(retention.run(p,{...page.request,apply:true,expectedSelectionHash:page.preview.selectionHash}),/RETENTION_SELECTION_CHANGED/);
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='later-eligible'"))[0].n,1);
+  await pool.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"succeeded\"') WHERE id='run-later-eligible'");
+  const current=await retention.run(p,page.request);
+  let checks=0;const revoked=new ConversationRetention(pool,principal=>++checks>=4?{...principal,roles:[]}:principal);
+  await assert.rejects(revoked.run(p,{...page.request,apply:true,expectedSelectionHash:current.selectionHash}),/RETENTION_AUTHORITY_DENIED/);
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='later-eligible'"))[0].n,1);
+  record('changed-payload-status-and-current-authority-reject-before-deletion-or-roll-back');
+  // Hold an uncommitted status update. Apply must wait, re-read the now-unknown run and reject its old selection.
+  const changing=await pool.connect();await changing.query('BEGIN');await changing.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"outcome-unknown\"') WHERE id='run-later-eligible'");
+  let settled=false;const applied=retention.run(p,{...page.request,apply:true,expectedSelectionHash:current.selectionHash}).finally(()=>{settled=true;});
+  const rejection=assert.rejects(applied,/RETENTION_SELECTION_CHANGED/);
+  await new Promise(resolve=>setTimeout(resolve,100));assert.equal(settled,false);
+  await changing.query('COMMIT');changing.release();await rejection;
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='later-eligible'"))[0].n,1);
+  record('apply-locks-current-run-status-and-refuses-concurrent-terminal-to-unknown-change');
+  await pool.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"succeeded\"') WHERE id='run-later-eligible'");
+  const reviewed=await previewRetentionBatches(retention,p,{cutoff,limit:100,maxBatches:3});assert.equal(reviewed.pages.length,2);assert.equal(reviewed.nextCursor,null);
+  for(const plan of reviewed.pages)await retention.run(p,{...plan.request,apply:true,expectedSelectionHash:plan.preview.selectionHash});
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id LIKE 'blocked-%'"))[0].n,101);
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='later-eligible'"))[0].n,0);
+  assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='foreign-eligible'"))[0].n,1);
+  assert.equal((await rows('SELECT count(*)::int AS n FROM ae_runs_v1'))[0].n,103);
+  await assert.rejects(retention.run(p,{...reviewed.pages[1].request,apply:true,expectedSelectionHash:reviewed.pages[1].preview.selectionHash}),/RETENTION_SELECTION_CHANGED/);
+  record('reviewed-bounded-drain-removes-only-later-terminal-projection-preserves-blocked-and-audit-and-rejects-stale-replay');
+  writeFileSync(join(directory,'retention-report.json'),JSON.stringify({status:'pass',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),postgres:(await rows('show server_version'))[0].server_version,tests,limits:['Synthetic owned data only','At most 100 conversations per page and 10 explicitly requested preview batches','Blocked diagnostics are page subsets, not exhaustive','No immutable run, approval, operation, intent or DBOS deletion']},null,2)+'\n');
+}finally{await pool.end();}

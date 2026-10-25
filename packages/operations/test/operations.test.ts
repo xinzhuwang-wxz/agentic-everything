@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aeMigrations, AE_COMPATIBILITY, installFixedSource, doctorInstallation, ConversationRetention, type SqlPool, checkedAdmissionPolicy } from '../src/index.js';
+import { aeMigrations, AE_COMPATIBILITY, installFixedSource, doctorInstallation, ConversationRetention, type SqlPool, checkedAdmissionPolicy, previewRetentionBatches } from '../src/index.js';
 test('migration ownership is one additive fixed list, never DBOS or host schemas',()=>{
   assert.deepEqual(aeMigrations.map(m=>m.version),[1,2,3]);
   for(const m of aeMigrations){assert.doesNotMatch(m.sql,/\bDROP\b|\bDELETE\b|\bdbos\b|qualification_host/i);assert.match(m.sql,/IF NOT EXISTS/);}
@@ -28,3 +28,10 @@ test('retention refuses missing/current revoked authority and unsafe bounds with
 });
 
 test('durable admission accepts only bounded server policies',()=>{assert.deepEqual(checkedAdmissionPolicy(),{maxStarts:60,windowSeconds:60});for(const policy of [{maxStarts:0,windowSeconds:60},{maxStarts:1001,windowSeconds:60},{maxStarts:3,windowSeconds:0},{maxStarts:3,windowSeconds:3601}])assert.throws(()=>checkedAdmissionPolicy(policy),/INVALID_ADMISSION_POLICY/);});
+
+test('retention cursors and explicit page budgets fail closed before SQL',async()=>{
+  const pool={connect:async()=>{throw new Error('must not connect');}} as unknown as SqlPool;
+  const principal={tenantId:'a',applicationId:'app',subjectId:'u',roles:['agentic:retention'],scopes:[]},retention=new ConversationRetention(pool,p=>p),cutoff='2026-01-01T00:00:00.000Z';
+  for(const cursor of ['', 'malformed', 'x'.repeat(2049), Buffer.from(JSON.stringify({v:1,binding:'wrong-scope',expiresAt:cutoff,id:'id'})).toString('base64url')])await assert.rejects(retention.run(principal,{cutoff,cursor}),/INVALID_RETENTION_CURSOR/);
+  for(const maxBatches of [0,11,1.5])await assert.rejects(previewRetentionBatches(retention,principal,{cutoff,maxBatches}),/INVALID_RETENTION_BATCH_BUDGET/);
+});
