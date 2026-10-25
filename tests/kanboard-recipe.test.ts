@@ -19,5 +19,5 @@ test('Kanboard transport retains shared AE runtime and native host enforcement',
   assert.match(controller, /hasProjectAccess/); assert.match(controller, /canChangeAssignee/);
   assert.match(controller, /canChangeTaskStatusInColumn/); assert.match(controller, /Confirmation already consumed/);
   assert.match(controller, /hash_equals/); assert.match(controller, /state='unknown'/);
-  assert.match(runtime, /samePrincipal/); assert.match(runtime, /timingSafeEqual/);
+  assert.match(runtime, /RUN_TARGET_DENIED/); assert.match(runtime, /new KanboardHost\(a.taskId\)/); assert.match(runtime, /samePrincipal/); assert.match(runtime, /timingSafeEqual/);
 });
