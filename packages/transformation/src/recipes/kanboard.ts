@@ -12,7 +12,7 @@ export const KANBOARD_FILES: Readonly<Record<string,string>> = {
   "plugins/AgenticEverything/Template/settings.php": "<div class=\"page-header\"><h2>Agentic Everything</h2></div>\n<p>A local, bounded assistant for Kanboard 1.2.56. Your existing users, project permissions and task models remain authoritative.</p>\n<form method=\"post\" action=\"<?= $this->url->href('AeController','settings',['plugin'=>'AgenticEverything']) ?>\">\n<?= $this->form->csrf() ?>\n<label for=\"ae-enabled\">Assistant availability</label><select name=\"ae_enabled\" id=\"ae-enabled\"><option value=\"1\" <?= $enabled==='1'?'selected':'' ?>>Enabled</option><option value=\"0\" <?= $enabled!=='1'?'selected':'' ?>>Disabled (including pending confirmations)</option></select><button class=\"btn btn-blue\" type=\"submit\">Save</button>\n</form>\n<h3>Capabilities and limits</h3><ul><li>Read a single authorized task and its assignable members.</li><li>Preview and confirm an assignee or open/closed status change.</li><li>Confirmation binds the current user, exact task snapshot, change and expiry; every execution rechecks host permissions.</li><li>Receipts persist in the host database. Repeated confirmations are rejected; unknown outcomes require host review, never blind retry.</li><li>Qualified scope: SQLite, local tasks, projects without automated actions. Original Kanboard controls remain available outside this scope.</li><li>No model provider configured: deterministic command interface, no model quality claim and no paid calls.</li></ul>\n<p>Disable this plugin to remove the assistant without removing task data. Keep operation receipts for audit. Back up the database before upgrades.</p>\n",
   "plugins/AgenticEverything/Template/sidebar.php": "<li><?= $this->url->link('Agentic Everything','AeController','settings',['plugin'=>'AgenticEverything']) ?></li>\n"
 };
-const INPUT_HASHES: Readonly<Record<string,string>> = {
+export const KANBOARD_INPUT_HASHES: Readonly<Record<string,string>> = {
   "composer.json": "48da225091408b7ccb372ff6699050af937784fca05a6d6015e659c329413295",
   "app/Controller/TaskModificationController.php": "bd8c651eee130c17b4e77ecbccca5a09a70f648491ba035d2fb11d37104741f3",
   "app/Controller/TaskStatusController.php": "1623475de91b3d4b9a5c6348bc3acf7145ac78a3a04431e870f1a30c8d5af635",
@@ -23,9 +23,9 @@ const INPUT_HASHES: Readonly<Record<string,string>> = {
   "app/Template/layout.php": "d54d76b034507cadbe0eefd55aceb5fb7f2fc13abaee1142a818906636cb540b"
 };
 export const kanboardRecipe = {
- ref: {id:'kanboard-upstream',version:'1.0.0'}, manifest:'composer.json', inputs:Object.keys(INPUT_HASHES), outputs:Object.keys(KANBOARD_FILES), businessPath:'app/Model/TaskModificationModel.php',
+ ref: {id:'kanboard-upstream',version:'1.0.0'}, manifest:'composer.json', inputs:Object.keys(KANBOARD_INPUT_HASHES), outputs:Object.keys(KANBOARD_FILES), businessPath:'app/Model/TaskModificationModel.php',
  observedFlow:'Pinned Kanboard 1.2.56 task reads and host-owned assignee/status mutations preserving authenticated project roles and CSRF.',
- matches(contents:ReadonlyMap<string,string>, _stack:readonly string[]):boolean {return Object.entries(INPUT_HASHES).every(([path,hash])=>contents.has(path)&&createHash('sha256').update(contents.get(path)!).digest('hex')===hash);},
+ matches(contents:ReadonlyMap<string,string>, _stack:readonly string[]):boolean {return Object.entries(KANBOARD_INPUT_HASHES).every(([path,hash])=>contents.has(path)&&createHash('sha256').update(contents.get(path)!).digest('hex')===hash);},
  planDetails:{
  goals:['Add a native Kanboard plugin with a draggable task assistant and administrator availability control.'],
  nonGoals:['Replacing PHP, Kanboard task models, roles or sessions','Paid model APIs','Deployment','Automatic retries of unknown writes','External tasks or automated project actions'],
