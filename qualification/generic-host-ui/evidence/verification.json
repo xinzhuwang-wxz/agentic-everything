@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-25",
+  "featureCommit": "4dec8f2",
+  "scope": "Synthetic domain-neutral browser mount over the existing generic HTTP/Agents/Python-SQLite runtime; no deployment or paid model.",
+  "checks": [
+    {
+      "name": "strict project TypeScript and package exports",
+      "status": "passed",
+      "command": "NODE_OPTIONS=--max-old-space-size=1024 node node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/link-build.mjs",
+      "note": "Ran after provider-schema fix; preceding the additional mounted-inventory test. Assembled root owns the final aggregate gate."
+    },
+    {
+      "name": "UI SDK and API regressions",
+      "status": "passed",
+      "tests": 98,
+      "command": "node --test --test-concurrency=1 dist/packages/ui/test/*.test.js dist/packages/host-sdk/test/*.test.js dist/apps/api/test/*.test.js"
+    },
+    {
+      "name": "actual mounted SDK HTTP Python inventory",
+      "status": "passed",
+      "tests": 1,
+      "command": "node --test dist/packages/ui/test/inventory-runtime.test.js",
+      "note": "The added test was narrowly transpiled for this local run; production/runtime modules were strictly compiled."
+    },
+    {
+      "name": "explicit legacy route opt-out with non-ticket read method",
+      "status": "passed",
+      "tests": 1,
+      "command": "node --test --test-name-pattern='conversation HTTP' dist/apps/api/test/reference-context-http.test.js"
+    },
+    {
+      "name": "qualified browser and vertical containment",
+      "status": "passed",
+      "groups": 6,
+      "command": "AE_BROWSER_EXECUTABLE=/tmp/ae-browser-qualification/root/usr/lib/chromium/chromium-headless-shell NODE_OPTIONS=--max-old-space-size=768 node tests/browser/inventory.mjs",
+      "chromiumSandbox": true,
+      "mutations": 1,
+      "httpStarts": 1,
+      "externalRequests": 0,
+      "pageErrors": 0
+    }
+  ],
+  "sourceSha256": {
+    "apps/api/src/app.ts": "4f12f7fcac899cea353b3dd407be7403b5977416e6290576f8ba274b3560d5ea",
+    "packages/host-sdk/src/mount.tsx": "233d47a06b85796692a1bbd69e69016ed247ce8c8d96e1ffd4c1d6efd60a68d7",
+    "packages/ui/src/context.ts": "dbb7efeee509497f257b0f277b1c0993e1dad7abdf23b89d6a44ae52e1713e76",
+    "packages/ui/src/panel.tsx": "2e56e0fb04e8b4e67e35543c4847a79c8c2a3968b5ce1324fc601a24e1972d6d",
+    "packages/ui/src/types.ts": "cfb589d0813e0fb10918d71df1607f1045b0c4524de51593ad7de4bd8be198a9",
+    "packages/ui/src/styles.css": "86e91e60f81027495c45f9e4fbe98340d349a3769c51b4b743a10b6a9f14dbd5",
+    "tests/browser/inventory.mjs": "60c7d0f0fa650a2069168eb5a0e35ed0789e503b64200c0c541bb42e5ea9f9d7",
+    "tests/support/inventory-ui.ts": "514f4a640453c62ca89edd393daee76f25f31c0b8530fc04d90dbd23f403dcd0",
+    "fixtures/inventory-ui/main.tsx": "b59c27d1765360597906a8e5a776cccc4ba24d9d17ff490f040a6819cbc5b46e"
+  },
+  "inspectedScreenshots": [
+    "inventory-approval.png",
+    "inventory-narrow.png",
+    "inventory-narrow-composer.png"
+  ],
+  "priorFailure": "System Chromium failed before page creation because its Unix socket was unavailable in the managed executor; the known-qualified headless shell passed without disabling Chromium sandboxing.",
+  "limits": [
+    "Synthetic identity and deterministic model",
+    "Memory runtime, not PostgreSQL inventory history",
+    "No new Python browser transformation recipe",
+    "No production SSO or arbitrary-host compatibility claim"
+  ]
+}

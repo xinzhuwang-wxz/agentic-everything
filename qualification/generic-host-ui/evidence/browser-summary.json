@@ -1,0 +1,37 @@
+{
+  "work": "/tmp/ae-inventory-browser-dTbOgq",
+  "root": "/tmp/ae-generic-host-ui",
+  "model": "deterministic synthetic test model; not model quality or production authentication",
+  "checks": [
+    "unchanged inventory read and generic API have no ticket route",
+    "shared floating drag, coordinate reload, keyboard open/Escape and focus recovery",
+    "host presentation fills composer only; genuine generic HTTP carries SKU references and write waits for confirmation",
+    "same server approval survives close, administration and reload; one confirmation reserves three desks exactly once and refreshes the host",
+    "browser storage contains only hashed scope/run ID and launcher coordinates, not labels, prompts, references or approval data",
+    "360px inventory viewport clips long receipt content, scrolls to a visible focusable composer, keeps launcher separate and has no horizontal overflow"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "runRequests": [
+    {
+      "input": "Reserve 3 desks for order-ui after reading current stock",
+      "context": {
+        "sku": "desk-01"
+      }
+    }
+  ],
+  "containment": {
+    "overflowY": "auto",
+    "clientHeight": 548,
+    "scrollHeight": 1466,
+    "outsideIsChild": false
+  },
+  "mutations": 1,
+  "finalStock": {
+    "sku": "desk-01",
+    "tenantId": "tenant-a",
+    "available": 9,
+    "version": 2
+  },
+  "completed": "2026-10-25T04:22:06.311Z"
+}

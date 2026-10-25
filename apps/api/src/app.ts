@@ -24,7 +24,7 @@ export interface ApiOptions {
   runtime: RuntimePort;
   controlPlane?: InMemoryControlPlane | ControlPlanePort;
   broker: { catalog(principal: Principal): CapabilityVersion[] | Promise<CapabilityVersion[]>; host?: unknown };
-  /** Optional legacy business read route. false disables compatibility auto-detection. */
+  /** Optional legacy business read route. Non-ticket hosts with any `host.read` method must pass false to disable legacy auto-detection. */
   ticketReader?: LegacyTicketReader | false;
   durability?: 'memory_fixture' | 'postgres_qualified';
   requirePublishedRelease?: boolean;
