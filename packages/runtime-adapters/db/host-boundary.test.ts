@@ -40,3 +40,19 @@ test('conversation target denial happens before any host business read or reserv
   await assert.rejects(broker.execute(row('tickets-policy-v1'), 'read_ticket', { ticketId: 'outside-context' }, 'call'), /CONVERSATION_CONTEXT_DENIED/);
   assert.equal(reads, 0);
 });
+test('persistent reconcile honors no-outcome-query declarations and still checks current authority', async () => {
+  const { PersistentRuntime } = await import('./runtime.js');
+  const run = row('inventory-policy-v1'); run.view.status = 'outcome-unknown';
+  run.pending = { write: true, preview: {}, request: { schemaVersion: '1', runId: 'run', invocationId: 'call', capabilityId: 'reserve_stock', capabilityVersion: '1', arguments: { sku: 'x' }, targetId: 'x', operationId: 'op' } };
+  let authorized = true, reads = 0, queries = 0, records = 0;
+  const receiver = { store: { load: async () => run }, async assertReadable() { reads++; if (!authorized) throw Error('RESOURCE_DENIED'); },
+    broker: { definitions: { reserve_stock: { capability: { supportsOutcomeQuery: false } } }, current: async () => principal,
+      async record(_run: string, _operation: string, result: { status: string }, reconcile: boolean) { records++; assert.equal(reconcile, true); assert.equal(result.status, 'outcome-unknown'); run.view.status = 'manual-review'; } },
+    options: { host: { async query() { queries++; throw Error('OUTCOME_QUERY_NOT_SUPPORTED'); } } }, get: async () => run.view,
+  } as unknown as InstanceType<typeof PersistentRuntime>;
+  const result = await PersistentRuntime.prototype.reconcile.call(receiver, 'run', principal);
+  assert.equal(result.status, 'manual-review'); assert.equal(queries, 0); assert.equal(records, 1); assert.equal(reads, 1);
+  authorized = false;
+  await assert.rejects(PersistentRuntime.prototype.reconcile.call(receiver, 'run', principal), /RESOURCE_DENIED/);
+  assert.equal(queries, 0); assert.equal(records, 1);
+});

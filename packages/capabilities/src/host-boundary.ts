@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { CapabilityVersionSchema, JsonObjectSchema, ToolRequestSchema, ToolResultSchema, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
-import { digest, PolicyError } from '@ae/policy';
+import { CapabilityVersionSchema, JsonObjectSchema, PrincipalSchema, ToolRequestSchema, ToolResultSchema, type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolRequest, type ToolResult } from '@ae/contracts';
+import { digest, PolicyError, samePrincipal } from '@ae/policy';
 
 /** Server-composed, reviewed definitions. Never accept a registry or authority hook from request JSON. */
 export interface CapabilityDefinition { readonly capability: CapabilityVersion; readonly parameters: z.ZodObject }
@@ -57,4 +57,14 @@ export function validateCapabilityResult(operationId: string, value: unknown): T
   const result = ToolResultSchema.parse(value);
   if ('operationId' in result && result.operationId !== operationId) throw new PolicyError('HOST_RECEIPT_OPERATION_MISMATCH');
   return result;
+}
+
+/** Generic floor; the host must additionally enforce its current domain/resource rights. */
+export function currentHostPrincipal(identity: Principal, resolved: Principal): Principal {
+  const current = PrincipalSchema.parse(resolved);
+  if (!samePrincipal(identity, current)) throw new PolicyError('PRINCIPAL_CHANGED');
+  return structuredClone(current);
+}
+export function requireCapabilityScopes(principal: Principal, capability: CapabilityVersion): void {
+  if (capability.requiredScopes.some(scope => !principal.scopes.includes(scope))) throw new PolicyError('SCOPE_DENIED');
 }

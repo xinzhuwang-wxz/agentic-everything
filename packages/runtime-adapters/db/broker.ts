@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { type BehaviorSelection, type CapabilityVersion, type JsonObject, type Principal, type ToolResult } from '@ae/contracts';
-import { validateDefinitions, parseCapabilityArguments, prepareCapabilityRequest, validateCapabilityResult, type CapabilityDefinitions, type CapabilityTarget, type PreparedTool } from '@ae/capabilities';
+import { requireCapabilityScopes, validateDefinitions, parseCapabilityArguments, prepareCapabilityRequest, validateCapabilityResult, type CapabilityDefinitions, type CapabilityTarget, type PreparedTool } from '@ae/capabilities';
 import { InMemoryApprovalLedger, digest, PolicyError, samePrincipal, type ApprovalView } from '@ae/policy';
 import { releasedCatalog } from '@ae/control-plane';
 import { PersistentStore, type Queryable, type StoredRun } from './store.js';
@@ -20,7 +20,7 @@ export class PersistentToolBroker<Host extends DurableHost = DurableHost> {
     for (const definition of Object.values(this.definitions)) {
       const c = definition.capability;
       if (!declared.some(h => h.capabilityId === c.capabilityId && h.version === c.version && h.bindingHash === c.bindingHash)) continue;
-      try { await this.authority.authorize(current, c.capabilityId); catalog.push(structuredClone(c)); } catch { /* Denied capabilities never reach the model. */ }
+      try { requireCapabilityScopes(current, c); await this.authority.authorize(current, c.capabilityId); catalog.push(structuredClone(c)); } catch { /* Denied capabilities never reach the model. */ }
     }
     return run?.release ? releasedCatalog(run.release, current, catalog) : catalog;
   }
@@ -31,6 +31,7 @@ export class PersistentToolBroker<Host extends DurableHost = DurableHost> {
   async assertCapability(run: StoredRun, name: string): Promise<void> {
     const current = await this.current(run.principal);
     await this.authority.authorize(current, name);
+    if (Object.hasOwn(this.definitions, name)) requireCapabilityScopes(current, this.definitions[name]!.capability);
     if (!(await this.catalog(current, run)).some(c => c.capabilityId === name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
   }
   async assertReadable(principal: Principal, target: CapabilityTarget): Promise<void> { await this.authority.assertReadable(await this.current(principal), target); }
@@ -43,6 +44,7 @@ export class PersistentToolBroker<Host extends DurableHost = DurableHost> {
     const parsed = parseCapabilityArguments(this.definitions, name, args);
     const current = await this.current(principal);
     await this.authority.authorize(current, name);
+    if (Object.hasOwn(this.definitions, name)) requireCapabilityScopes(current, this.definitions[name]!.capability);
     if (!(await this.catalog(current)).some(c => c.capabilityId === name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
     const reference = this.referenceTarget(name, parsed);
     const target = await this.authority.prepareTarget(current, name, parsed);

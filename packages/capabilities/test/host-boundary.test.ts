@@ -52,3 +52,12 @@ test('trusted target preview cannot switch the strictly resolved resource', () =
   const broker = new ToolBroker(h);
   assert.throws(() => broker.prepare(alice, 'r', 'c', 'read_stock', { sku: 'one' }), /HOST_TARGET_BINDING_MISMATCH/);
 });
+test('generic broker enforces identity and registered scope floors before custom host dispatch', async () => {
+  const h = host(); h.authorizeCapability = () => {};
+  const broker = new ToolBroker(h), noScopes = { ...alice, scopes: [] };
+  assert.deepEqual(broker.catalog(noScopes), []);
+  assert.throws(() => broker.prepare(noScopes, 'r', 'c', 'read_stock', { sku: 'x' }), /SCOPE_DENIED/);
+  h.current = p => ({ ...p, subjectId: 'another-user' });
+  assert.throws(() => broker.current(alice), /PRINCIPAL_CHANGED/);
+  assert.throws(() => broker.prepare(alice, 'r', 'c', 'read_stock', { sku: 'x' }), /PRINCIPAL_CHANGED/);
+});

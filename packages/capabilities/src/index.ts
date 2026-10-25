@@ -2,7 +2,7 @@ import { projectTicketBehavior, syntheticTitleCatalog } from './behavior.js';
 export { projectTicketBehavior, syntheticTitleCatalog, syntheticTitleBaseline, assertTicketBehavior } from './behavior.js';
 import { z } from 'zod';
 import { ticketToolDefinitions, type TicketToolName } from './definitions.js';
-import { parseCapabilityArguments, prepareCapabilityRequest, validateCapabilityResult, validateDefinitions, type CapabilityDefinitions, type CapabilityTarget, type PreparedTarget, type TrustedCapabilityHost } from './host-boundary.js';
+import { currentHostPrincipal, requireCapabilityScopes, parseCapabilityArguments, prepareCapabilityRequest, validateCapabilityResult, validateDefinitions, type CapabilityDefinitions, type CapabilityTarget, type PreparedTarget, type TrustedCapabilityHost } from './host-boundary.js';
 export * from './host-boundary.js';
 export { ticketToolDefinitions, type TicketToolName } from './definitions.js';
 import { randomUUID } from 'node:crypto';
@@ -155,13 +155,16 @@ export class ToolBroker<Host extends TrustedCapabilityHost = AuthorizedTicketHos
   private ledger = new Map<string, { hash: string; result: ToolResult }>();
   constructor(readonly host: Host, options: { approvals?: InMemoryApprovalLedger; loseWriteResponse?: boolean; supportsOutcomeQuery?: boolean } = {}) { this.definitions = validateDefinitions(host.definitions); this.approvals = options.approvals ?? new InMemoryApprovalLedger(Date.now, host.policyVersion); if (this.approvals.policyVersion !== host.policyVersion) throw new PolicyError('HOST_POLICY_MISMATCH'); this.options = options; }
   private options: { loseWriteResponse?: boolean; supportsOutcomeQuery?: boolean };
-  catalog(principal: Principal): CapabilityVersion[] { return Object.values(this.definitions).map(d => d.capability).filter(c => { try { if (!this.host.supports(c.capabilityId)) return false; this.host.authorizeCapability(principal, c.capabilityId); return true; } catch { return false; } }).map(c => structuredClone(c)); }
+  current(principal: Principal): Principal { return currentHostPrincipal(principal, this.host.current(structuredClone(principal))); }
+  catalog(principal: Principal): CapabilityVersion[] { return Object.values(this.definitions).map(d => d.capability).filter(c => { try { if (!this.host.supports(c.capabilityId)) return false; const current = this.current(principal); requireCapabilityScopes(current, c); this.host.authorizeCapability(current, c.capabilityId); return true; } catch { return false; } }).map(c => structuredClone(c)); }
   prepare(principal: Principal, runId: string, callId: string, name: string, args: JsonObject): PreparedTool {
     if (!this.host.supports(name)) throw new PolicyError('CAPABILITY_NOT_ALLOWED');
     const parsed = parseCapabilityArguments(this.definitions, name, args);
-    this.host.authorizeCapability(principal, name);
+    const current = this.current(principal);
+    this.host.authorizeCapability(current, name);
+    requireCapabilityScopes(current, this.definitions[name]!.capability);
     const reference = this.host.referenceTarget(name, parsed);
-    const target = this.host.prepareTarget(principal, name, parsed);
+    const target = this.host.prepareTarget(current, name, parsed);
     if (target.targetId !== reference) throw new PolicyError('HOST_TARGET_BINDING_MISMATCH');
     return prepareCapabilityRequest(principal, runId, callId, this.definitions[name]!, parsed, target);
   }
@@ -172,7 +175,7 @@ export class ToolBroker<Host extends TrustedCapabilityHost = AuthorizedTicketHos
     const hash = digest(request);
     try {
       if (signal?.aborted) throw new PolicyError('CANCELLED');
-      this.host.current(principal);
+      this.current(principal);
       this.host.assertReadable(principal, request); // Current host authority, including cached receipts.
       const existing = this.ledger.get(key);
       if (existing) { if (existing.hash !== hash) throw new PolicyError('IDEMPOTENCY_CONFLICT'); return structuredClone(existing.result); }
@@ -207,7 +210,7 @@ export class ToolBroker<Host extends TrustedCapabilityHost = AuthorizedTicketHos
     const key = JSON.stringify([principal.tenantId, principal.applicationId, principal.subjectId, prepared.request.operationId]);
     const existing = this.ledger.get(key), hash = digest(prepared.request);
     if (existing && existing.hash !== hash) throw new PolicyError('IDEMPOTENCY_CONFLICT');
-    this.host.current(principal);
+    this.current(principal);
     this.host.assertReadable(principal, prepared.request);
     if (this.options.supportsOutcomeQuery === false || this.definitions[prepared.request.capabilityId]?.capability.supportsOutcomeQuery !== true) return { status: 'outcome-unknown', operationId: prepared.request.operationId, message: 'Adapter has no outcome query; manual review is required, never retry.' };
     const result = validateCapabilityResult(prepared.request.operationId, this.host.query(principal, prepared.request.operationId, prepared.request));

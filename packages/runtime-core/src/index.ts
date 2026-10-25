@@ -56,7 +56,7 @@ export class GovernedRuntime {
     return this.get(runId, principal);
   }
   get(runId: string, principal: Principal): RunView { const session = this.session(runId, principal); this.assertReadable(session, principal); return structuredClone(session.view); }
-  list(principal: Principal): RunView[] { this.options.broker.host.current(principal); return [...this.sessions.values()].filter(s => samePrincipal(s.principal, principal)).map(s => { this.assertReadable(s, principal); return structuredClone(s.view); }); }
+  list(principal: Principal): RunView[] { this.options.broker.current(principal); return [...this.sessions.values()].filter(s => samePrincipal(s.principal, principal)).map(s => { this.assertReadable(s, principal); return structuredClone(s.view); }); }
   async decide(runId: string, principal: Principal, decision: ApprovalDecision): Promise<RunView> {
     const session = this.session(runId, principal);
     this.assertReadable(session, principal);
@@ -123,7 +123,7 @@ export class GovernedRuntime {
     } finally { clearTimeout(deadline); session.busy = false; }
   }
   private assertReadable(session: Session, principal: Principal): void {
-    this.options.broker.host.current(principal);
+    this.options.broker.current(principal);
     // Only trusted prepare results contribute authority, never model text or receipt fields.
     for (const target of session.targets.values()) this.options.broker.host.assertReadable(principal, target);
   }

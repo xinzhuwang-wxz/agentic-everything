@@ -78,7 +78,10 @@ export class PersistentRuntime<Host extends DurableHost = DurableTicketHost> {
   async reconcile(runId: string, principal: Principal): Promise<PersistentRunView> {
     const r = await this.store.load(runId, principal); await this.assertReadable(r, principal);
     if (!['outcome-unknown', 'manual-review'].includes(r.view.status) || !r.pending) throw new PolicyError('RUN_NOT_UNKNOWN');
-    const result = validateHostResult(r.pending.request.operationId, await this.options.host.query(await this.broker.current(principal), r.pending.request.operationId));
+    const request = r.pending.request;
+    const result = this.broker.definitions[request.capabilityId]?.capability.supportsOutcomeQuery === true
+      ? validateHostResult(request.operationId, await this.options.host.query(await this.broker.current(principal), request.operationId))
+      : { status: 'outcome-unknown' as const, operationId: request.operationId, message: 'Host does not support outcome queries; manual review is required. No write was retried.' };
     await this.broker.record(runId, r.pending.request.operationId, result, true);
     return this.get(runId, principal);
   }

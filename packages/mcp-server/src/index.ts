@@ -5,18 +5,21 @@ import { z } from 'zod';
 import { PatchArtifactSchema, Sha256 } from '@ae/contracts';
 import { assessProject, proposePlan, previewPatch, verifyAdaptation, installedRecipeDescriptors, digest } from '@ae/transformation';
 
-const recipeId = 'react-helpdesk';
-const recipe = installedRecipeDescriptors().find(candidate => candidate.ref.id === recipeId);
-if (!recipe) throw new Error('MCP recipe is not installed');
-const recipeRef = recipe.ref;
-const recipePaths = recipe.outputPaths;
-const recipeInput = z.strictObject({ recipeId: z.literal(recipeId) });
+const recipes = installedRecipeDescriptors();
+if (!recipes.length) throw new Error('No MCP recipes are installed');
+const recipeInput = z.strictObject({ recipeId: z.enum(recipes.map(recipe => recipe.ref.id) as [string, ...string[]]) });
 const verificationInput = z.strictObject({
   patch: PatchArtifactSchema.omit({ worktree: true }).extend({
-    changes: PatchArtifactSchema.shape.changes.max(recipePaths.length),
+    changes: PatchArtifactSchema.shape.changes.max(Math.max(...recipes.map(recipe => recipe.outputPaths.length))),
   }),
   businessHash: Sha256,
 });
+function plannedRecipe(root: string, requestedId: string) {
+  const assessment = assessProject(root), plan = proposePlan(assessment);
+  const installed = recipes.find(recipe => recipe.ref.id === requestedId);
+  if (!installed || plan.recipes.length !== 1 || digest(plan.recipes[0]) !== digest(installed.ref)) throw new Error('Requested recipe does not match this host');
+  return { assessment, plan, planHash: digest(plan) };
+}
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
 /** Launch configuration, not model tool arguments. Only explicitly authorized development repos. */
@@ -49,7 +52,7 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
     inputSchema: z.strictObject({}), annotations,
   }, () => result({
     mode: 'read-only', scope: 'One operator-configured development Git repository; client roots never grant access.',
-    recipes: [{ ...recipeRef, support: 'Qualified first sample: React 19 helpdesk layout, not a product or industry boundary.' }],
+    recipes: recipes.map(recipe => ({ ...recipe.ref, outputPaths: recipe.outputPaths, support: 'Reviewed bounded host recipe. This read-only MCP surface does not execute its separate acceptance profile.' })),
     generality: 'AE is for software of all kinds. Unknown layouts require evidence-led custom adaptation by the existing developer agent; no automatic patch is claimed.',
     limitations: ['No shell, arbitrary file reads, source execution, network access, or paid model calls.', 'No approval, apply, or revert tools. MCP arguments cannot create authority.', 'Verification is static and hash-based. Host tests, identity, runtime, and browser acceptance remain not-run.', 'Use the Skill/CLI workflow with separately authorized plan approval and isolated apply.'],
   }));
@@ -60,12 +63,12 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
   server.registerTool('ae_plan', {
     description: 'Propose a plan from freshly assessed source using the shared transformation core. A proposal is not an approval.',
     inputSchema: recipeInput, annotations,
-  }, () => guarded(() => { checkRoot(); const assessment = assessProject(root); const plan = proposePlan(assessment); return { assessment, plan, planHash: digest(plan) }; }));
+  }, ({ recipeId }) => guarded(() => { checkRoot(); return plannedRecipe(root, recipeId); }));
   server.registerTool('ae_preview', {
     description: 'Preview the shared recipe patch without writing. Requires the current ae_plan hash; source drift invalidates the preview.',
     inputSchema: recipeInput.extend({ planHash: Sha256 }), annotations,
-  }, ({ planHash }) => guarded(() => {
-    checkRoot(); const assessment = assessProject(root); const plan = proposePlan(assessment);
+  }, ({ recipeId, planHash }) => guarded(() => {
+    checkRoot(); const { assessment, plan } = plannedRecipe(root, recipeId);
     if (digest(plan) !== planHash) throw new Error('Plan drift');
     return { planHash, changes: previewPatch(root, plan, assessment) };
   }));
@@ -74,7 +77,9 @@ export function createAeMcpServer(scope: McpLaunchScope): McpServer {
     inputSchema: verificationInput, annotations,
   }, ({ patch, businessHash }) => guarded(() => {
     checkRoot();
-    if (patch.recipe.id !== recipeRef.id || patch.recipe.version !== recipeRef.version || JSON.stringify(patch.changes.map(c => c.path)) !== JSON.stringify(recipePaths)) throw new Error('Unknown verification recipe or path scope');
+    const installed = recipes.find(recipe => digest(recipe.ref) === digest(patch.recipe));
+    if (!installed || JSON.stringify(patch.changes.map(c => c.path)) !== JSON.stringify(installed.outputPaths)) throw new Error('Unknown verification recipe or path scope');
+    plannedRecipe(root, installed.ref.id); // A known recipe cannot be used to verify another host kind.
     return verifyAdaptation({ patch: { ...patch, worktree: root }, businessHash, originals: {} });
   }));
   return server;

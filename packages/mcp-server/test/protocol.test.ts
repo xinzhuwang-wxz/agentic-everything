@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { assessProject, proposePlan, digest, sha256 } from '@ae/transformation';
 import { createAeMcpServer } from '../src/index.js';
 
-function fixture() {
+function fixture(name = 'existing-react-helpdesk') {
   const parent = mkdtempSync(join(tmpdir(), 'ae-mcp-')); const root = join(parent, 'source');
-  cpSync(resolve('fixtures/existing-react-helpdesk'), root, { recursive: true });
+  cpSync(resolve('fixtures', name), root, { recursive: true });
   const git = (...args: string[]) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', stdio: 'pipe' });
   git('init'); git('config', 'user.name', 'Fictional MCP fixture'); git('config', 'user.email', 'fixture@example.invalid'); git('add', '.'); git('commit', '-m', 'Fictional source');
   return { parent, root, git };
@@ -54,6 +54,10 @@ test('official SDK client initializes stdio, lists and calls all read-only toolk
       { name: 'ae_assess', arguments: { repoRoot: '/etc' } },
       { name: 'ae_assess', arguments: { path: '../outside' } },
       { name: 'ae_plan', arguments: { recipeId: 'unknown-recipe' } },
+      { name: 'ae_plan', arguments: { recipeId: 3 } },
+      { name: 'ae_plan', arguments: { recipeId: 'python-inventory' } },
+      { name: 'ae_preview', arguments: { recipeId: 'python-inventory', planHash: planned.planHash } },
+      { name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: '0'.repeat(64) } },
       { name: 'ae_plan', arguments: { recipeId: 'react-helpdesk', approval: true } },
       { name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: 'invalid' } },
       { name: 'ae_verify', arguments: { patch: { ...patch, worktree: '/etc' }, businessHash: '0'.repeat(64) } },
@@ -106,4 +110,45 @@ test('configured root boundaries and source symlinks are enforced, including aft
 
 test('stdio launch fails closed without operator scope', () => {
   assert.throws(() => execFileSync(process.execPath, [resolve('dist/packages/mcp-server/src/stdio.js')], { env: { PATH: process.env.PATH ?? '' }, stdio: 'pipe', timeout: 5000 }), /startup rejected/);
+});
+
+
+test('official SDK selects Python recipe consistently and refuses mismatched host, recipe and version', async () => {
+  const f = fixture('existing-python-inventory'), { client } = await connect(f.root);
+  try {
+    const description = data(await client.callTool({ name: 'ae_describe', arguments: {} }));
+    assert.deepEqual(description.recipes.map((recipe: { id: string }) => recipe.id).sort(), ['python-inventory', 'react-helpdesk']);
+    const planned = data(await client.callTool({ name: 'ae_plan', arguments: { recipeId: 'python-inventory' } }));
+    const advertised = description.recipes.find((recipe: { id: string }) => recipe.id === 'python-inventory');
+    assert.deepEqual(planned.plan.recipes, [{ id: advertised.id, version: advertised.version }]);
+    const preview = data(await client.callTool({ name: 'ae_preview', arguments: { recipeId: 'python-inventory', planHash: planned.planHash } }));
+    assert.deepEqual(preview.changes.map((change: { path: string }) => change.path), ['agentic/ae_adapter.py']);
+    const businessHash = sha256(readFileSync(join(f.root, 'inventory.py'), 'utf8'));
+    const patch = { schemaVersion: '1', planHash: planned.planHash, baseCommit: planned.assessment.baseCommit, recipe: planned.plan.recipes[0], appliedAt: new Date().toISOString(), changes: preview.changes.map((change: { path: string; before: string | null; after: string }) => ({ path: change.path, beforeHash: change.before === null ? null : sha256(change.before), afterHash: sha256(change.after) })) };
+    const unapplied = data(await client.callTool({ name: 'ae_verify', arguments: { patch, businessHash } }));
+    assert.ok(unapplied.checks.some((check: { status: string }) => check.status === 'fail'));
+    const react = description.recipes.find((recipe: { id: string }) => recipe.id === 'react-helpdesk');
+    for (const request of [
+      { name: 'ae_plan', arguments: { recipeId: 'react-helpdesk' } },
+      { name: 'ae_plan', arguments: { recipeId: ['python-inventory'] } },
+      { name: 'ae_preview', arguments: { recipeId: 'react-helpdesk', planHash: planned.planHash } },
+      { name: 'ae_preview', arguments: { recipeId: 'python-inventory', planHash: '0'.repeat(64) } },
+      { name: 'ae_verify', arguments: { patch: { ...patch, recipe: { ...patch.recipe, version: 'stale' } }, businessHash } },
+      { name: 'ae_verify', arguments: { patch: { ...patch, recipe: { id: react.id, version: react.version }, changes: react.outputPaths.map((path: string) => ({ path, beforeHash: null, afterHash: '0'.repeat(64) })) }, businessHash } },
+    ]) {
+      let rejected = false;
+      try { rejected = (await client.callTool(request)).isError === true; } catch { rejected = true; }
+      assert.equal(rejected, true, JSON.stringify(request));
+    }
+    // Only the trusted test materializes reviewed bytes; MCP itself still has no write tool.
+    for (const change of preview.changes) { mkdirSync(dirname(join(f.root, change.path)), { recursive: true }); writeFileSync(join(f.root, change.path), change.after); }
+    const verified = data(await client.callTool({ name: 'ae_verify', arguments: { patch, businessHash } }));
+    assert.equal(verified.checks.filter((check: { status: string }) => check.status === 'fail').length, 0);
+    for (const name of ['host-compilation', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'cli-acceptance']) assert.equal(verified.checks.find((check: { name: string }) => check.name === name)?.status, 'not-run');
+    assert.equal(verified.checks.some((check: { name: string }) => check.name === 'browser-acceptance'), false);
+    writeFileSync(join(f.root, 'inventory.py'), readFileSync(join(f.root, 'inventory.py'), 'utf8') + '\n# changed after proposal\n');
+    assert.equal((await client.callTool({ name: 'ae_preview', arguments: { recipeId: 'python-inventory', planHash: planned.planHash } })).isError, true);
+    const drifted = data(await client.callTool({ name: 'ae_verify', arguments: { patch, businessHash } }));
+    assert.equal(drifted.checks.find((check: { name: string }) => check.name === 'original-business-source')?.status, 'fail');
+  } finally { await client.close(); rmSync(f.parent, { recursive: true, force: true }); }
 });

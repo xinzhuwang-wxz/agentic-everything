@@ -21,15 +21,15 @@ The operator must explicitly authorize the checkout and configure the environmen
 
 - `ae_describe {}`: actual support and safety boundaries.
 - `ae_assess {}`: bounded static source assessment, including unknowns.
-- `ae_plan {"recipeId":"react-helpdesk"}`: fresh assessment, proposed plan, canonical plan hash.
+- `ae_plan {"recipeId":"react-helpdesk"}` (or `"python-inventory"`): fresh assessment, proposed plan, canonical plan hash.
 - `ae_preview {"recipeId":"react-helpdesk","planHash":"<returned hash>"}`: patch text without writes; rejects source/plan drift.
-- `ae_verify {"patch":<PatchArtifact without worktree>,"businessHash":"<original business hash>"}`: shared static verifier against only the configured root. Copy the patch's fields but remove `worktree`; it is never accepted from a tool caller. Only the two registered recipe-owned paths in their canonical order are accepted.
+- `ae_verify {"patch":<PatchArtifact without worktree>,"businessHash":"<original business hash>"}`: shared static verifier against only the configured root. Copy the patch's fields but remove `worktree`; it is never accepted from a tool caller. Only the selected installed recipe’s output paths in canonical order are accepted; the recipe must match the configured host.
 
 All tools are read-only. Unknown arguments, arbitrary paths, worktree arguments, unknown recipes, and model-supplied `approval: true` are rejected. Source reads are limited and bounded by the shared transformation core. Symbolic links in source paths and root ancestry are rejected. The server rechecks its root at every filesystem operation. Do not concurrently replace checkout files while it runs: filesystem permissions and operator isolation, not MCP, are the security boundary against hostile local processes.
 
-Verification checks hashes and TSX parseability, not authenticated provenance. Caller-supplied hashes are expectations, never authorization. Host typecheck, business tests, black-box business differential, authenticated runtime, and browser acceptance remain explicitly `not-run`. Static verification never claims that a behavioral differential was executed. A clean static result is not production readiness or a signed attestation.
+Verification checks hashes and TSX parseability or exact generated Python template bytes, not authenticated provenance. Caller-supplied hashes are expectations, never authorization. Host typecheck/compilation, business tests, black-box business differential, authenticated runtime, and the applicable browser or CLI acceptance remain explicitly `not-run`. Static verification never claims that a behavioral differential was executed. A clean static result is not production readiness or a signed attestation.
 
-`react-helpdesk@1.0.0` is the first qualified automatic recipe, not a domain or software-category boundary. AE targets source-to-agentic adaptation across software types. Unknown layouts receive an honest assessment; existing developer agents must research and implement custom adaptations separately rather than claim an unsupported recipe is automatic.
+`react-helpdesk@1.1.0` and `python-inventory@1.0.0` are the installed bounded recipes. Description, planning, preview and verification obtain their current revisions and output paths from the same installed registry. A request naming another host’s recipe is rejected, not silently substituted. These fixtures are not domain or software-category boundaries. AE targets source-to-agentic adaptation across software types. Unknown layouts receive an honest assessment; existing developer agents must research and implement custom adaptations separately rather than claim an unsupported recipe is automatic.
 
 ## Mutation boundary
 
