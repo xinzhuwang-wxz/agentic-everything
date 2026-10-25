@@ -37,6 +37,6 @@ AE 是 MIT 开源改造工具，不是另一个通用 coding agent，也不是�
 
 也可以在 Node 24 / npm 11 环境运行 `npm ci --ignore-scripts` 和 `npm run check`，再按[入门指南](getting-started.md)生成改造预览。可管理的固定版本安装使用[运维指南](operations.md)，不是假设已经发布的 npm 包。
 
-当前 fixture 不是计划中的三个真实外部开源项目案例。核心验收已通过；这些独立案例仍待制作与验收，完成实际改造、原始基线、对拍、截图和许可保留，最后填写经核验的原仓库与改造仓库链接，不使用占位 URL。
+三个独立案例已完成实际 AE 改造、限定范围内的业务、权限、恢复与浏览器验收，并已公开发布。原始项目、改造仓库、Agent 集成目录、截图与证据见上方三行表；适用范围及模拟调用者边界见[对应说明](verification/external-cases.md)。
 
 [完整实施计划](../IMPLEMENTATION_PLAN.md) · [参与贡献](../CONTRIBUTING.md) · [安全边界](../SECURITY.md) · [许可证与来源](../NOTICE.md)
