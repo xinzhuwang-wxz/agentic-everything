@@ -68,7 +68,7 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
   if (!covered) unknowns.push('No installed patch recipe covers this project yet. This is a coverage limitation, not a conclusion that the software cannot be made agentic. A tailored business and identity assessment is required.');
   return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'project-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: covered ? [covered.observedFlow] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: covered ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
 }
-export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: 'react-helpdesk-synthetic-v1' | 'python-inventory-synthetic-v1' }): AdaptationPlan {
+export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: 'react-helpdesk-synthetic-v1' | 'python-inventory-synthetic-v1' | 'java-spring-inventory-synthetic-v1' }): AdaptationPlan {
   ProjectAssessmentSchema.parse(assessment);
   const recipe = recipeForAssessment(assessment);
   if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact trusted synthetic fixture evidence');

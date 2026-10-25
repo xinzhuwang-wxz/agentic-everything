@@ -3,8 +3,9 @@ import type { z } from 'zod';
 import { parse } from '../ast.js';
 import { helpdeskRecipe } from './react-helpdesk.js';
 import { inventoryRecipe } from './python-inventory.js';
+import { javaSpringRecipe, JAVA_ADAPTER } from './java-spring-inventory.js';
 
-export const installedRecipes = [helpdeskRecipe, inventoryRecipe];
+export const installedRecipes = [helpdeskRecipe, inventoryRecipe, javaSpringRecipe];
 export function recipeForAssessment(assessment: ProjectAssessment) {
   const matches = installedRecipes.filter(recipe => assessment.businessFlows.includes(recipe.observedFlow));
   if (assessment.supportLevel !== 'L2' || matches.length !== 1) throw Error('No installed recipe coverage or conflicting recipes: tailored plan needs developer review, not automatic patching');
@@ -16,6 +17,7 @@ export function recipeForRef(ref: z.infer<typeof RecipeRefSchema>) {
   return recipe;
 }
 export function syntaxCheck(path: string, value: string) {
+  if (path.endsWith('.java')) { const valid = path === 'agentic/AeHost.java' && value === JAVA_ADAPTER; return { status: valid ? 'pass' as const : 'fail' as const, expected: 'Exact reviewed Java/Spring Core adapter', actual: valid ? 'Reviewed Java template matches; compilation requires explicit fixture profile' : 'Generated Java template drift' }; }
   if (path.endsWith('.py')) {
     const expected = inventoryRecipe.preview(name => name === 'inventory.py' ? 'present' : null).find(change => change.path === path)?.after;
     const valid = value === expected;
@@ -25,5 +27,5 @@ export function syntaxCheck(path: string, value: string) {
   catch { return { status: 'fail' as const, expected: 'Parseable TSX', actual: 'Parse error' }; }
 }
 export function executionGates(ref: z.infer<typeof RecipeRefSchema>): string[] {
-  return ref.id === 'python-inventory' ? ['host-compilation', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'cli-acceptance'] : ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance'];
+  return ['python-inventory', 'java-spring-inventory'].includes(ref.id) ? ['host-compilation', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'cli-acceptance'] : ['host-typecheck', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'browser-acceptance'];
 }

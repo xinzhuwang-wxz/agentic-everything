@@ -1,0 +1,9 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example.fixture</groupId><artifactId>spring-core-inventory-cli</artifactId><version>1.0.0</version>
+  <properties><maven.compiler.release>21</maven.compiler.release></properties>
+  <dependencies>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><version>6.2.19</version></dependency>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.20.1</version></dependency>
+  </dependencies>
+</project>
