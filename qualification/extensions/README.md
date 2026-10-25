@@ -19,3 +19,5 @@ Observed corrections retained for audit:
 3. An initial PG assertion equated every synthetic host read with an execution. The runtime intentionally repeats live resource authorization reads on polling/recovery. The corrected assertion independently checks one persisted governed operation, one tool receipt, two checkpointed model responses, and zero mutations. The successful report retains the actual live-read count rather than hiding it.
 
 The local test command stops its DBOS workers, HTTP listener and PostgreSQL cluster even on failure. No schedule persists outside the disposable stopped cluster. Runtime logs remain in the printed private temporary evidence folder; only the compact synthetic summary is committed here.
+
+Evidence scope: the revocation case checks a fresh replayed dispatch and an A2A read after current rights change. The separate crash/restart case checks durable recovery without that rights change. The evidence does not claim a combined second crash after revocation.

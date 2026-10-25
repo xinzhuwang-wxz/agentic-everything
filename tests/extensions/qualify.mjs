@@ -97,7 +97,7 @@ try {
   await host.pool.query('DELETE FROM qualification_host.principals WHERE tenant_id=$1 AND application_id=$2 AND subject_id=$3', [principal.tenantId, principal.applicationId, principal.subjectId]);
   await assert.rejects(worker.call('dispatch', occurrence.toISOString(), spec), /HOST_PRINCIPAL_NOT_FOUND/);
   await assert.rejects(sdk.getTask(GetTaskRequest.fromJSON({ id: task.id }), options));
-  record('Live host identity revocation blocks recovered triggers and protocol reads');
+  record('Live host identity revocation blocks replayed dispatch and protocol reads and protocol reads');
   await worker.stop();
   writeFileSync(join(directory, 'report.json'), JSON.stringify({ status: 'pass', scope: 'owned local fixture only; simulated model; mobile real platform unverified', versions: { node: process.version, dbos: '5.3.0', a2aSdk: '1.3.0', a2aProtocol: '1.0', postgres: '17.11' }, cases }, null, 2) + '\n');
 } finally {
