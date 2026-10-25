@@ -48,10 +48,12 @@ try{
   record('changed-payload-status-and-current-authority-reject-before-deletion-or-roll-back');
   // Hold an uncommitted status update. Apply must wait, re-read the now-unknown run and reject its old selection.
   const changing=await pool.connect();await changing.query('BEGIN');await changing.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"outcome-unknown\"') WHERE id='run-later-eligible'");
+  try{
   let settled=false;const applied=retention.run(p,{...page.request,apply:true,expectedSelectionHash:current.selectionHash}).finally(()=>{settled=true;});
   const rejection=assert.rejects(applied,/RETENTION_SELECTION_CHANGED/);
   await new Promise(resolve=>setTimeout(resolve,100));assert.equal(settled,false);
-  await changing.query('COMMIT');changing.release();await rejection;
+  await changing.query('COMMIT');await rejection;
+  }finally{await changing.query('ROLLBACK');changing.release();}
   assert.equal((await rows("SELECT count(*)::int AS n FROM ae_conversation_turns_v1 WHERE conversation_id='later-eligible'"))[0].n,1);
   record('apply-locks-current-run-status-and-refuses-concurrent-terminal-to-unknown-change');
   await pool.query("UPDATE ae_runs_v1 SET body=jsonb_set(body,'{view,status}','\"succeeded\"') WHERE id='run-later-eligible'");
