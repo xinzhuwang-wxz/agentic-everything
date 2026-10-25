@@ -72,3 +72,17 @@ test('public CLI produces the Python inventory through approved baseline, isolat
   assert.equal(invoke(...apply, '--baseline-out', file('second-baseline')).status, 1);
   run('revert', '--patch', file('patch')); assert.equal(execFileSync('git', ['-C', candidate, 'status', '--porcelain'], { encoding: 'utf8' }), '');
 });
+
+test('CLI operations avoid loading transformation tooling while transformation commands still use it', () => {
+  const hook = 'data:text/javascript,' + encodeURIComponent("import { registerHooks } from 'node:module'; registerHooks({ resolve(specifier, context, nextResolve) { if (specifier === '@ae/transformation') throw new Error('TRANSFORMATION_LOAD_SENTINEL'); return nextResolve(specifier, context); } });");
+  const run = (...args: string[]) => spawnSync(process.execPath, ['--import', hook, cli, ...args], { encoding: 'utf8', env: {PATH:process.env.PATH ?? '/usr/bin:/bin'} });
+  for (const command of ['install', 'upgrade', 'doctor', 'uninstall', 'schema-check', 'schema-apply']) {
+    const result = run(command);
+    assert.equal(result.status, 1, result.stderr);
+    assert.doesNotMatch(result.stderr, /TRANSFORMATION_LOAD_SENTINEL/);
+    assert.match(result.stderr, /Required --|Set AE_DATABASE_URL/);
+  }
+  const transformation = run('assess', '--repo', '/unused');
+  assert.equal(transformation.status, 1);
+  assert.match(transformation.stderr, /TRANSFORMATION_LOAD_SENTINEL/);
+});

@@ -61,3 +61,23 @@ test('doctor and uninstall reject inconsistent or malformed editable receipt met
     // A consistent rewritten receipt is intentionally not an authenticity test; it is only local state.
   }finally{rmSync(root,{recursive:true});}
 });
+
+test('doctor hashes full multi-chunk files and detects boundary, final-byte and truncation changes',()=>{
+  const root=mkdtempSync(join(tmpdir(),'ae-install-hash-chunks-'));
+  try{
+    writeFileSync(join(root,'package.json'),'{"version":"0.1.0"}\n');
+    writeFileSync(join(root,'package-lock.json'),'{}\n');
+    const payload=Buffer.alloc(3*64*1024+17);for(let i=0;i<payload.length;i++)payload[i]=i%251;
+    writeFileSync(join(root,'payload.bin'),payload);
+    const receipt={format:'ae-source-install-v1',version:'0.1.0',commit:'a'.repeat(40),tree:'b'.repeat(40),sourceHash:'c'.repeat(64),lockHash:hash(readFileSync(join(root,'package-lock.json'))),schema:0,node:process.versions.node,npm:'11.9.0',files:['package-lock.json','package.json','payload.bin'].map(path=>({path,type:'file',mode:statSync(join(root,path)).mode&0o777,hash:hash(readFileSync(join(root,path)))}))};
+    writeFileSync(join(root,'.ae-installation.json'),JSON.stringify(receipt));
+    assert.equal(doctorInstallation(root).integrity,true);
+    for(const offset of [0,64*1024-1,64*1024,2*64*1024,payload.length-1]){
+      const modified=Buffer.from(payload);modified[offset]=modified[offset]!^0xff;writeFileSync(join(root,'payload.bin'),modified);
+      assert.equal(doctorInstallation(root).integrity,false,`changed byte ${offset} must be hashed`);
+      assert.throws(()=>uninstallFixedSource(root,receipt.commit),/UNINSTALL_MODIFIED_INSTALLATION/);
+    }
+    writeFileSync(join(root,'payload.bin'),payload.subarray(0,payload.length-1));assert.equal(doctorInstallation(root).integrity,false);
+    writeFileSync(join(root,'payload.bin'),payload);assert.equal(doctorInstallation(root).integrity,true);
+  }finally{rmSync(root,{recursive:true});}
+});

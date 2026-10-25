@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, openSync, readSync, closeSync, readdirSync, readlinkSync, realpathSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { AE_COMPATIBILITY } from './migrations.js';
 const receiptName='.ae-installation.json';
@@ -19,17 +19,26 @@ function within(root:string,path:string):boolean{const part=relative(root,path);
 // Reuse the transformation preflight policy: read Git objects/configuration without hooks or fsmonitor.
 function safeGit(source:string,args:string[]):string[]{return ['--no-optional-locks','-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,...args];}
 function git(source:string,args:string[]):string{return execFileSync('git',safeGit(source,args),{encoding:'utf8',timeout:15000,maxBuffer:32*1024*1024}).trim();}
-function inventory(root:string,path=root):Entry[]{
-  const result:Entry[]=[];
-  for(const name of readdirSync(path).sort()){
-    const file=join(path,name),rel=relative(root,file);if(rel===receiptName)continue;
-    const stat=lstatSync(file);
-    if(stat.isSymbolicLink()){const target=readlinkSync(file);if(!within(root,resolve(dirname(file),target)))throw new Error('INSTALL_SYMLINK_ESCAPE');result.push({path:rel,type:'link',mode:stat.mode&0o777,target});}
-    else if(stat.isDirectory()){result.push({path:rel,type:'directory',mode:stat.mode&0o777});result.push(...inventory(root,file));}
-    else if(stat.isFile())result.push({path:rel,type:'file',mode:stat.mode&0o777,hash:hash(readFileSync(file))});
-    else throw new Error('UNSUPPORTED_INSTALL_FILE');
+function inventory(root:string):Entry[]{
+  const result:Entry[]=[],buffer=Buffer.allocUnsafe(64*1024);
+  // Hash every byte without retaining dependency-sized Buffers before the next child compiler.
+  function fileHash(file:string):string{
+    const digest=createHash('sha256'),fd=openSync(file,'r');
+    try{let bytes:number;while((bytes=readSync(fd,buffer,0,buffer.length,null))!==0)digest.update(buffer.subarray(0,bytes));}
+    finally{closeSync(fd);}
+    return digest.digest('hex');
   }
-  return result;
+  function visit(path:string):void{
+    for(const name of readdirSync(path).sort()){
+      const file=join(path,name),rel=relative(root,file);if(rel===receiptName)continue;
+      const stat=lstatSync(file);
+      if(stat.isSymbolicLink()){const target=readlinkSync(file);if(!within(root,resolve(dirname(file),target)))throw new Error('INSTALL_SYMLINK_ESCAPE');result.push({path:rel,type:'link',mode:stat.mode&0o777,target});}
+      else if(stat.isDirectory()){result.push({path:rel,type:'directory',mode:stat.mode&0o777});visit(file);}
+      else if(stat.isFile())result.push({path:rel,type:'file',mode:stat.mode&0o777,hash:fileHash(file)});
+      else throw new Error('UNSUPPORTED_INSTALL_FILE');
+    }
+  }
+  visit(root);return result;
 }
 function record(value:unknown):value is Record<string,unknown>{return value!==null&&typeof value==='object'&&!Array.isArray(value);}
 function keys(value:Record<string,unknown>,expected:string[]):boolean{return Object.keys(value).sort().join(',')===[...expected].sort().join(',');}
