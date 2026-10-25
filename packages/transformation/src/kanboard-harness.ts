@@ -25,7 +25,7 @@ function build(root:string,candidate:boolean,deadline:number,work:string){
  assert.ok(lstatSync(phpunit).isFile());assert.equal(hash(readFileSync(phpunit)),PHPUNIT_HASH);
  for(const [name,expected]of Object.entries(STOPWATCH_FILES)){assert.ok(lstatSync(join(stopwatch,name)).isFile());assert.equal(hash(readFileSync(join(stopwatch,name))),expected);}
  const bootstrap=join(work,(candidate?'candidate':'original')+'-bootstrap.php');writeFileSync(bootstrap,`<?php\n$loader=require ${JSON.stringify(join(root,'vendor/autoload.php'))};\n$loader->addPsr4('Symfony\\\\Component\\\\Stopwatch\\\\',${JSON.stringify(stopwatch)});\n`);
- const stdout=run(kanboardPhp,[phpunit,'-c',join(root,'tests/units.sqlite.xml'),'--bootstrap',bootstrap,'--no-cache-result','--colors=never','--filter','TaskCreationModelTest|TaskModificationModelTest|TaskStatusModelTest|ProjectRoleHelperTest|ProjectUserRoleModelTest'],deadline,env);
+ const stdout=run(kanboardPhp,[phpunit,'-c',join(root,'tests/units.sqlite.xml'),'--bootstrap',bootstrap,'--do-not-cache-result','--colors=never','--filter','TaskCreationModelTest|TaskModificationModelTest|TaskStatusModelTest|ProjectRoleHelperTest|ProjectUserRoleModelTest'],deadline,env);
  assert.match(stdout,/OK \(53 tests, 475 assertions\)/);
  return{language:'PHP8.4.27',sourceTreeHash:candidate?kanboardCandidateHash():kanboardSourceHash,phpLint:paths,javascriptSyntax:javascript,exitCode:0,tests:53,assertions:475,stdout,stdoutHash:hash(stdout),phpunitHash:PHPUNIT_HASH,stopwatchHash:hash(JSON.stringify(STOPWATCH_FILES))};
 }
