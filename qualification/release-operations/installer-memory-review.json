@@ -1,0 +1,96 @@
+{
+  "observedAt": "2026-10-25T04:45:03Z",
+  "status": "pass",
+  "scope": "Fixed-source offline installation, side-by-side upgrade, integrity doctor and guarded uninstall only.",
+  "commit": "87c3a3d212c36f3fc793ba57e3e0f111cf313ec2",
+  "tree": "efc2781a55a60d1977f9112f3bd313d552ccaec6",
+  "node": "24.19.0",
+  "npm": "11.9.0",
+  "reuse": {
+    "bases": [
+      "Node 24 process, filesystem and SHA-256 APIs",
+      "Git commit/tree/blob inspection",
+      "npm 11 exact offline lockfile installation"
+    ],
+    "newDependencies": false,
+    "reasonForLocalWrapper": "Compose the existing doctor and reviewed build without retaining unrelated CLI tooling or prior inventory allocations during compilation."
+  },
+  "changes": [
+    "Transformation tooling is imported only for transformation CLI commands.",
+    "Inventory hashes every byte using one reusable 64 KiB buffer; all original path, mode, link, receipt and metadata checks remain.",
+    "Upgrade calls the identical doctor in a short-lived bounded Node process. Fixed reviewed code and separate argument arrays pass the module URL and previous directory; no shell, interpolated caller code or inherited Node loader options.",
+    "Previous inspection exits before full offline npm ci and the unchanged npm run build. Compiler old-space cap remains 640 MiB; qualifier, public CLI and doctor child are separately capped at 256 MiB."
+  ],
+  "checks": {
+    "strictBuild": "pass on exact integrated commit",
+    "distribution": "8 of 8 cases passed on exact integrated commit",
+    "focusedRegressionTests": "4 of 4 distribution cases passed using lightweight ES-module transpilation after the isolated-doctor change; exact integrated strict build then passed, and final aggregate test status is recorded separately.",
+    "priorAggregate": "302 of 302 compiled tests and lint passed on tree 8fa176982b3ab49256542d64cad02ca672e89539 before the additional isolated-doctor regression."
+  },
+  "resourceObservations": {
+    "oldCliIdleRssKiB": 109932,
+    "commandScopedCliIdleRssKiB": 36172,
+    "upgradeParentBeforeIsolationRssKiB": 90392,
+    "upgradeParentAfterIsolationDiagnosticRssKiB": 44972,
+    "finalStrictBuildPeakSampledAggregateRssKiB": 875280,
+    "finalInstallerPeakSampledAggregateRssKiB": 965864,
+    "finalInstallerSeconds": 40.1
+  },
+  "retainedFailures": [
+    {
+      "commit": "19adba9",
+      "outcome": "Legacy build OS-killed; failed, no installation readiness claim."
+    },
+    {
+      "commit": "24cd5cd",
+      "outcome": "Legacy install/build/doctor passed; candidate build OS-killed. Both trees retained."
+    },
+    {
+      "tree": "8fa176982b3ab49256542d64cad02ca672e89539",
+      "diagnosticOldSpaceMiB": 512,
+      "exitCode": 134,
+      "outcome": "Explicit V8 heap exhaustion; lowering the compiler cap was rejected. No repeated heap-size cycle."
+    }
+  ],
+  "limitations": [
+    "RSS observations are sampled, not a guaranteed worst-case bound. A V8 heap cap is not a process or aggregate RSS limit.",
+    "No cgroup or OOM-killer telemetry was available, so no hard OS memory threshold is asserted.",
+    "The fresh qualification installs were removed only by the harness after full integrity verification; retained prior partial/rollback evidence was not removed.",
+    "The receipt remains editable local integrity evidence, not authenticated publisher provenance.",
+    "No registry publication, service activation, host/database modification or production qualification."
+  ],
+  "privateLogDigests": [
+    {
+      "name": "ae-87c3a3d-build.log",
+      "sha256": "0efe0b0994facf086433ff4b9420fcdced11175300c1f5b1b0aaea106865ca9a"
+    },
+    {
+      "name": "ae-87c3a3d-build-memory.jsonl",
+      "sha256": "6df264f2a5b8f87cc43d9c15bcd571555095e876550c8d7be90773e4712bf87e"
+    },
+    {
+      "name": "ae-87c3a3d-install.log",
+      "sha256": "115bd8d816387024cbbfd5dfbcac76a41d22f3be2feed9bb2b71a226cef5cad5"
+    },
+    {
+      "name": "ae-87c3a3d-install-memory.jsonl",
+      "sha256": "ff65ae99f94059294728f050a2756efe39dabb0b18351a6cafbb562038f34c3f"
+    },
+    {
+      "name": "ae-isolated-doctor-focused-esm.log",
+      "sha256": "eda2bc92dc4cfcbcd69a8a0dbbce4854019e5a5e2969d124d815d8951973a4d1"
+    },
+    {
+      "name": "ae-isolated-upgrade-parent-profile.log",
+      "sha256": "f475c322bd402d30322705d475438decc009a22090fc93adbf2f4d2e0dfcce25"
+    },
+    {
+      "name": "ae-candidate-512-build.log",
+      "sha256": "900461a3d5831567756009dc1b8338e04be7ebbb2fb54f5ad3ca829a1235f2fe"
+    }
+  ],
+  "nonQualifyingDiagnosticFailures": [
+    "A legacy build profile using another checkout's workspace dependency symlinks produced duplicate-source TypeScript errors. That shared-layout diagnostic was rejected and was not installation evidence.",
+    "The first lightweight focused-test transpilation emitted CommonJS into an ESM package and failed at module load. Selecting ESNext module output corrected the diagnostic runner; all four tests then passed."
+  ]
+}
