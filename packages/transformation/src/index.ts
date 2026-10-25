@@ -4,7 +4,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, unlinkSyn
 import { dirname, join, resolve } from 'node:path';
 import { installedRecipes, recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { requirePreparedBaseline } from './pre-apply.js';
-import { matchesProfileAssessment, verificationAuthorization } from './profiles.js';
+import { matchesProfileAssessment, verificationAuthorization, verificationExcludedActions, type VerificationProfile } from './profiles.js';
 import { assertMaterializableTrackedTree } from './source-materialization.js';
 import { ProjectAssessmentSchema, AdaptationPlanSchema, ApprovedChangeSetSchema, PatchArtifactSchema, type ProjectAssessment, type AdaptationPlan, type ApprovedChangeSet, type PatchArtifact, type ArchivedBaseline, type VerificationReport } from '@ae/contracts';
 
@@ -69,10 +69,10 @@ export function assessProject(sourceRoot: string): ProjectAssessment {
   if (!covered) unknowns.push('No installed patch recipe covers this project yet. This is a coverage limitation, not a conclusion that the software cannot be made agentic. A tailored business and identity assessment is required.');
   return ProjectAssessmentSchema.parse({ schemaVersion: '1', projectId: 'project-' + sha256(root).slice(0, 12), baseCommit: git(root, ['rev-parse', 'HEAD']), detectedStack, businessFlows: covered ? [covered.observedFlow] : [], identity: ['Unknown: requires host-specific authenticated session and authorization review.'], evidence, supportLevel: covered ? 'L2' : 'L0', unknowns, baseline: 'not-run' });
 }
-export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: 'react-helpdesk-synthetic-v1' | 'python-inventory-synthetic-v1' | 'java-spring-inventory-synthetic-v1' }): AdaptationPlan {
+export function proposePlan(assessment: ProjectAssessment, options?: { verificationProfile: VerificationProfile }): AdaptationPlan {
   ProjectAssessmentSchema.parse(assessment);
   const recipe = recipeForAssessment(assessment);
-  if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact trusted synthetic fixture evidence');
+  if (options && !matchesProfileAssessment(options.verificationProfile, assessment)) throw new Error('Verification profile requires exact reviewed source evidence');
   return AdaptationPlanSchema.parse({ ...(options ? { verificationAuthorization: verificationAuthorization(options.verificationProfile) } : {}), schemaVersion: '1', planId: 'adapt-' + digest(assessment).slice(0, 16), projectId: assessment.projectId, baseCommit: assessment.baseCommit, assessmentHash: digest(assessment), ...recipe.planDetails, recipes: [recipe.ref], allowedPaths: recipe.outputs });
 }
 /** Public recipe metadata is copied from the implementation, never separately versioned by a transport. */
@@ -82,7 +82,7 @@ export function installedRecipeDescriptors() {
 export function approvePlan(plan: AdaptationPlan, input: { approverId: string; authorizationRef: string; expiresAt?: string }): ApprovedChangeSet {
   AdaptationPlanSchema.parse(plan);
   if (!input.approverId.trim() || !input.authorizationRef.trim()) throw new Error('Explicit approver and authorization evidence are required');
-  return ApprovedChangeSetSchema.parse({ ...(plan.verificationAuthorization ? { verificationAuthorization: plan.verificationAuthorization } : {}), schemaVersion: '1', approvalId: randomUUID(), approverId: input.approverId, authorizationRef: input.authorizationRef, planHash: digest(plan), baseCommit: plan.baseCommit, allowedPaths: plan.allowedPaths, allowedCommands: [], networkAllowlist: [], maximumCostUsd: 0, excludedActions: ['deployment', 'publishing', 'dependency installation', ...(plan.verificationAuthorization ? ['customer source execution outside the exact synthetic fixture profile'] : ['source execution']), 'paid model calls'], approvedAt: new Date().toISOString(), expiresAt: input.expiresAt ?? new Date(Date.now() + 3600000).toISOString() });
+  return ApprovedChangeSetSchema.parse({ ...(plan.verificationAuthorization ? { verificationAuthorization: plan.verificationAuthorization } : {}), schemaVersion: '1', approvalId: randomUUID(), approverId: input.approverId, authorizationRef: input.authorizationRef, planHash: digest(plan), baseCommit: plan.baseCommit, allowedPaths: plan.allowedPaths, allowedCommands: [], networkAllowlist: [], maximumCostUsd: 0, excludedActions: verificationExcludedActions(plan.verificationAuthorization?.profile), approvedAt: new Date().toISOString(), expiresAt: input.expiresAt ?? new Date(Date.now() + 3600000).toISOString() });
 }
 export function previewPatch(root: string, plan: AdaptationPlan, assessment: ProjectAssessment): { path: string; before: string | null; after: string }[] {
   if (digest(assessment) !== plan.assessmentHash || digest(proposePlan(assessment, plan.verificationAuthorization ? { verificationProfile: plan.verificationAuthorization.profile } : undefined)) !== digest(plan)) throw new Error('Plan does not match the assessed recipe');

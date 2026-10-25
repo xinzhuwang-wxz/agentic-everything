@@ -117,7 +117,7 @@ test('official SDK selects Python recipe consistently and refuses mismatched hos
   const f = fixture('existing-python-inventory'), { client } = await connect(f.root);
   try {
     const description = data(await client.callTool({ name: 'ae_describe', arguments: {} }));
-    assert.deepEqual(description.recipes.map((recipe: { id: string }) => recipe.id).sort(), ['java-spring-inventory', 'python-inventory', 'react-helpdesk']);
+    assert.deepEqual(description.recipes.map((recipe: { id: string }) => recipe.id).sort(), ['java-spring-inventory', 'kanboard-upstream', 'linkding-django', 'python-inventory', 'react-helpdesk', 'reveal-local']);
     const planned = data(await client.callTool({ name: 'ae_plan', arguments: { recipeId: 'python-inventory' } }));
     const advertised = description.recipes.find((recipe: { id: string }) => recipe.id === 'python-inventory');
     assert.deepEqual(planned.plan.recipes, [{ id: advertised.id, version: advertised.version }]);

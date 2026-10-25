@@ -20,7 +20,16 @@ const ReactVerificationAuthorizationSchema = z.strictObject({
   isolation: z.literal('exact-fixture-temporary-worktree'), network: z.literal('loopback-only-no-external'),
   maximumCostUsd: z.literal(0), maximumElapsedMs: z.literal(300000), maximumHeapMiB: z.literal(640),
 });
-export const VerificationAuthorizationSchema = z.discriminatedUnion('profile', [ReactVerificationAuthorizationSchema, ReactVerificationAuthorizationSchema.extend({ profile: z.literal('python-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) }), ReactVerificationAuthorizationSchema.extend({ profile: z.literal('java-spring-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) })]);
+const PinnedUpstreamVerificationAuthorizationSchema = ReactVerificationAuthorizationSchema.extend({
+  isolation: z.literal('exact-pinned-upstream-temporary-worktree'),
+});
+export const VerificationAuthorizationSchema = z.discriminatedUnion('profile', [
+  ReactVerificationAuthorizationSchema,
+  ReactVerificationAuthorizationSchema.extend({ profile: z.literal('python-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) }),
+  ReactVerificationAuthorizationSchema.extend({ profile: z.literal('java-spring-inventory-synthetic-v1'), actions: z.tuple([z.literal('baseline-differential'), z.literal('host-build'), z.literal('runtime-rpc'), z.literal('cli')]) }),
+  PinnedUpstreamVerificationAuthorizationSchema.extend({ profile: z.literal('reveal-upstream-v1'), sourceCommit: z.literal('75dff6f515d2d08df0c32cf2b7328b89425c6f25') }),
+  PinnedUpstreamVerificationAuthorizationSchema.extend({ profile: z.literal('linkding-upstream-v1'), sourceCommit: z.literal('24b5ad6cc9bde497b5d1b1e86aed5a2fb7d25c2f') }),
+]);
 export type VerificationAuthorization = z.infer<typeof VerificationAuthorizationSchema>;
 export const AdaptationPlanSchema = z.strictObject({
   schemaVersion: SchemaVersion, planId: z.string().min(1), projectId: z.string().min(1), baseCommit: z.string().min(1),

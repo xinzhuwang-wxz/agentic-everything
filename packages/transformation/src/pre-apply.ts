@@ -4,7 +4,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AdaptationPlanSchema, ApprovedChangeSetSchema, ProjectAssessmentSchema, ArchivedBaselineSchema, PreApplyBaselineSchema, type AdaptationPlan, type ApprovedChangeSet, type ArchivedBaseline, type ProjectAssessment } from '@ae/contracts';
 import { applyApprovedPlan, canonical, digest, adaptationCodeHash, expectedBaselineCodeHash, previewPatch, type AppliedTransformation } from './index.js';
-import { reviewedProfile, type VerificationProfile } from './profiles.js';
+import { reviewedProfile, verificationExcludedActions, type VerificationProfile } from './profiles.js';
 
 const prepared = new WeakSet<object>();
 const byteHash = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
@@ -42,7 +42,7 @@ export async function validateArchivedBaseline(value: unknown, assessment: Proje
 export async function applyApprovedPlanWithBaseline(input: {sourceRoot:string;destination:string;assessment:ProjectAssessment;plan:AdaptationPlan;approval:ApprovedChangeSet;baselinePath:string}): Promise<AppliedTransformation> {
   const assessment=ProjectAssessmentSchema.parse(input.assessment),plan=AdaptationPlanSchema.parse(input.plan),approval=ApprovedChangeSetSchema.parse(input.approval);
   if(!plan.verificationAuthorization||approval.planHash!==digest(plan)||approval.baseCommit!==plan.baseCommit||Date.parse(approval.expiresAt)<=Date.now()||Date.parse(approval.approvedAt)>Date.now())throw Error('Baseline capture requires current explicit approved profile');
-  if(canonical(approval.verificationAuthorization)!==canonical(plan.verificationAuthorization)||canonical(approval.allowedPaths)!==canonical(plan.allowedPaths)||approval.allowedCommands.length||approval.networkAllowlist.length||approval.maximumCostUsd!==0||canonical(approval.excludedActions)!==canonical(['deployment','publishing','dependency installation','customer source execution outside the exact synthetic fixture profile','paid model calls']))throw Error('Baseline capture approval scope mismatch');
+  if(canonical(approval.verificationAuthorization)!==canonical(plan.verificationAuthorization)||canonical(approval.allowedPaths)!==canonical(plan.allowedPaths)||approval.allowedCommands.length||approval.networkAllowlist.length||approval.maximumCostUsd!==0||canonical(approval.excludedActions)!==canonical(verificationExcludedActions(plan.verificationAuthorization.profile)))throw Error('Baseline capture approval scope mismatch');
   if(assessment.projectId!=='project-'+byteHash(Buffer.from(realpathSync(input.sourceRoot))).slice(0,12))throw Error('Assessment source root mismatch');
   previewPatch(input.sourceRoot,plan,assessment);
   if(adaptationCodeHash(input.sourceRoot,assessment,plan)!==expectedBaselineCodeHash(assessment,plan))throw Error('Source drift before baseline capture');

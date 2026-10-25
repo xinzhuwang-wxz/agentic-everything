@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { AdaptationPlanSchema, ArchivedBaselineSchema, ApprovedChangeSetSchema, DeliveryManifestSchema, PatchArtifactSchema, ProjectAssessmentSchema, Sha256, VerificationReportSchema, type AdaptationPlan, type ApprovedChangeSet, type DeliveryManifest, type DeliveryValidation, type ProjectAssessment, type VerificationReport } from '@ae/contracts';
+import { AdaptationPlanSchema, ArchivedBaselineSchema, ApprovedChangeSetSchema, DeliveryManifestSchema, maximumDeliveryArtifacts, PatchArtifactSchema, ProjectAssessmentSchema, Sha256, VerificationReportSchema, type AdaptationPlan, type ApprovedChangeSet, type DeliveryManifest, type DeliveryValidation, type ProjectAssessment, type VerificationReport } from '@ae/contracts';
 import { adaptationCodeHash, canonical, digest, expectedBaselineCodeHash, previewPatch, proposePlan, sha256, verifyAdaptation, type AppliedTransformation } from './index.js';
 import { recipeForAssessment, recipeForRef, syntaxCheck, executionGates } from './recipes/index.js';
 import { validateArchivedBaseline } from './pre-apply.js';
@@ -24,7 +24,7 @@ function fixtureChecks(report: unknown, gates: string[]): VerificationReport['ch
   return checks;
 }
 function bindEvidenceRefs(checks: VerificationReport['checks'], files: Map<string, Buffer>): void {
-  const required: Record<string, string[]> = { 'host-typecheck': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-compilation': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-business-tests': ['evidence/baseline.json'], 'black-box-business-differential': ['evidence/differential.json'], 'authenticated-runtime': ['evidence/runtime.json'], 'browser-acceptance': ['evidence/browser.json'], 'cli-acceptance': ['evidence/cli.json'] };
+  const required: Record<string, string[]> = { 'host-typecheck': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-syntax-check': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-compilation': ['evidence/original-build.json', 'evidence/candidate-build.json'], 'host-business-tests': ['evidence/baseline.json'], 'black-box-business-differential': ['evidence/differential.json'], 'authenticated-runtime': ['evidence/runtime.json'], 'local-authority-runtime': ['evidence/runtime.json'], 'browser-acceptance': ['evidence/browser.json'], 'cli-acceptance': ['evidence/cli.json'] };
   for (const check of checks) {
     if (check.status === 'pass' && required[check.name]) exact(check.evidence.map(ref => ref.path).sort(), [...required[check.name]!].sort(), 'Missing or unexpected fixture evidence references');
     for (const ref of check.evidence) {
@@ -167,7 +167,7 @@ export async function checkDelivery(directory: string): Promise<DeliveryValidati
     function walk(relative: string): void {
       for (const name of readdirSync(relative ? file(root, relative) : root)) {
         const path = relative ? relative + '/' + name : name; const absolute = file(root, path); const stat = lstatSync(absolute);
-        if (actual.length > 32 || path.split('/').length > 8) throw new Error('Unbounded package');
+        if (actual.length > maximumDeliveryArtifacts(manifest.verificationScope) || path.split('/').length > 8) throw new Error('Unbounded package');
         if (stat.isDirectory()) { if (![...refs.keys()].some(p => p.startsWith(path + '/'))) throw new Error('Unexpected artifact directory'); walk(path); } else { if (!stat.isFile()) throw new Error('Non-regular artifact'); actual.push(path); }
       }
     }
