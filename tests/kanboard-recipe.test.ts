@@ -21,3 +21,12 @@ test('Kanboard transport retains shared AE runtime and native host enforcement',
   assert.match(controller, /hash_equals/); assert.match(controller, /state='unknown'/);
   assert.match(runtime, /RUN_TARGET_DENIED/); assert.match(runtime, /new KanboardHost\(a.taskId\)/); assert.match(runtime, /samePrincipal/); assert.match(runtime, /timingSafeEqual/);
 });
+test('Kanboard rechecks target eligibility inside the SQLite write lock before mutation', () => {
+  const controller = KANBOARD_FILES['plugins/AgenticEverything/Controller/AeController.php']!;
+  const transaction = controller.slice(controller.indexOf('$pdo->beginTransaction();'), controller.indexOf('if (!$ok)'));
+  const lock = transaction.indexOf("UPDATE ae_task_operations SET state='executing'");
+  const eligibility = transaction.indexOf('getAssignableUsersList');
+  const mutation = transaction.indexOf('$this->taskModificationModel->update');
+  assert.ok(lock >= 0 && eligibility > lock && mutation > eligibility);
+  assert.match(transaction.slice(lock, mutation), /throw new AccessForbiddenException/);
+});
