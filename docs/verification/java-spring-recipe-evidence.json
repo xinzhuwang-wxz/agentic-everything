@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "status": "pass",
+  "profile": "java-spring-inventory-synthetic-v1",
+  "lifecycleCommands": [
+    {
+      "command": "assess",
+      "exitCode": 0
+    },
+    {
+      "command": "plan",
+      "exitCode": 0
+    },
+    {
+      "command": "preview",
+      "exitCode": 0
+    },
+    {
+      "command": "approve",
+      "exitCode": 0
+    },
+    {
+      "command": "apply",
+      "exitCode": 0
+    },
+    {
+      "command": "verify",
+      "exitCode": 2
+    },
+    {
+      "command": "deliver",
+      "exitCode": 0
+    },
+    {
+      "command": "delivery-check",
+      "exitCode": 0
+    },
+    {
+      "command": "revert",
+      "exitCode": 0
+    }
+  ],
+  "baselineBeforeApply": true,
+  "originalSourcesUnchanged": true,
+  "businessCases": 14,
+  "differentialPassed": true,
+  "tamperCasesRejected": 8,
+  "originalCliPreserved": true,
+  "recipeAdapterRemovedOnRevert": true,
+  "runtime": {
+    "status": "pass",
+    "runtime": "official-agents-sdk-memory",
+    "modelMode": "simulated",
+    "assertions": [
+      "real-spring-managed-bean",
+      "shared-official-agents-runtime",
+      "read-before-proposal",
+      "no-write-before-approval",
+      "one-approved-reservation",
+      "duplicate-approval-denied",
+      "exact-host-replay",
+      "read-only-catalog",
+      "cross-tenant-denied",
+      "token-identity-mismatch-denied",
+      "strict-arguments-denied",
+      "current-host-revocation-zero-write",
+      "actual-lost-http-response-unknown",
+      "receipt-reconciliation-no-redispatch",
+      "owned-host-stopped"
+    ],
+    "finalStock": {
+      "sku": "desk-01",
+      "tenantId": "tenant-a",
+      "available": 7,
+      "version": 3
+    },
+    "mutationCount": 2,
+    "spring": "6.2.19",
+    "managedInventory": true
+  },
+  "checks": [
+    {
+      "name": "patch:agentic/AeHost.java",
+      "status": "pass"
+    },
+    {
+      "name": "syntax:agentic/AeHost.java",
+      "status": "pass"
+    },
+    {
+      "name": "original-business-source",
+      "status": "pass"
+    },
+    {
+      "name": "host-compilation",
+      "status": "pass"
+    },
+    {
+      "name": "host-business-tests",
+      "status": "pass"
+    },
+    {
+      "name": "black-box-business-differential",
+      "status": "pass"
+    },
+    {
+      "name": "authenticated-runtime",
+      "status": "pass"
+    },
+    {
+      "name": "cli-acceptance",
+      "status": "pass"
+    },
+    {
+      "name": "fixture-process-completion",
+      "status": "pass"
+    },
+    {
+      "name": "delivery-authorization-valid",
+      "status": "pass"
+    }
+  ],
+  "elapsedMs": 43600,
+  "excluded": [
+    "arbitrary Java source transformation",
+    "Spring Boot/MVC",
+    "production IAM/TLS",
+    "Java PostgreSQL/DBOS execution",
+    "real provider inference",
+    "power-loss safety"
+  ],
+  "observedAt": "2026-10-25T05:03:12.556Z",
+  "implementationCommit": "d2db94b5352deb51ca48bc55d7973e88bc4354f8",
+  "baselineHash": "367be3411470d3aa94a902a0489807bbb02db2f47d7914c51772c61c924a2269",
+  "archivedBaselineSha256": "901938c1d646e3b0cb5132610d5f3f6bf8d7a5dd5f5cdd0f76b578db2bb64163",
+  "deliveryManifestSha256": "738085ad062f59e9880214c571d75658812cf7a08374e1bc940023658cc95165",
+  "baselineCapturedAt": "2026-10-25T05:00:48.706Z",
+  "candidateSourceCommit": "bc7379902f3e32120c0b167688ad9a57e06f8cd3",
+  "tools": {
+    "node": "v24.19.0",
+    "java": "OpenJDK 21.0.12.1",
+    "spring": "6.2.19",
+    "dependencyLockSha256": "98e5d670207fdd2c5846afa693a1d7bec5ad96f6e96f236660ea48b1a2b1a60b",
+    "verifiedJars": 11
+  },
+  "commands": [
+    {
+      "command": "NODE_OPTIONS=--max-old-space-size=640 npm run build",
+      "status": "pass"
+    },
+    {
+      "command": "node --test --test-concurrency=1 dist/packages/transformation/test/java.test.js dist/packages/mcp-server/test/protocol.test.js",
+      "status": "pass",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node qualification/java-spring-recipe/qualify.mjs",
+      "status": "pass",
+      "elapsedMs": 43600
+    },
+    {
+      "command": "node scripts/lint.mjs && git diff --check",
+      "status": "pass"
+    }
+  ],
+  "priorFailedAttempt": {
+    "stage": "pre-apply-original-compilation",
+    "reason": "Installed Java21 compiler module has no ct.sym release table, so --release21 was rejected before patching.",
+    "correction": "Require installed Java21; compile with -source21 -target21 and -proc:none using same verified jars.",
+    "outcome": "Full lifecycle rerun passed; no dependency installed."
+  },
+  "fullRepositorySuite": "not-run in this focused window; root integration owns aggregate check"
+}
