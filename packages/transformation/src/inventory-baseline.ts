@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { captureBaseline, verifyArchive } from '@ae/verification';
+import { qualifiedPython } from '@ae/capabilities';
 import { ObservationSchema, type BaselineArchive, type Observation, type ProjectAssessment, type Provenance } from '@ae/contracts';
 import { inventoryRecipe } from './recipes/python-inventory.js';
 
@@ -66,8 +67,10 @@ export function assertTrustedInventoryDelivery(input: { sourceRoot: string; cand
   return { sourceFiles, candidateFiles, sourceTreeHash: treeHash(sourceFiles), candidateTreeHash: treeHash(candidateFiles) };
 }
 export function python(script: string, args: string[], input?: string, deadlineAt = Number.POSITIVE_INFINITY): string {
+  if (deadlineAt <= Date.now()) throw Error('Inventory verification total budget exhausted');
+  const interpreter = qualifiedPython(undefined, deadlineAt);
   const remaining = deadlineAt - Date.now(); if (remaining <= 0) throw Error('Inventory verification total budget exhausted');
-  const child = spawnSync('/usr/bin/python3', ['-I', '-B', '-c', 'import os; os.setsid()\n' + script, ...args], { input, encoding: 'utf8', timeout: Math.min(5000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8', PYTHONDONTWRITEBYTECODE: '1' } });
+  const child = spawnSync(interpreter, ['-I', '-B', '-c', 'import os; os.setsid()\n' + script, ...args], { input, encoding: 'utf8', timeout: Math.min(5000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8', PYTHONDONTWRITEBYTECODE: '1' } });
   let remainingGroup = false; if (child.pid) { try { process.kill(-child.pid, 0); remainingGroup = true; } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; } }
   if (remainingGroup) { try { process.kill(-child.pid, 'SIGKILL'); } catch {} }
   if (child.error || child.status !== 0 || child.signal !== null || Date.now() > deadlineAt || remainingGroup) throw Error('Inventory Python process did not finish cleanly: ' + (child.error?.message ?? child.stderr ?? child.signal));

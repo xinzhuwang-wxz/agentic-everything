@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { qualifiedPython } from './python-runtime.js';
 import { lstatSync, realpathSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -32,11 +33,12 @@ export class PythonInventoryHost implements TrustedCapabilityHost {
   private writes = 0;
   private readonly deadlineAt: number;
   constructor(options: { adapterPath: string; databasePath: string; interpreter?: string; deadlineAt?: number; currentPrincipal?: (p: Principal) => Principal }) {
-    this.adapterPath = resolve(options.adapterPath); this.databasePath = resolve(options.databasePath); this.interpreter = options.interpreter ?? '/usr/bin/python3';
+    this.adapterPath = resolve(options.adapterPath); this.databasePath = resolve(options.databasePath);
     this.deadlineAt = Math.min(Date.now() + 240_000, options.deadlineAt ?? Number.POSITIVE_INFINITY);
     if (!Number.isFinite(this.deadlineAt) || this.deadlineAt <= Date.now()) throw new PolicyError('HOST_EXECUTION_BUDGET_EXPIRED');
     if (!isAbsolute(options.adapterPath) || !isAbsolute(options.databasePath) || realpathSync(this.adapterPath) !== this.adapterPath || !lstatSync(this.adapterPath).isFile() || realpathSync(dirname(this.databasePath)) !== dirname(this.databasePath)) throw new PolicyError('HOST_PATH_DENIED');
     try { const stat = lstatSync(this.databasePath); if (!stat.isFile() || stat.isSymbolicLink()) throw new PolicyError('HOST_PATH_DENIED'); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    this.interpreter = qualifiedPython(options.interpreter, this.deadlineAt);
     this.resolvePrincipal = options.currentPrincipal ?? (p => p);
   }
   private readonly resolvePrincipal: (p: Principal) => Principal;

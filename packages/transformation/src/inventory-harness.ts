@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { qualifiedPython } from '@ae/capabilities';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -12,7 +13,7 @@ const files = { report: 'report.json', baseline: 'baseline.json', differential: 
 export const inventoryGates = ['host-compilation', 'host-business-tests', 'black-box-business-differential', 'authenticated-runtime', 'cli-acceptance', 'fixture-process-completion'];
 const canonical = (value: unknown): string => value && typeof value === 'object' ? Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : '{' + Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => JSON.stringify(key) + ':' + canonical(item)).join(',') + '}' : JSON.stringify(value);
 function exact(left: unknown, right: unknown, message: string) { if (canonical(left) !== canonical(right)) throw Error(message); }
-const toolFiles = ['packages/transformation/dist/inventory-baseline.js', 'packages/transformation/dist/inventory-harness.js', 'packages/transformation/dist/recipes/python-inventory.js', 'packages/runtime-core/dist/inventory-qualification.js', 'packages/runtime-core/dist/index.js', 'packages/capabilities/dist/index.js', 'packages/capabilities/dist/host-boundary.js', 'packages/capabilities/dist/python-inventory.js', 'packages/policy/dist/index.js', 'packages/runtime-adapters/dist/agents-tools.js', 'packages/runtime-adapters/dist/agents-model.js', 'packages/control-plane/dist/index.js', 'packages/contracts/dist/runtime.js', 'packages/contracts/dist/control.js', 'packages/contracts/dist/transformation.js', 'packages/contracts/dist/verification.js', 'packages/contracts/dist/hash.js', 'packages/verification/dist/index.js'];
+const toolFiles = ['packages/transformation/dist/inventory-baseline.js', 'packages/transformation/dist/inventory-harness.js', 'packages/transformation/dist/recipes/python-inventory.js', 'packages/runtime-core/dist/inventory-qualification.js', 'packages/runtime-core/dist/index.js', 'packages/capabilities/dist/index.js', 'packages/capabilities/dist/host-boundary.js', 'packages/capabilities/dist/python-inventory.js', 'packages/capabilities/dist/python-runtime.js', 'packages/policy/dist/index.js', 'packages/runtime-adapters/dist/agents-tools.js', 'packages/runtime-adapters/dist/agents-model.js', 'packages/control-plane/dist/index.js', 'packages/contracts/dist/runtime.js', 'packages/contracts/dist/control.js', 'packages/contracts/dist/transformation.js', 'packages/contracts/dist/verification.js', 'packages/contracts/dist/hash.js', 'packages/verification/dist/index.js'];
 function toolchain() { return { lockfileHash: hash(readFileSync(join(aeRoot(), 'package-lock.json'))), toolFiles: Object.fromEntries(toolFiles.map(path => [path, hash(readFileSync(join(aeRoot(), path)))])) }; }
 function build(root: string, sourceTreeHash: string, deadlineAt: number) {
   const paths = [...inventoryRecipe.inputs.filter(path => path.endsWith('.py')), ...(existsSync(join(root, inventoryRecipe.outputs[0]!)) ? inventoryRecipe.outputs : [])];
@@ -22,9 +23,10 @@ function build(root: string, sourceTreeHash: string, deadlineAt: number) {
 }
 const alice = { tenantId: 'tenant-a', applicationId: 'inventory-fixture', subjectId: 'alice', roles: ['operator'], scopes: ['inventory:read', 'inventory:reserve'] };
 function cli(adapter: string, database: string, deadlineAt: number) {
+  const interpreter = qualifiedPython(undefined, deadlineAt);
   const invoke = (request: unknown) => {
     const remaining = deadlineAt - Date.now(); if (remaining <= 0) throw Error('Inventory CLI total budget exhausted');
-    const child = spawnSync('/usr/bin/python3', ['-I', '-B', adapter, '--database', database], { input: JSON.stringify(request), encoding: 'utf8', timeout: Math.min(5000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8' } });
+    const child = spawnSync(interpreter, ['-I', '-B', adapter, '--database', database], { input: JSON.stringify(request), encoding: 'utf8', timeout: Math.min(5000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8' } });
     if (child.error || child.status !== 0 || child.signal || Date.now() > deadlineAt) throw Error('Inventory CLI process failure');
     return JSON.parse(child.stdout) as Record<string, unknown>;
   };

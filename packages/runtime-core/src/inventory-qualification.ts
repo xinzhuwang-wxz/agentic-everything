@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import type { JsonObject, ModelProvider, ModelRequest, ModelResponse, Principal } from '@ae/contracts';
-import { PythonInventoryHost, ToolBroker } from '@ae/capabilities';
+import { PythonInventoryHost, ToolBroker, qualifiedPython } from '@ae/capabilities';
 import { GovernedRuntime } from './index.js';
 
 export const inventoryRuntimeAssertions = [
@@ -31,8 +31,9 @@ function simulation(orderId: string, quantity: number, expectedVersion: number) 
 function rights(adapterPath: string, databasePath: string, roles: string[], scopes: string[], deadlineAt: number) {
   // Owned synthetic host administration only. Never exported as an agent tool.
   const script = 'import json,sys; sys.path.insert(0,sys.argv[1]); from inventory import Inventory; Inventory(sys.argv[2]).set_principal_rights(json.loads(sys.argv[3]),json.loads(sys.argv[4]),json.loads(sys.argv[5]))';
+  const interpreter = qualifiedPython(undefined, deadlineAt);
   const remaining = deadlineAt - Date.now(); assert.ok(remaining > 0, 'Inventory qualification budget expired');
-  const result = spawnSync('/usr/bin/python3', ['-I', '-B', '-c', script, resolve(dirname(adapterPath), '..'), databasePath, JSON.stringify(alice), JSON.stringify(roles), JSON.stringify(scopes)], { encoding: 'utf8', timeout: Math.min(5_000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8' } });
+  const result = spawnSync(interpreter, ['-I', '-B', '-c', script, resolve(dirname(adapterPath), '..'), databasePath, JSON.stringify(alice), JSON.stringify(roles), JSON.stringify(scopes)], { encoding: 'utf8', timeout: Math.min(5_000, remaining), killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, env: { PATH: '/usr/bin:/bin', LANG: 'C.UTF-8' } });
   assert.equal(result.status, 0, result.stderr); assert.equal(result.signal, null);
 }
 /** Executes only the caller's already verified owned synthetic fixture. Not an arbitrary-source sandbox. */

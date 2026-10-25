@@ -79,11 +79,12 @@ function changedLines(host, candidate, sourceFiles, arm) {
   return { files, filesChanged: files.length, linesAdded: files.reduce((n, f) => n + f.added, 0), linesDeleted: files.reduce((n, f) => n + f.deleted, 0) };
 }
 try {
+  const { qualifiedPython } = await import(pathToFileURL(join(root, 'packages/capabilities/dist/python-runtime.js')).href);
   report.environment = {
     sourceCommit: git('provenance', root, 'rev-parse', 'HEAD').trim(),
     node: process.version, platform: process.platform, architecture: process.arch,
     git: command('provenance', root, 'git', ['--version']).trim(),
-    python: command('provenance', root, '/usr/bin/python3', ['--version']).trim(),
+    python: command('provenance', root, qualifiedPython(), ['--version']).trim(),
     lockfileSha256: hash(readFileSync(join(root, 'package-lock.json'))),
     scriptSha256: hash(readFileSync(fileURLToPath(import.meta.url))),
     sharedMachine: true, processHeapMiB: 640, measurementOutput: out,
