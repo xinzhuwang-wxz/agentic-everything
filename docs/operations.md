@@ -4,7 +4,7 @@ This runbook covers the local source distribution and opt-in PostgreSQL/DBOS ser
 
 ## Fixed-source installation and diagnosis
 
-Use Node 24, npm 11, Git and a reviewed clean AE checkout. A trusted handoff must provide the exact complete commit and Git tree hashes. Git hashes and local receipts verify integrity, not the identity of a publisher; there is no signed published package or registry release yet.
+Use Node 24, npm 11, Git and a reviewed clean AE checkout. A trusted handoff must provide the exact complete commit and Git tree hashes. Git object hashes bind the supplied source pin, but a local receipt is editable bookkeeping, not a signature or independent authentication of a publisher. There is no signed published package or registry release yet.
 
 1. Review the fixed checkout and lockfile. Provision an operator-owned npm cache from the exact lockfile using `npm ci --ignore-scripts --cache /approved/cache` against the official npm registry in a separate disposable copy. This is the only network download step. No lifecycle scripts run.
 2. Build the reviewed AE checkout once: `npm run build`.
@@ -17,9 +17,9 @@ node packages/cli/dist/index.js install \
 node packages/cli/dist/index.js doctor --installation /approved/ae-install-0.1.0
 ```
 
-Install exports only regular committed blobs; dirty sources, floating pins, symlink path components, existing destinations and host-repository destinations are refused. It runs exact offline `npm ci --ignore-scripts` and the reviewed project's build. A cache miss fails rather than silently using the network. Builds are serialized and bounded; a killed build is failed, not a completed installation. A failed owned directory is retained for diagnosis, never automatically erased. Use a disk-backed destination/cache when memory-backed temporary storage is constrained.
+Install applies the transformation preflight policy before Git status: hooks and fsmonitor are disabled, optional index writes are suppressed, and configured clean/process filters are refused without executing them. Install exports only regular committed blobs; dirty sources, floating pins, symlink path components, existing destinations and host-repository destinations are refused. It runs exact offline `npm ci --ignore-scripts` and the reviewed project's build. A cache miss fails rather than silently using the network. Builds are serialized and bounded; a killed build is failed, not a completed installation. A failed owned directory is retained for diagnosis, never automatically erased. Use a disk-backed destination/cache when memory-backed temporary storage is constrained.
 
-A successful receipt covers source, lockfile, built output and all installed dependency files/links. Doctor reports the exact version, source and schema compatibility, integrity and Node compatibility. Do not edit an installation in place. Doctor's `ready` is installation integrity, not production or whole-product acceptance. Source-only development checkouts are not managed installations.
+A successful receipt records source pins, lockfile, built output and all installed dependency files/links. Doctor checks its strict entry shape, canonical paths, modes and hashes, and cross-checks package version, lock hash and schema metadata against installed files. Doctor reports the recorded source pins, observed version/schema, local drift and Node compatibility. The receipt is an accidental-drift guard only: anyone able to rewrite both files and receipt can make them consistent. It does not independently validate recorded commit/tree/source-hash claims or authenticate approval or provenance. Do not edit an installation in place. Doctor's `ready` is installation integrity, not production or whole-product acceptance. Source-only development checkouts are not managed installations.
 
 ## Upgrade, compatible rollback and uninstall
 
@@ -37,7 +37,7 @@ node packages/cli/dist/index.js uninstall \
   --installation /approved/ae-install-next --commit INSTALLED_FULL_COMMIT_HASH
 ```
 
-Uninstall only removes the exact managed copy when its complete file/link inventory is unchanged. Changed or added user files, a wrong commit or a symlink path fail closed. Export needed operator evidence first; if you added files to the install, preserve them elsewhere and review the difference. Uninstall does not remove original hosts, AE/DBOS databases, host receipts, external credentials or deployment services. Disabling an embedded assistant requires the host's separately reviewed recipe revert; that does not undo business writes.
+Uninstall only removes the local managed copy when its complete file/link inventory and metadata agree with the editable receipt. This guard detects accidental local changes, not an attacker rewriting the installation and receipt together. Changed or added user files, a wrong commit or a symlink path fail closed. Export needed operator evidence first; if you added files to the install, preserve them elsewhere and review the difference. Uninstall does not remove original hosts, AE/DBOS databases, host receipts, external credentials or deployment services. Disabling an embedded assistant requires the host's separately reviewed recipe revert; that does not undo business writes.
 
 ## One AE schema owner
 

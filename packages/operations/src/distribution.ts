@@ -16,7 +16,9 @@ function safePath(value:string,mustExist=false):string{
   return path;
 }
 function within(root:string,path:string):boolean{const part=relative(root,path);return part!==''&&!part.startsWith(`..${sep}`)&&part!=='..'&&!isAbsolute(part);}
-function git(source:string,args:string[]):string{return execFileSync('git',['-C',source,...args],{encoding:'utf8',maxBuffer:32*1024*1024}).trim();}
+// Reuse the transformation preflight policy: read Git objects/configuration without hooks or fsmonitor.
+function safeGit(source:string,args:string[]):string[]{return ['--no-optional-locks','-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false','-C',source,...args];}
+function git(source:string,args:string[]):string{return execFileSync('git',safeGit(source,args),{encoding:'utf8',timeout:15000,maxBuffer:32*1024*1024}).trim();}
 function inventory(root:string,path=root):Entry[]{
   const result:Entry[]=[];
   for(const name of readdirSync(path).sort()){
@@ -29,48 +31,71 @@ function inventory(root:string,path=root):Entry[]{
   }
   return result;
 }
+function record(value:unknown):value is Record<string,unknown>{return value!==null&&typeof value==='object'&&!Array.isArray(value);}
+function keys(value:Record<string,unknown>,expected:string[]):boolean{return Object.keys(value).sort().join(',')===[...expected].sort().join(',');}
+function installedSchema(root:string):number{
+  const source=join(root,'packages/operations/src/migrations.ts');
+  const schema=existsSync(source)?Number(/export const AE_SCHEMA_VERSION = (\d+);/.exec(readFileSync(source,'utf8'))?.[1]):0;
+  if(!Number.isSafeInteger(schema)||schema<0)throw new Error('INSTALLED_SCHEMA_VERSION_UNRECOGNIZED');
+  return schema;
+}
 function load(root:string):Receipt{
-  const path=join(root,receiptName);if(lstatSync(path).isSymbolicLink())throw new Error('INSTALL_RECEIPT_SYMLINK');
-  const r=JSON.parse(readFileSync(path,'utf8')) as Receipt;
-  if(r.format!=='ae-source-install-v1'||!Array.isArray(r.files)||!/^([a-f0-9]{40}|[a-f0-9]{64})$/.test(r.commit)||!r.files.every(e=>typeof e.path==='string'&&within(root,resolve(root,e.path))))throw new Error('INVALID_INSTALL_RECEIPT');
-  return r;
+  const path=join(root,receiptName),stat=lstatSync(path);
+  if(stat.isSymbolicLink())throw new Error('INSTALL_RECEIPT_SYMLINK');
+  if(!stat.isFile()||stat.size>32*1024*1024)throw new Error('INVALID_INSTALL_RECEIPT');
+  let r:unknown;try{r=JSON.parse(readFileSync(path,'utf8'));}catch{throw new Error('INVALID_INSTALL_RECEIPT');}
+  const sha256=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
+  const oid=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v);
+  const version=(v:unknown)=>typeof v==='string'&&/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(v);
+  if(!record(r)||!keys(r,['format','version','commit','tree','sourceHash','lockHash','schema','node','npm','files'])||r.format!=='ae-source-install-v1'||!version(r.version)||!oid(r.commit)||!oid(r.tree)||!sha256(r.sourceHash)||!sha256(r.lockHash)||!Number.isSafeInteger(r.schema)||Number(r.schema)<0||!version(r.node)||!String(r.node).startsWith('24.')||!version(r.npm)||!String(r.npm).startsWith('11.')||!Array.isArray(r.files)||!r.files.length||r.files.length>100000)throw new Error('INVALID_INSTALL_RECEIPT');
+  const seen=new Set<string>();
+  for(const e of r.files){
+    if(!record(e)||typeof e.path!=='string'||!e.path||e.path.includes('\\')||e.path.includes('\0')||e.path===receiptName||!within(root,resolve(root,e.path))||relative(root,resolve(root,e.path))!==e.path||seen.has(e.path)||!Number.isInteger(e.mode)||Number(e.mode)<0||Number(e.mode)>0o777)throw new Error('INVALID_INSTALL_RECEIPT');
+    seen.add(e.path);
+    const valid=e.type==='file'?keys(e,['path','type','mode','hash'])&&sha256(e.hash):e.type==='directory'?keys(e,['path','type','mode']):e.type==='link'?keys(e,['path','type','mode','target'])&&typeof e.target==='string'&&e.target.length>0&&!e.target.includes('\0')&&within(root,resolve(dirname(join(root,e.path)),e.target)):false;
+    if(!valid)throw new Error('INVALID_INSTALL_RECEIPT');
+  }
+  return r as unknown as Receipt;
 }
 export function doctorInstallation(directory:string){
   const root=safePath(directory,true),receipt=load(root),actual=inventory(root);
-  const unchanged=JSON.stringify(actual)===JSON.stringify(receipt.files);
   const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
-  return {status:unchanged?'ready':'modified',version:pkg.version,commit:receipt.commit,tree:receipt.tree,sourceHash:receipt.sourceHash,lockHash:receipt.lockHash,node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])===24,schema:receipt.schema,inspectorCompatibility:AE_COMPATIBILITY,integrity:unchanged,productionQualified:false};
+  const schema=installedSchema(root);
+  const metadataConsistent=receipt.version===pkg.version&&receipt.lockHash===hash(readFileSync(join(root,'package-lock.json')))&&receipt.schema===schema;
+  const unchanged=metadataConsistent&&JSON.stringify(actual)===JSON.stringify(receipt.files);
+  // The receipt is editable local state, not a signature or independent publisher authentication.
+  return {status:unchanged?'ready':'modified',version:pkg.version,commit:receipt.commit,tree:receipt.tree,sourceHash:receipt.sourceHash,lockHash:receipt.lockHash,node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])===24,schema,inspectorCompatibility:AE_COMPATIBILITY,metadataConsistent,integrity:unchanged,productionQualified:false};
 }
 /** Explicit local source installation. No floating branch, network, global install, host patch or service start. */
 export function installFixedSource(input:{source:string;commit:string;tree:string;destination:string;cache:string;previous?:string}){
   const source=safePath(input.source,true),destination=safePath(input.destination),cache=realpathSync(input.cache);
   if(!/^[a-f0-9]{40}$/.test(input.commit)||!/^[a-f0-9]{40}$/.test(input.tree))throw new Error('FULL_SOURCE_PIN_REQUIRED');
   if(existsSync(destination)||within(source,destination)||within(destination,source))throw new Error('INSTALL_DESTINATION_MUST_BE_NEW_AND_SEPARATE');
+  // Inspect configured filter names before status can invoke a clean/process helper. No config values are emitted.
+  if(git(source,['config','--name-only','--list']).split('\n').some(name=>/^filter\./i.test(name)))throw new Error('SOURCE_GIT_FILTERS_REQUIRE_REVIEW');
   if(git(source,['rev-parse','--show-toplevel'])!==source||git(source,['status','--porcelain','--untracked-files=all']))throw new Error('SOURCE_MUST_BE_CLEAN_GIT_ROOT');
   if(git(source,['rev-parse',`${input.commit}^{commit}`])!==input.commit||git(source,['rev-parse',`${input.commit}^{tree}`])!==input.tree)throw new Error('SOURCE_PIN_MISMATCH');
   if(input.previous){const previous=doctorInstallation(input.previous);if(!previous.integrity)throw new Error('UPGRADE_PREVIOUS_MODIFIED');}
   // Refuse installing into an existing host repository, even if the final directory does not exist.
-  try{execFileSync('git',['-C',dirname(destination),'rev-parse','--show-toplevel'],{stdio:'pipe'});throw new Error('INSTALL_INSIDE_HOST_DENIED');}catch(error){if(error instanceof Error&&error.message==='INSTALL_INSIDE_HOST_DENIED')throw error;}
-  const listing=execFileSync('git',['-C',source,'ls-tree','-rz','--full-tree',input.commit],{encoding:'utf8',maxBuffer:32*1024*1024}).split('\0').filter(Boolean);
+  try{execFileSync('git',safeGit(dirname(destination),['rev-parse','--show-toplevel']),{stdio:'pipe',timeout:15000});throw new Error('INSTALL_INSIDE_HOST_DENIED');}catch(error){if(error instanceof Error&&error.message==='INSTALL_INSIDE_HOST_DENIED')throw error;}
+  const listing=execFileSync('git',safeGit(source,['ls-tree','-rz','--full-tree',input.commit]),{encoding:'utf8',timeout:15000,maxBuffer:32*1024*1024}).split('\0').filter(Boolean);
   const files=listing.map(line=>{const match=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(line);if(!match||!within(destination,resolve(destination,match[3]!))||match[3]!.includes('\\'))throw new Error('UNSAFE_SOURCE_TREE_ENTRY');return {mode:match[1]!,oid:match[2]!,path:match[3]!};});
   if(files.length>10000||!files.some(f=>f.path==='package-lock.json'))throw new Error('UNSUPPORTED_SOURCE_DISTRIBUTION');
   mkdirSync(destination,{recursive:false});
   // Failures retain the owned directory for inspection; never erase a partially installed tree automatically.
-  for(const f of files){const target=join(destination,f.path);mkdirSync(dirname(target),{recursive:true});const bytes=execFileSync('git',['-C',source,'cat-file','blob',f.oid],{maxBuffer:32*1024*1024});writeFileSync(target,bytes,{flag:'wx'});if(f.mode==='100755')chmodSync(target,0o755);}
+  for(const f of files){const target=join(destination,f.path);mkdirSync(dirname(target),{recursive:true});const bytes=execFileSync('git',safeGit(source,['cat-file','blob',f.oid]),{timeout:15000,maxBuffer:32*1024*1024});writeFileSync(target,bytes,{flag:'wx'});if(f.mode==='100755')chmodSync(target,0o755);}
   const pkg=JSON.parse(readFileSync(join(destination,'package.json'),'utf8'));
   if(Number(process.versions.node.split('.')[0])!==24)throw new Error('NODE_24_REQUIRED');
   const npm=execFileSync('npm',['--version'],{encoding:'utf8'}).trim();if(!/^11\./.test(npm))throw new Error('NPM_11_REQUIRED');
   const env={PATH:process.env.PATH??'/usr/bin:/bin',HOME:destination,TZ:'UTC',npm_config_cache:cache,npm_config_offline:'true',NODE_OPTIONS:'--max-old-space-size=640'};
   execFileSync('npm',['ci','--ignore-scripts','--offline','--no-audit','--no-fund'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
   execFileSync('npm',['run','build'],{cwd:destination,env,stdio:'pipe',timeout:180000,maxBuffer:8*1024*1024});
-  const schemaSource=join(destination,'packages/operations/src/migrations.ts');
-  const schema=existsSync(schemaSource)?Number(/export const AE_SCHEMA_VERSION = (\d+);/.exec(readFileSync(schemaSource,'utf8'))?.[1]):0;
-  if(!Number.isInteger(schema))throw new Error('INSTALLED_SCHEMA_VERSION_UNRECOGNIZED');
+  const schema=installedSchema(destination);
   const receipt:Receipt={format:'ae-source-install-v1',version:pkg.version,commit:input.commit,tree:input.tree,sourceHash:hash(JSON.stringify(files)),lockHash:hash(readFileSync(join(destination,'package-lock.json'))),schema,node:process.versions.node,npm,files:inventory(destination)};
   writeFileSync(join(destination,receiptName),JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});
   return {destination,...doctorInstallation(destination),...(input.previous?{previousRetained:resolve(input.previous),activation:'not-changed'}:{})};
 }
-/** Only a verified installation can be removed. Any user addition or modification fails closed. */
+/** Only a locally unchanged installation can be removed. The editable receipt is not an authenticity boundary. */
 export function uninstallFixedSource(directory:string,expectedCommit:string){
   const root=safePath(directory,true),receipt=load(root);
   if(receipt.commit!==expectedCommit)throw new Error('UNINSTALL_COMMIT_MISMATCH');
