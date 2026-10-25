@@ -31,10 +31,10 @@ try{
  // Deny any accidental external request, including upstream favicon fetches.
  await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
  await page.goto(origin+'/login');await page.locator('[name=username]').fill('ae_demo');await page.locator('[name=password]').fill('qualification-only');await page.locator('input[type=submit]').click();await page.waitForURL('**/bookmarks');
- const titles=await page.locator('ul.bookmark-list .bookmark-title').allTextContents();
+ const titles=(await page.locator('ul.bookmark-list .title > a').allTextContents()).map(t=>t.trim()).sort();assert.deepEqual(titles,['Django documentation','Python language']);
  const listText=await page.locator('ul.bookmark-list').innerText();assert.match(listText,/Django documentation/);assert.match(listText,/Python language/);assert.doesNotMatch(listText,/Foreign private/);
  await page.goto(origin+'/bookmarks?q=Django');const searchText=await page.locator('ul.bookmark-list').innerText();assert.match(searchText,/Django documentation/);assert.doesNotMatch(searchText,/Python language|Foreign private/);
- const business={authenticated:true,titles:['Django documentation','Python language'],searchTitles:['Django documentation'],foreignVisible:false};assertions.push('original-session-login','own-bookmark-list','host-search-query','foreign-bookmark-invisible');
+ const searchTitles=(await page.locator('ul.bookmark-list .title > a').allTextContents()).map(t=>t.trim()).sort();assert.deepEqual(searchTitles,['Django documentation']);const business={authenticated:true,titles,searchTitles,foreignVisible:listText.includes('Foreign private')};assertions.push('original-session-login','own-bookmark-list','host-search-query','foreign-bookmark-invisible');
  await page.goto(origin+'/bookmarks');await page.screenshot({path:join(out,phase==='baseline'?'before.png':'after-collapsed.png'),fullPage:true});
  let runtime;
  if(phase==='candidate'){
