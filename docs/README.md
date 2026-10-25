@@ -5,11 +5,11 @@
 1. [Product overview](../README.md): the promise and current boundaries.
 2. [Get started](getting-started.md): copy a plain product, inspect and preview a patch.
 3. [Delivery and evidence](delivery.md): one approved plan, bounded verification and an inspectable bundle.
-4. [First example](examples.md): before/after story and evidence map.
-5. [Integration](integrating.md): development-time Skill, host SDK, local runtime and remaining gates.
+4. [Examples](examples.md): React helpdesk, Python inventory and bounded Java lifecycle evidence.
+5. [Integration](integrating.md): development-time Skill/MCP, generic host SDK, shared runtime and authority boundaries.
 6. [中文入口](README.zh-CN.md): concise Chinese introduction.
 
-See [current acceptance status and remaining gates](acceptance-status.md) before treating a bounded fixture pass as whole-product readiness.
+See [current acceptance status and exact remaining gates](acceptance-status.md) before treating a bounded fixture pass as whole-product readiness. The [read-only evidence audit](verification/core-acceptance-audit.md) distinguishes stale status from still-unproven original requirements.
 
 - [Declared support and operational owners](support-matrix.md).
 - [Installation, operations and recovery](operations.md): fixed-source distribution, one schema owner, backup/restore, configuration transfer, admission and projection retention.

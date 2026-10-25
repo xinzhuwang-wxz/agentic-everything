@@ -43,9 +43,9 @@ No `--report`, `--passed` or arbitrary JSON import turns a gate green. Unprofile
 
 Unprofiled recipe approval excludes source execution, dependency installation, deployment and paid model calls. The versioned synthetic verification profile permits only its enumerated fixture checks, bounded temporary workspace and loopback services; it does not authorize general source execution. A developer's consolidated project plan must explicitly cover any actual harness execution and its environment before running it. Do not rewrite an approval after it was accepted, or copy a different run's green evidence into this bundle. Where execution is unavailable, deliver the exact not-run gate and the smallest remaining requirement.
 
-## One approved synthetic verification profile
+## Approved synthetic verification profiles
 
-For an exact disposable copy of the included fixture, the developer agent can request a new plan with:
+For an exact disposable copy of the React helpdesk fixture, the developer agent can request a new plan with:
 
 ```sh
 node packages/cli/dist/index.js plan --assessment /workspace/assessment.json \
@@ -56,9 +56,13 @@ The profile is part of the displayed plan hash and the subsequent approval. It c
 
 Use the same approve/deliver commands afterward. For this profile, add `--baseline-out NEW_ABSOLUTE_ARCHIVE_PATH` to `ae apply`; the archive must be a new file outside both source and candidate. Apply captures the exact trusted original, exclusively writes and flushes its bound archive, then consumes a one-use in-process receipt before creating the candidate. Direct core apply cannot bypass this gate or import an arbitrary JSON baseline. The archive binds input/output observations, fixture/collector/toolchain versions, source, plan and approval; patch and delivery bind its hash. A later apply failure preserves the archive and a failure sidecar rather than overwriting it. Delivery reuses that archive and never recaptures original observations. The 300-second total budget starts at baseline capture, not at delivery; if it expires, delivery remains not-run/partial. Archive timestamps are auxiliary evidence, not the ordering authority. No second development approval is needed for these already approved checks. Old plans without the profile remain static; never retrofit permission into an old approval. The harness uses already installed dependencies and an explicitly qualified sandboxed Chromium, never downloads tools. The current profile pins the Linux qualification binary by path and SHA-256; another operating system, browser installation or binary is not silently treated as qualified and yields not-run until a separately reviewed profile supports it. Missing prerequisites or unrun gates remain partial; observed failures remain failed. Complete additionally requires the parent to observe zero process exit without a timeout/signal, all owned services/browser cleaned up, and the process group closed without forced cleanup. Child PASS observations alone cannot satisfy this terminal gate. Evidence distinguishes deterministic simulated model behavior from real model quality.
 
+The second installed profile, `python-inventory-synthetic-v1`, uses the same approved lifecycle, pre-apply archive and delivery/check contracts for the exact Python/SQLite fixture. It parses original/generated Python, runs the independent 13-case inventory baseline and 25 host tests, and exercises shared SDK/host approval, reservation and receipt recovery through a local JSON CLI. It does not claim browser acceptance or PostgreSQL inventory recovery. Select this profile before approval; do not substitute it into an approved helpdesk plan. See [inventory reproduction and bounds](verification/cross-stack-inventory.md).
+
+The third profile, `java-spring-inventory-synthetic-v1`, captures the original Java/Spring Core CLI before apply and compares 14 business cases against its generated authenticated adapter, while preserving the original CLI and source. It uses the same archive/approval/delivery contracts and separately prepared verified Java dependencies; it is not Spring Boot/MVC, arbitrary Java transformation or Java PostgreSQL recovery. See [Java lifecycle qualification](verification/java-spring-recipe.md).
+
 ## Available qualification and its scope
 
-Profile completion is not overall AE acceptance. [Remaining milestone gates](acceptance-status.md) distinguish this result from broader business coverage, cross-stack repeatability and release readiness.
+Profile completion is not overall AE acceptance. [Current milestone evidence and exact remaining gates](acceptance-status.md) distinguish profile completion from whole-core acceptance. Cross-stack, operational and extension receipts are separately scoped, not silently imported into the bundle.
 
 [The current delivery qualification](verification/delivery-qualification.md) records the actual end-to-end CLI result, negative controls, aggregate checks and its bounded scope.
 

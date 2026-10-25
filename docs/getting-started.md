@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-This walkthrough demonstrates **source assessment and patch preview**, then an optional approved adaptation. It uses synthetic fixture data, not your product, a model service or a deployed application. Run the commands in one Bash-compatible shell on macOS/Linux. Other shells are not qualified by this walkthrough.
+This walkthrough demonstrates **source assessment and patch preview**, then an optional approved adaptation. It uses synthetic fixture data, not your product, a model service or a deployed application. The recorded execution environment is Linux with a Bash-compatible shell. The source-preview commands are portable in intent, but macOS and other shells do not inherit that execution evidence. In particular, the browser delivery profile pins its qualified Linux Chromium binary.
 
 ## 1. Check the workspace
 
@@ -48,7 +48,7 @@ node "$AE_CLI" preview --repo "$DEMO_DIR/source" \
 cat "$DEMO_DIR/plan.json"
 ```
 
-For the complete bounded synthetic verification route, add `--verification-profile react-helpdesk-synthetic-v1` to the `plan` command above before obtaining approval. This requires the installed build tools and qualified sandboxed Chromium; it does not download tools or authorize an arbitrary customer project. Review the [profile limits](delivery.md#one-approved-synthetic-verification-profile) with the same plan. Omitting it keeps the static-only route shown below.
+For the complete bounded synthetic verification route, add `--verification-profile react-helpdesk-synthetic-v1` to the `plan` command above before obtaining approval. This requires the installed build tools and qualified sandboxed Chromium; it does not download tools or authorize an arbitrary customer project. Review the [profile limits](delivery.md#approved-synthetic-verification-profiles) with the same plan. Omitting it keeps the static-only route shown below.
 
 Expect evidence for the explicit React 19/TypeScript fixture, a versioned recipe and a plan hash. The proposed change adds `src/ae/AgenticMount.tsx` and mounts it in `src/App.tsx`. It does not change `src/tickets.ts`, install host dependencies, call a model or run host scripts.
 
@@ -105,6 +105,16 @@ node "$AE_CLI" revert --patch "$DEMO_DIR/patch.json"
 ```
 
 Only unchanged patch-owned files are restored; the isolated worktree is retained. If someone edited those files after applying, revert stops for review. It does not undo database writes or remote deployments. Do not delete the evidence directory until you finish inspecting the result.
+
+## A different host, the same lifecycle
+
+The second installed recipe is `python-inventory@1.0.0`. Copy [the original Python inventory fixture](../fixtures/existing-python-inventory) to its own disposable Git root, then use the same assess → plan → approve → apply → deliver → delivery-check → revert commands. Select `--verification-profile python-inventory-synthetic-v1` in the plan and retain a fresh `--baseline-out` archive at apply. The [inventory guide](verification/cross-stack-inventory.md#reproduction) gives the exact path and limits.
+
+That profile requires Python 3.11+ and its standard library, adds only a JSON transport adapter, and preserves the original Python/SQLite business implementation. Its 13-case business comparison and actual CLI/SDK runtime checks do not require React or a browser. The separately qualified inventory UI is an integration fixture, not output promised by this headless recipe.
+
+The third recipe, `java-spring-inventory@1.0.0`, preserves the original Java/Spring Core CLI and generates a bounded HTTP adapter. Its exact `java-spring-inventory-synthetic-v1` profile requires Java 21 and the separately checksum-verified dependency cache, captures 14 original CLI business cases before apply, and checks the generated adapter and original entry point. Follow [Java reproduction](../qualification/java-spring-recipe/README.md); the profile does not download dependencies or qualify arbitrary Spring Boot/MVC projects.
+
+For a managed, fixed-version AE installation rather than a development checkout, follow [install, doctor, upgrade and uninstall](operations.md). It uses an exact reviewed commit/tree and an already-provisioned lockfile cache, without a network fallback, service activation or any AE account/key.
 
 ## Next steps
 
